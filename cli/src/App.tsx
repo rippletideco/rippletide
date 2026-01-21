@@ -950,11 +950,11 @@ export const App: React.FC<AppProps> = ({
               </Box>
             </Box>
           )}
-          
+
           {currentLLMResponse && (
             <Box flexDirection="column" marginTop={1}>
               <Box>
-                <Text bold color="green">LLM Response:</Text>
+                <Text bold color="green">Agent Response:</Text>
               </Box>
               <Box paddingLeft={2}>
                 <Text>{currentLLMResponse.length > 200 ? currentLLMResponse.substring(0, 200) + '...' : currentLLMResponse}</Text>
