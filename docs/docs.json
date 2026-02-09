@@ -57,6 +57,19 @@
             ]
           },
           {
+            "group": "Trust Platform",
+            "expanded": false,
+            "pages": [
+              "docs/trust-platform/overview",
+              {
+                "group": "Integrations",
+                "pages": [
+                  "docs/trust-platform/integrations/amazon-bedrock"
+                ]
+              }
+            ]
+          },
+          {
             "group": "Community",
             "pages": [
               "docs/community"

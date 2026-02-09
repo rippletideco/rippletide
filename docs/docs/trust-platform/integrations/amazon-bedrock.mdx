@@ -1,0 +1,126 @@
+---
+title: "Amazon Bedrock Integration"
+description: "Connect Amazon Bedrock knowledge bases with Rippletide for advanced AI agent capabilities"
+---
+
+Rippletide seamlessly integrates with Amazon Bedrock, enabling you to deploy, monitor, and evaluate AI agents built on AWS's fully managed foundation model service. This integration allows you to leverage your existing Bedrock knowledge bases directly within Rippletide.
+
+## Prerequisites
+
+Before integrating with Amazon Bedrock, ensure you have:
+
+- An active AWS account with Amazon Bedrock access enabled
+- Appropriate IAM permissions configured for Bedrock Knowledge Bases
+- An existing Amazon Bedrock Knowledge Base
+- AWS access credentials (Access Key ID and Secret Access Key)
+- A Rippletide account
+
+## AWS Configuration
+
+### 1. Obtain Your AWS Credentials
+
+You'll need the following information from your AWS account:
+
+- **AWS Access Key ID**: Your AWS access key identifier
+- **AWS Secret Access Key**: Your AWS secret access key
+- **AWS Region**: The region where your Bedrock knowledge base is deployed (e.g., `us-east-1`)
+- **Knowledge Base ID**: The unique identifier for your Bedrock knowledge base
+
+### 2. Required IAM Permissions
+
+Ensure your AWS credentials have the following permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:GetKnowledgeBase",
+        "bedrock:ListKnowledgeBases",
+        "bedrock:RetrieveAndGenerate"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+## Integration Steps
+
+### 1. Access Rippletide Platform
+
+Navigate to [https://trust.rippletide.com/](https://trust.rippletide.com/) and sign in to your account.
+
+### 2. Create a New Agent
+
+1. Click on **"Create Agent"**
+2. Select **"Start from scratch"**
+3. Enter a descriptive name for your agent
+4. Click **"Continue to Knowledge"**
+
+<img src="/img/create_agent.png" alt="Create a new agent in Rippletide" />
+
+### 3. Connect Amazon Bedrock
+
+1. In the Knowledge section, select **"Other Connectors"**
+2. Choose **"AWS Bedrock"** from the list of available integrations
+
+<img src="/img/connect_agent.png" alt="Connect Amazon Bedrock to your agent" />
+
+3. Enter your AWS credentials:
+   - **AWS Access Key**: Your AWS access key ID
+   - **AWS Secret Access Key**: Your secret access key
+   - **AWS Region**: The region of your knowledge base
+   - **Knowledge Base ID**: Your Bedrock knowledge base identifier
+
+### 4. Import Data Sources
+
+1. Select the data sources you want to import from your Bedrock knowledge base
+2. Review your selections to ensure all required sources are included
+3. Click **"Continue"**
+
+### 5. Configure Your Agent
+
+1. Wait for the data import process to complete (this may take a few minutes depending on the size of your knowledge base)
+2. Click **"Continue to Processes"** to configure agent workflows
+3. Click **"Continue to Guardrails"** to set up safety controls
+
+### 6. Test Your Integration
+
+1. Navigate to the **"Knowledge"** tab
+2. Visualize your imported knowledge base
+3. Start interacting with your agent to verify the integration is working correctly
+
+## Troubleshooting
+
+### Connection Issues
+
+If you encounter connection errors:
+
+- Verify your AWS credentials are correct and active
+- Ensure the IAM user has the required Bedrock permissions
+- Check that the Knowledge Base ID is valid and exists in the specified region
+- Confirm that Amazon Bedrock is available in your selected AWS region
+
+### Data Import Failures
+
+If data import fails or is incomplete:
+
+- Verify the knowledge base contains data sources
+- Check AWS CloudWatch logs for detailed error messages
+- Ensure the knowledge base is in an active state in AWS
+
+## Next Steps
+
+After successfully integrating Amazon Bedrock:
+
+- Configure advanced agent processes and workflows
+- Set up guardrails to ensure safe and compliant interactions
+- Test your agent with various queries to validate knowledge base integration
+- Monitor agent performance and usage analytics
+
+## Related Resources
+
+- [AWS Bedrock Documentation](https://docs.aws.amazon.com/bedrock/)
