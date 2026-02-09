@@ -4,7 +4,7 @@ import { callLLMEndpoint } from './llm.js';
 import { type CustomEndpointConfig } from './endpoint.js';
 
 let client = axios.create({
-  baseURL: 'https://rippletide-backend.azurewebsites.net',
+  baseURL: 'https://agent-evalserver-production.up.railway.app',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -260,12 +260,13 @@ export async function runPromptEvaluation(
       if (hallucinationResult.hallucinationLabel && hallucinationResult.hallucinationLabel !== '') {
         payload.hallucinationLabel = hallucinationResult.hallucinationLabel;
       }
-      
-      if (hallucinationResult.hallucinationFindings && hallucinationResult.hallucinationFindings.length > 0) {
-        payload.hallucinationFindings = hallucinationResult.hallucinationFindings;
-        logger.debug(`Including ${hallucinationResult.hallucinationFindings.length} hallucination findings`);
+
+      // Always include hallucinationFindings, even if empty
+      payload.hallucinationFindings = hallucinationResult.hallucinationFindings || [];
+      if (payload.hallucinationFindings.length > 0) {
+        logger.debug(`Including ${payload.hallucinationFindings.length} hallucination findings`);
       } else {
-        logger.debug('No hallucination findings to include');
+        logger.debug('No hallucination findings to include (empty array)');
       }
       
       await client.post(`/api/agents/${agentId}/test-results/${promptId}`, payload);
@@ -279,11 +280,14 @@ export async function runPromptEvaluation(
         response: llmResponse,
         expectedAnswer: expectedAnswer || null
       };
-      
+
       if (hallucinationResult.hallucinationLabel) {
         minimalPayload.hallucinationLabel = hallucinationResult.hallucinationLabel;
       }
-      
+
+      // Always include hallucinationFindings, even if empty
+      minimalPayload.hallucinationFindings = hallucinationResult.hallucinationFindings || [];
+
       await client.post(`/api/agents/${agentId}/test-results/${promptId}`, minimalPayload);
       logger.debug(`Stored minimal test result for prompt ${promptId}`);
     }
@@ -301,7 +305,8 @@ export async function runPromptEvaluation(
         await client.post(`/api/agents/${agentId}/test-results/${promptId}`, {
           status: 'passed',
           response: llmResponse,
-          expectedAnswer: expectedAnswer || null
+          expectedAnswer: expectedAnswer || null,
+          hallucinationFindings: []
         });
       } catch (storeError) {
         logger.error('Could not store passed result:', storeError);
@@ -339,16 +344,18 @@ export async function runPromptEvaluation(
       await client.post(`/api/agents/${agentId}/test-results/${promptId}`, {
         status: 'failed',
         response: errorResponse,
-        expectedAnswer: expectedAnswer || null
+        expectedAnswer: expectedAnswer || null,
+        hallucinationFindings: []
       });
       logger.debug(`Stored failed result for prompt ${promptId}`);
     } catch (e: any) {
       logger.error('Failed to store failed result:', e?.message || e);
       logger.debug('Error details:', e?.response?.data);
-      
+
       try {
         await client.post(`/api/agents/${agentId}/test-results/${promptId}`, {
-          status: 'failed'
+          status: 'failed',
+          hallucinationFindings: []
         });
         logger.debug(`Stored minimal failed result for prompt ${promptId}`);
       } catch (fallbackError) {

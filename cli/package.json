@@ -1,6 +1,6 @@
 {
   "name": "rippletide",
-  "version": "1.0.15",
+  "version": "1.0.19",
   "description": "Rippletide Evaluation CLI",
   "main": "dist/index.js",
   "bin": {
@@ -33,11 +33,9 @@
     "axios": "^1.13.2",
     "chalk": "^5.3.0",
     "drizzle-orm": "^0.38.3",
-    "form-data": "^4.0.0",
     "ink": "^5.0.1",
     "ink-text-input": "^6.0.0",
     "mime-types": "^2.1.35",
-    "node-fetch": "^3.3.2",
     "pg": "^8.13.1",
     "posthog-node": "^5.20.0",
     "react": "^18.3.1",
@@ -49,10 +47,12 @@
     "@babel/preset-typescript": "^7.26.0",
     "@types/mime-types": "^2.1.4",
     "@types/node": "^22.10.2",
-    "@types/node-fetch": "^2.6.13",
     "@types/pg": "^8.16.0",
     "@types/react": "^18.3.18",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "node-fetch": "4.0.0-beta.4"
   }
 }

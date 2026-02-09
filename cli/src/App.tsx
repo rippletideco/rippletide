@@ -276,7 +276,7 @@ export const App: React.FC<AppProps> = ({
           
           const qaPairs = await getPostgreSQLQAndA(
             config,
-            backendUrl || 'https://rippletide-backend.azurewebsites.net',
+            backendUrl || 'https://agent-evalserver-production.up.railway.app',
             (message) => setPostgresqlProgress(message)
           );
           setPostgresqlQAndA(qaPairs);
@@ -370,8 +370,10 @@ export const App: React.FC<AppProps> = ({
           
           setEvaluationProgress(30);
           
+          // Import knowledge based on source
+          let knowledgeData: any = null;
+
           if (knowledgeSource === 'files') {
-            let knowledgeData: any = null;
             if (templatePath) {
               try {
                 if (isRemoteTemplate) {
@@ -401,17 +403,26 @@ export const App: React.FC<AppProps> = ({
                 }
               }
             }
-            
-            if (knowledgeData) {
-              setEvaluationProgress(35);
-              try {
-                const importResult = await api.importKnowledge(agentId, knowledgeData);
-                logger.debug('Knowledge import result:', importResult);
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              } catch (error: any) {
-                logger.error('Failed to import knowledge:', error?.message || error);
-                logger.debug('Import error details:', error?.response?.data);
-              }
+          } else if (knowledgeSource === 'pinecone' && pineconeQAndA.length > 0) {
+            // Import Pinecone Q&A as knowledge
+            knowledgeData = pineconeQAndA;
+          } else if (knowledgeSource === 'postgresql' && postgresqlQAndA.length > 0) {
+            // Import PostgreSQL Q&A as knowledge
+            knowledgeData = postgresqlQAndA;
+          } else if (knowledgeSource === 'pdf' && pdfQAndA.length > 0) {
+            // Import PDF Q&A as knowledge
+            knowledgeData = pdfQAndA;
+          }
+
+          if (knowledgeData && Array.isArray(knowledgeData) && knowledgeData.length > 0) {
+            setEvaluationProgress(35);
+            try {
+              const importResult = await api.importKnowledge(agentId, knowledgeData);
+              logger.debug('Knowledge import result:', importResult);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (error: any) {
+              logger.error('Failed to import knowledge:', error?.message || error);
+              logger.debug('Import error details:', error?.response?.data);
             }
           }
           

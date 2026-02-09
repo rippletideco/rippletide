@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import FormData from 'form-data';
 import axios from 'axios';
 import { PdfUploadError, PdfValidationError } from '../errors/types.js';
 import { logger } from './logger.js';
@@ -85,10 +84,8 @@ export async function getPdfQAndA(
     if (onProgress) onProgress(`Uploading ${fileName} (${Math.round(fileBuffer.length / 1024)}KB)...`);
 
     const formData = new FormData();
-    formData.append('file', fileBuffer, {
-      filename: fileName,
-      contentType: 'application/pdf'
-    });
+    const blob = new Blob([fileBuffer], { type: 'application/pdf' });
+    formData.append('file', blob, fileName);
 
     const uploadUrl = `${backendUrl}/api/agents/${agentId}/upload-pdf`;
     
@@ -96,12 +93,9 @@ export async function getPdfQAndA(
     logger.debug(`File: ${fileName}, Size: ${fileBuffer.length} bytes`);
 
     const response = await axios.post<PdfUploadResponse>(uploadUrl, formData, {
-      headers: {
-        ...formData.getHeaders()
-      },
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
-      timeout: 300000 // 5 minutes timeout for PDF processing
+      timeout: 300000
     });
 
     if (!response.data.success) {

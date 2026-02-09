@@ -32,7 +32,7 @@ const parseArgs = async () => {
   }
   
   const options: any = {
-    backendUrl: 'https://rippletide-backend.azurewebsites.net',
+    backendUrl: 'https://agent-evalserver-production.up.railway.app',
     dashboardUrl: 'https://eval.rippletide.com',
     debug: false,
     nonInteractive: false
@@ -114,7 +114,7 @@ Options:
   -t, --template <name>       Use a pre-configured template
   -a, --agent <url>           Agent endpoint URL (e.g., localhost:8000)
   -k, --knowledge <source>    Knowledge source: files, pinecone, postgresql, or pdf (default: files)
-  -b, --backend-url <url>     Backend API URL (default: https://rippletide-backend.azurewebsites.net)
+  -b, --backend-url <url>     Backend API URL (default: https://agent-evalserver-production.up.railway.app)
   -d, --dashboard-url <url>   Dashboard URL (default: https://eval.rippletide.com)
   
   Pinecone options:

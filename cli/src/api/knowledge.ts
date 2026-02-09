@@ -1,12 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
-import FormData from 'form-data';
 import { logger } from '../utils/logger.js';
 import { PdfUploadError, PdfValidationError } from '../errors/types.js';
 
 let client = axios.create({
-  baseURL: 'https://rippletide-backend.azurewebsites.net',
+  baseURL: 'https://agent-evalserver-production.up.railway.app',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -153,22 +152,17 @@ export async function uploadPdfToAgent(
     }
 
     const formData = new FormData();
-    formData.append('file', fileBuffer, {
-      filename: fileName,
-      contentType: 'application/pdf'
-    });
+    const blob = new Blob([fileBuffer], { type: 'application/pdf' });
+    formData.append('file', blob, fileName);
 
     const response = await client.post(
       `/api/agents/${agentId}/upload-pdf`,
       formData,
       {
-        headers: {
-          ...formData.getHeaders(),
-          ...(API_KEY ? { 'x-api-key': API_KEY } : {})
-        },
+        headers: API_KEY ? { 'x-api-key': API_KEY } : {},
         maxBodyLength: Infinity,
         maxContentLength: Infinity,
-        timeout: 300000 // 5 minutes timeout for PDF processing
+        timeout: 300000
       }
     );
 
