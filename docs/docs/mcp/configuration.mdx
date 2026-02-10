@@ -1,0 +1,69 @@
+---
+title: Configuration
+description: All configuration options for the Rippletide MCP server
+---
+
+## Environment Variables & CLI Flags
+
+All options support both environment variables and CLI flags. **CLI flags take priority** over environment variables.
+
+| Env Variable | CLI Flag | Default | Description |
+|-------------|----------|---------|-------------|
+| `GRAPH_API_URL` | `--api-url` | `http://localhost:3000` | Knowledge graph backend URL |
+| `AGENT_ID` | `--agent-id` | `"default"` | Target agent's graph |
+| `TRANSPORT` | `--transport` | `stdio` | `stdio` for local, `http` for remote |
+| `PORT` | `--port` | `8080` | Port for HTTP transport |
+| `HOST` | `--host` | `127.0.0.1` | Bind address for HTTP transport |
+| `LOG_LEVEL` | `--log-level` | `info` | `debug`, `info`, `warn`, `error` |
+
+## Transport Modes
+
+### stdio (default)
+
+Used by local MCP clients like Cursor and Claude Desktop. The AI client spawns the MCP server as a subprocess and communicates over stdin/stdout.
+
+```bash
+npx @rippletide/mcp --api-url http://localhost:3000 --agent-id my-agent
+```
+
+### HTTP (remote / deployed)
+
+Used when deploying the MCP server as a standalone service. Exposes a single endpoint at `/mcp` following the MCP Streamable HTTP spec with stateful sessions.
+
+```bash
+npx @rippletide/mcp --transport http --host 0.0.0.0 --port 8080 --api-url https://your-backend.com
+```
+
+## Agent ID
+
+Each `AGENT_ID` gets its own **isolated knowledge graph**. Without it, everything goes to the `"default"` graph.
+
+You can set the agent ID in three ways:
+
+1. **Environment variable**: `AGENT_ID=abc-123`
+2. **CLI flag**: `--agent-id abc-123`
+3. **At runtime**: use the `switch_agent` tool during a conversation
+
+<Warning>
+  There is no authentication on the MCP server in V1. Anyone with the backend URL and an agent ID can read/write to that agent's graph. Authentication is planned for V2.
+</Warning>
+
+## Health Check
+
+On startup, the server pings `GET /api/graph/stats` on the backend. If the backend is unreachable, a warning is logged but the server still starts. Tools will return errors until the backend comes up.
+
+## Logging
+
+All logs are **JSON-formatted** and written to **stderr** (stdout is reserved for the MCP stdio protocol).
+
+```bash
+# Enable debug logging
+LOG_LEVEL=debug npx @rippletide/mcp
+```
+
+Example log output:
+```json
+{"ts":"2025-01-15T10:30:00.000Z","level":"info","msg":"starting rippletide-mcp","graphApiUrl":"http://localhost:3000","agentId":"my-agent","transport":"stdio"}
+{"ts":"2025-01-15T10:30:00.050Z","level":"info","msg":"health check passed","entities":42,"memories":156,"relations":89}
+{"ts":"2025-01-15T10:30:00.051Z","level":"info","msg":"rippletide-mcp running on stdio"}
+```

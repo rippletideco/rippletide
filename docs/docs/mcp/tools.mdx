@@ -1,0 +1,147 @@
+---
+title: Tools & Resources
+description: All MCP tools and resources exposed by the Rippletide MCP server
+---
+
+## Tools
+
+The MCP server exposes 7 tools that your AI client can call during conversations.
+
+### remember
+
+Store a fact, preference, intent, or decision in the agent's memory, linked to entities.
+
+```json
+{
+  "content": "Client prefers email communication over phone",
+  "category": "preference",
+  "entities": [
+    { "name": "John Doe", "type": "Person" }
+  ],
+  "confidence": 0.95
+}
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `content` | string | Yes | The memory content to store |
+| `category` | string | Yes | One of: `fact`, `preference`, `intent`, `decision`, `context` |
+| `entities` | array | No | Entities this memory is about (name + type) |
+| `confidence` | number | No | Confidence level 0-1 (default: 0.9) |
+| `sourceText` | string | No | Original text this was extracted from |
+
+### recall
+
+Search the agent's memories by keyword or topic.
+
+```json
+{
+  "query": "pricing preferences",
+  "limit": 5
+}
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | Yes | Search query |
+| `limit` | number | No | Max results (default: 10) |
+
+### get_context
+
+Get all information about a specific entity — its memories, relations, and attributes.
+
+```json
+{
+  "entity_name": "Acme Corp"
+}
+```
+
+### list_entities
+
+List all known entities in the graph, optionally filtered by type.
+
+```json
+{
+  "type": "Person"
+}
+```
+
+### invalidate
+
+Mark a memory as no longer valid. Useful when information becomes outdated.
+
+```json
+{
+  "memory_id": "abc123",
+  "reason": "Pricing has been updated for Q2"
+}
+```
+
+### relate
+
+Create a relationship between two entities. Creates entities if they don't exist yet.
+
+```json
+{
+  "source": "John Doe",
+  "target": "Acme Corp",
+  "relation_type": "works_at"
+}
+```
+
+### switch_agent
+
+Switch to a different agent's knowledge graph at runtime. All subsequent tool calls will target the new agent's graph.
+
+```json
+{
+  "agent_id": "2c5eaa9d-5510-4a1d-a204-a795646eeb32"
+}
+```
+
+Returns the previous and new agent ID, plus a health check result confirming the backend is reachable.
+
+## Entity Types
+
+| Type | Description |
+|------|-------------|
+| `Person` | A person (client, employee, contact) |
+| `Organization` | A company, team, or group |
+| `Product` | A product or service |
+| `Amount` | A monetary amount or quantity |
+| `Date` | A date or time reference |
+| `Location` | A physical or virtual location |
+| `Concept` | An abstract concept or topic |
+| `Decision` | A decision that was made |
+| `Action` | An action that was taken or planned |
+
+## Relation Types
+
+| Type | Example |
+|------|---------|
+| `works_at` | John **works at** Acme Corp |
+| `wants` | Client **wants** premium support |
+| `has` | Acme Corp **has** enterprise plan |
+| `is_a` | Rippletide **is a** SaaS product |
+| `related_to` | Pricing **related to** Q2 review |
+| `caused` | Bug report **caused** hotfix release |
+| `approved` | Manager **approved** budget increase |
+| `declined` | Client **declined** renewal |
+| `lives_in` | John **lives in** Paris |
+| `resulted_in` | Meeting **resulted in** partnership |
+| `mentioned_with` | Product A **mentioned with** Product B |
+
+## Resources (Read-Only)
+
+The MCP server also exposes 4 read-only resources that clients can query for the full graph state.
+
+| URI | Description |
+|-----|-------------|
+| `graph://entities` | All entities in the graph |
+| `graph://memories` | All active (non-invalidated) memories |
+| `graph://relations` | All active relations |
+| `graph://stats` | Graph statistics (entity count, memory count, etc.) |

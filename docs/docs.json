@@ -57,6 +57,16 @@
             ]
           },
           {
+            "group": "MCP Server",
+            "expanded": false,
+            "pages": [
+              "docs/mcp/overview",
+              "docs/mcp/configuration",
+              "docs/mcp/tools",
+              "docs/mcp/deploy"
+            ]
+          },
+          {
             "group": "Trust Platform",
             "expanded": false,
             "pages": [
