@@ -155,7 +155,9 @@ headers = {
 
 ### Base URL
 
+```
 https://agent.rippletide.com/api/sdk
+```
 
 ### Agent Management
 
@@ -1278,7 +1280,7 @@ class AgentChat:
 
 The Rippletide SDK provides a powerful platform for building reliable, hallucination-free conversational AI agents. By following this guide and implementing the best practices outlined, you can create sophisticated agents that provide accurate, helpful responses while maintaining conversation context and following predefined business logic.
 
-For additional support and updates, visit the [Rippletide documentation](https://agent.rippletide.com) or contact our support team.
+For additional support and updates, visit the [Rippletide documentation](https://docs.rippletide.com) or contact our support team.
 
 ---
 
