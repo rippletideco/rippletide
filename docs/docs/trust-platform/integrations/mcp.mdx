@@ -1,0 +1,58 @@
+---
+title: "Integrate Agents with MCP"
+description: "Create an agent on Rippletide and integrate it into any MCP-compatible client in under 2 minutes"
+---
+
+## Overview
+
+You can easily create an agent using the Rippletide Trust Platform and expose it as an MCP server, ready to be plugged into any MCP-compatible agent or client.
+
+## Step 1: Build your Agent
+
+Go to the [Rippletide Builder](https://app.rippletide.com) and define your agent's:
+
+- **Knowledge** — the data and context your agent can access
+- **Processes** — the workflows and actions it can perform
+- **Guardrails** — the safety rules and constraints it must follow
+
+## Step 2: Visualize and Test
+
+Navigate to the **Knowledge** tab to visualize your agent's knowledge graph and test it interactively before going live.
+
+## Step 3: Get your MCP Configuration
+
+Go to the **Launch** page. You will see **MCP Tools** and the exposed tools for your agent.
+
+Copy the JSON configuration:
+
+```json
+{
+  "mcpServers": {
+    "rippletide-kg": {
+      "type": "url",
+      "url": "https://mcp.rippletide.com/mcp?agentId=<your-agent-id>"
+    }
+  }
+}
+```
+
+## Step 4: Add to your Agent
+
+Paste the configuration into your favorite MCP-compatible client:
+
+<CardGroup cols={2}>
+  <Card title="Claude Desktop" icon="message-bot">
+    Add to your `claude_desktop_config.json`
+  </Card>
+  <Card title="Cursor" icon="code">
+    Add to your `.cursor/mcp.json`
+  </Card>
+  <Card title="VS Code" icon="window" >
+    Add to your VS Code MCP settings
+  </Card>
+  <Card title="Custom Agent" icon="robot">
+    Use any MCP-compatible SDK or framework
+  </Card>
+</CardGroup>
+
+That's it — in under 2 minutes you've created an agent on Rippletide, tested it, and integrated it into your agent using MCP.
