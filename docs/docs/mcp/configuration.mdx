@@ -3,9 +3,30 @@ title: Configuration Options
 description: All configuration options for the Rippletide MCP server
 ---
 
-## Environment Variables & CLI Flags
+## Hosted Server (Recommended)
 
-All options support both environment variables and CLI flags. **CLI flags take priority** over environment variables.
+The hosted MCP server at `mcp.rippletide.com` requires no configuration beyond your agent ID:
+
+```json
+{
+  "mcpServers": {
+    "rippletide-kg": {
+      "type": "url",
+      "url": "https://mcp.rippletide.com/mcp?agentId=your-agent-id"
+    }
+  }
+}
+```
+
+### Agent ID
+
+Each agent ID gets its own **isolated knowledge graph**. You can find your agent ID on the agent detail page in the [Rippletide platform](https://eval.rippletide.com).
+
+You can also switch agents at runtime using the `switch_agent` tool during a conversation.
+
+## Self-Hosted Server
+
+If you're running the MCP server yourself (see [Deploy](/docs/mcp/deploy)), you can configure it via environment variables or CLI flags. **CLI flags take priority.**
 
 | Env Variable | CLI Flag | Default | Description |
 |-------------|----------|---------|-------------|
@@ -16,54 +37,39 @@ All options support both environment variables and CLI flags. **CLI flags take p
 | `HOST` | `--host` | `127.0.0.1` | Bind address for HTTP transport |
 | `LOG_LEVEL` | `--log-level` | `info` | `debug`, `info`, `warn`, `error` |
 
-## Transport Modes
+### Transport Modes
 
-### stdio (default)
+**stdio (default)** — Used by local MCP clients like Cursor and Claude Desktop. The AI client spawns the MCP server as a subprocess.
 
-Used by local MCP clients like Cursor and Claude Desktop. The AI client spawns the MCP server as a subprocess and communicates over stdin/stdout.
-
-```bash
-npx @rippletide/mcp --api-url http://localhost:3000 --agent-id my-agent
+```json
+{
+  "mcpServers": {
+    "rippletide": {
+      "command": "npx",
+      "args": ["-y", "@rippletide/mcp"],
+      "env": {
+        "GRAPH_API_URL": "http://localhost:3000",
+        "AGENT_ID": "your-agent-id"
+      }
+    }
+  }
+}
 ```
 
-### HTTP (remote / deployed)
-
-Used when deploying the MCP server as a standalone service. Exposes a single endpoint at `/mcp` following the MCP Streamable HTTP spec with stateful sessions.
+**HTTP** — Used when deploying as a standalone service:
 
 ```bash
 npx @rippletide/mcp --transport http --host 0.0.0.0 --port 8080 --api-url https://your-backend.com
 ```
 
-## Agent ID
+### Health Check
 
-Each `AGENT_ID` gets its own **isolated knowledge graph**. Without it, everything goes to the `"default"` graph.
+On startup, the server pings `GET /api/graph/stats` on the backend. If unreachable, a warning is logged but the server still starts.
 
-You can set the agent ID in three ways:
+### Logging
 
-1. **Environment variable**: `AGENT_ID=abc-123`
-2. **CLI flag**: `--agent-id abc-123`
-3. **At runtime**: use the `switch_agent` tool during a conversation
-
-<Warning>
-  There is no authentication on the MCP server in V1. Anyone with the backend URL and an agent ID can read/write to that agent's graph. Authentication is planned for V2.
-</Warning>
-
-## Health Check
-
-On startup, the server pings `GET /api/graph/stats` on the backend. If the backend is unreachable, a warning is logged but the server still starts. Tools will return errors until the backend comes up.
-
-## Logging
-
-All logs are **JSON-formatted** and written to **stderr** (stdout is reserved for the MCP stdio protocol).
+All logs are JSON-formatted and written to stderr (stdout is reserved for the MCP stdio protocol).
 
 ```bash
-# Enable debug logging
 LOG_LEVEL=debug npx @rippletide/mcp
-```
-
-Example log output:
-```json
-{"ts":"2025-01-15T10:30:00.000Z","level":"info","msg":"starting rippletide-mcp","graphApiUrl":"http://localhost:3000","agentId":"my-agent","transport":"stdio"}
-{"ts":"2025-01-15T10:30:00.050Z","level":"info","msg":"health check passed","entities":42,"memories":156,"relations":89}
-{"ts":"2025-01-15T10:30:00.051Z","level":"info","msg":"rippletide-mcp running on stdio"}
 ```
