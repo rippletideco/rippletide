@@ -74,7 +74,8 @@
               {
                 "group": "Integrations",
                 "pages": [
-                  "docs/trust-platform/integrations/amazon-bedrock"
+                  "docs/trust-platform/integrations/amazon-bedrock",
+                  "docs/trust-platform/integrations/mcp"
                 ]
               }
             ]
