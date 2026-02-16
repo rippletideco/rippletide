@@ -19,40 +19,120 @@ Go to the [Rippletide Builder](https://app.rippletide.com) and define your agent
 
 Navigate to the **Knowledge** tab to visualize your agent's knowledge graph and test it interactively before going live.
 
-## Step 3: Get your MCP Configuration
+## Step 3: Add to your Agent
 
 Go to the **Launch** page. You will see **MCP Tools** and the exposed tools for your agent.
 
-Copy the JSON configuration:
+Copy the configuration for your favorite MCP-compatible client:
 
-```json
-{
-  "mcpServers": {
-    "rippletide-kg": {
-      "type": "url",
-      "url": "https://mcp.rippletide.com/mcp?agentId=<your-agent-id>"
+<AccordionGroup>
+  <Accordion title="Claude Desktop" icon="message-bot">
+    Add the following to your `claude_desktop_config.json` file:
+    - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+    - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+    ```json
+    {
+      "mcpServers": {
+        "rippletide-kg": {
+          "type": "url",
+          "url": "https://mcp.rippletide.com/mcp?agentId=<your-agent-id>"
+        }
+      }
     }
-  }
-}
-```
+    ```
+  </Accordion>
 
-## Step 4: Add to your Agent
+  <Accordion title="Claude Code (CLI)" icon="terminal">
+    Run the following command in your terminal:
 
-Paste the configuration into your favorite MCP-compatible client:
+    ```bash
+    claude mcp add rippletide-kg --transport http "https://mcp.rippletide.com/mcp?agentId=<your-agent-id>"
+    ```
 
-<CardGroup cols={2}>
-  <Card title="Claude Desktop" icon="message-bot">
-    Add to your `claude_desktop_config.json`
-  </Card>
-  <Card title="Cursor" icon="code">
-    Add to your `.cursor/mcp.json`
-  </Card>
-  <Card title="VS Code" icon="window" >
-    Add to your VS Code MCP settings
-  </Card>
-  <Card title="Custom Agent" icon="robot">
-    Use any MCP-compatible SDK or framework
-  </Card>
-</CardGroup>
+    Or add it to your `.claude/settings.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "rippletide-kg": {
+          "type": "url",
+          "url": "https://mcp.rippletide.com/mcp?agentId=<your-agent-id>"
+        }
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Cursor" icon="code">
+    Add the following to your `.cursor/mcp.json` file at the root of your project (or globally in `~/.cursor/mcp.json`):
+
+    ```json
+    {
+      "mcpServers": {
+        "rippletide-kg": {
+          "type": "url",
+          "url": "https://mcp.rippletide.com/mcp?agentId=<your-agent-id>"
+        }
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Windsurf" icon="wind">
+    Add the following to your `~/.codeium/windsurf/mcp_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "rippletide-kg": {
+          "type": "url",
+          "url": "https://mcp.rippletide.com/mcp?agentId=<your-agent-id>"
+        }
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="VS Code (GitHub Copilot)" icon="window">
+    Add the following to your `.vscode/mcp.json` file at the root of your project:
+
+    ```json
+    {
+      "servers": {
+        "rippletide-kg": {
+          "type": "http",
+          "url": "https://mcp.rippletide.com/mcp?agentId=<your-agent-id>"
+        }
+      }
+    }
+    ```
+
+    Or add it to your VS Code `settings.json` under `mcp`:
+
+    ```json
+    {
+      "mcp": {
+        "servers": {
+          "rippletide-kg": {
+            "type": "http",
+            "url": "https://mcp.rippletide.com/mcp?agentId=<your-agent-id>"
+          }
+        }
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Custom Agent / SDK" icon="robot">
+    Use any MCP-compatible SDK or framework. Point your MCP client to the following URL:
+
+    ```
+    https://mcp.rippletide.com/mcp?agentId=<your-agent-id>
+    ```
+
+    The server supports **Streamable HTTP** transport.
+  </Accordion>
+</AccordionGroup>
 
 That's it — in under 2 minutes you've created an agent on Rippletide, tested it, and integrated it into your agent using MCP.
