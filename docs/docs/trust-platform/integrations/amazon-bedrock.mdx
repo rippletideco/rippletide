@@ -1,34 +1,38 @@
 ---
 title: "Amazon Bedrock Integration"
-description: "Connect Amazon Bedrock knowledge bases with Rippletide for advanced AI agent capabilities"
+description: "Bring your Amazon Bedrock knowledge bases into Rippletide to monitor, evaluate, and secure your AI agents"
 ---
 
-Rippletide seamlessly integrates with Amazon Bedrock, enabling you to deploy, monitor, and evaluate AI agents built on AWS's fully managed foundation model service. This integration allows you to leverage your existing Bedrock knowledge bases directly within Rippletide.
+Already using Amazon Bedrock to power your AI agents? Rippletide lets you connect your existing Bedrock knowledge bases to add guardrails, monitoring, and evaluation — without changing your AWS infrastructure.
+
+## What You Get
+
+By connecting your Bedrock knowledge bases to Rippletide, you can:
+
+- **Visualize** your knowledge base as an interactive knowledge graph
+- **Define processes** and workflows on top of your existing data
+- **Add guardrails** to enforce safety and compliance rules
+- **Test and evaluate** your agent's responses before going live
+- **Deploy via MCP** to plug your agent into any MCP-compatible client
 
 ## Prerequisites
 
-Before integrating with Amazon Bedrock, ensure you have:
+- An Amazon Bedrock Knowledge Base (active, with data sources)
+- AWS credentials with the required permissions (see below)
+- A [Rippletide account](https://trust.rippletide.com/)
 
-- An active AWS account with Amazon Bedrock access enabled
-- Appropriate IAM permissions configured for Bedrock Knowledge Bases
-- An existing Amazon Bedrock Knowledge Base
-- AWS access credentials (Access Key ID and Secret Access Key)
-- A Rippletide account
+## Step 1: Prepare Your AWS Credentials
 
-## AWS Configuration
+Gather the following from your AWS account:
 
-### 1. Obtain Your AWS Credentials
+- **AWS Access Key ID**
+- **AWS Secret Access Key**
+- **AWS Region** where your knowledge base is deployed (e.g., `us-east-1`)
+- **Knowledge Base ID** (found in the Bedrock console)
 
-You'll need the following information from your AWS account:
+### Required IAM Permissions
 
-- **AWS Access Key ID**: Your AWS access key identifier
-- **AWS Secret Access Key**: Your AWS secret access key
-- **AWS Region**: The region where your Bedrock knowledge base is deployed (e.g., `us-east-1`)
-- **Knowledge Base ID**: The unique identifier for your Bedrock knowledge base
-
-### 2. Required IAM Permissions
-
-Ensure your AWS credentials have the following permissions:
+The IAM user or role associated with your credentials needs the following permissions:
 
 ```json
 {
@@ -47,79 +51,56 @@ Ensure your AWS credentials have the following permissions:
 }
 ```
 
-## Integration Steps
+## Step 2: Create an Agent on Rippletide
 
-### 1. Access Rippletide Platform
-
-Navigate to [https://trust.rippletide.com/](https://trust.rippletide.com/) and sign in to your account.
-
-### 2. Create a New Agent
-
-1. Click on **"Create Agent"**
-2. Select **"Start from scratch"**
-3. Enter a descriptive name for your agent
-4. Click **"Continue to Knowledge"**
+1. Go to [trust.rippletide.com](https://trust.rippletide.com/) and sign in
+2. Click **"Create Agent"** then **"Start from scratch"**
+3. Give your agent a name and click **"Continue to Knowledge"**
 
 <img src="/img/create_agent.png" alt="Create a new agent in Rippletide" />
 
-### 3. Connect Amazon Bedrock
+## Step 3: Connect Your Bedrock Knowledge Base
 
 1. In the Knowledge section, select **"Other Connectors"**
-2. Choose **"AWS Bedrock"** from the list of available integrations
+2. Choose **"AWS Bedrock"**
 
 <img src="/img/connect_agent.png" alt="Connect Amazon Bedrock to your agent" />
 
 3. Enter your AWS credentials:
-   - **AWS Access Key**: Your AWS access key ID
-   - **AWS Secret Access Key**: Your secret access key
-   - **AWS Region**: The region of your knowledge base
-   - **Knowledge Base ID**: Your Bedrock knowledge base identifier
+   - **AWS Access Key**
+   - **AWS Secret Access Key**
+   - **AWS Region**
+   - **Knowledge Base ID**
 
-### 4. Import Data Sources
+4. Select the data sources you want to import and click **"Continue"**
 
-1. Select the data sources you want to import from your Bedrock knowledge base
-2. Review your selections to ensure all required sources are included
-3. Click **"Continue"**
+## Step 4: Configure and Test
 
-### 5. Configure Your Agent
-
-1. Wait for the data import process to complete (this may take a few minutes depending on the size of your knowledge base)
-2. Click **"Continue to Processes"** to configure agent workflows
-3. Click **"Continue to Guardrails"** to set up safety controls
-
-### 6. Test Your Integration
-
-1. Navigate to the **"Knowledge"** tab
-2. Visualize your imported knowledge base
-3. Start interacting with your agent to verify the integration is working correctly
+1. Once the import completes, your knowledge base is visualized as a graph in the **"Knowledge"** tab
+2. Click **"Continue to Processes"** to define agent workflows
+3. Click **"Continue to Guardrails"** to set up safety and compliance rules
+4. Test your agent directly in Rippletide to validate responses
 
 ## Troubleshooting
 
 ### Connection Issues
 
-If you encounter connection errors:
-
 - Verify your AWS credentials are correct and active
-- Ensure the IAM user has the required Bedrock permissions
-- Check that the Knowledge Base ID is valid and exists in the specified region
-- Confirm that Amazon Bedrock is available in your selected AWS region
+- Confirm the IAM user has the required Bedrock permissions listed above
+- Check that the Knowledge Base ID exists in the specified region
+- Make sure Amazon Bedrock is available in your selected AWS region
 
 ### Data Import Failures
 
-If data import fails or is incomplete:
-
-- Verify the knowledge base contains data sources
+- Verify the knowledge base contains at least one data source
+- Ensure the knowledge base is in an **active** state in the Bedrock console
 - Check AWS CloudWatch logs for detailed error messages
-- Ensure the knowledge base is in an active state in AWS
 
 ## Next Steps
 
-After successfully integrating Amazon Bedrock:
-
-- Configure advanced agent processes and workflows
-- Set up guardrails to ensure safe and compliant interactions
-- Test your agent with various queries to validate knowledge base integration
-- Monitor agent performance and usage analytics
+- [Deploy your agent via MCP](/docs/trust-platform/integrations/mcp) to use it in Claude Desktop, Cursor, VS Code, and more
+- Set up advanced guardrails for production-ready safety controls
+- Monitor agent performance and usage analytics from the Rippletide dashboard
 
 ## Related Resources
 
