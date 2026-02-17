@@ -1,24 +1,101 @@
 ---
-title: 'Overview'
-description: 'Explore the Hypergraph architecture and its capabilities'
+title: 'Rippletide SDK'
+description: 'Build hallucination-free AI agents with the Rippletide hypergraph'
 ---
 
-## What is Hypergraph?
+## What is the Hypergraph?
 
-The Hypergraph architecture in Rippletide is a powerful framework for building and managing complex AI agent interactions. It enables sophisticated multi-agent orchestration and conversation flows through a graph-based approach.
+The Hypergraph is Rippletide's knowledge representation engine. Unlike traditional RAG (Retrieval-Augmented Generation) where an LLM retrieves chunks of text and guesses the answer, Rippletide structures knowledge as a **graph of entities, relations, and rules** that drives deterministic decision-making.
 
-## Key Components
+**The result**: agents that hallucinate less than 1% of the time, with full explainability on every answer.
+
+## How It Differs from RAG
+
+| | Traditional RAG | Rippletide Hypergraph |
+|---|----------------|----------------------|
+| **Knowledge storage** | Unstructured text chunks in a vector DB | Structured Q&A pairs, tags, actions, and state transitions |
+| **Decision-making** | LLM generates answers probabilistically | Deterministic reasoning engine selects the best answer |
+| **Hallucination rate** | Variable, hard to control | < 1% by design |
+| **Explainability** | Black box | Every decision is traceable to a knowledge node |
+| **Guardrails** | Prompt-based, easy to bypass | Enforced at the engine level, 100% compliance |
+
+## Core Building Blocks
+
+Your agent's knowledge is composed of four types of building blocks:
+
+<CardGroup cols={2}>
+  <Card title="Q&A Pairs" icon="circle-question">
+    The questions your agent can answer and their expected responses. This is the foundation of your agent's knowledge.
+  </Card>
+
+  <Card title="Tags" icon="tags">
+    Labels that organize Q&A pairs by topic (e.g. "pricing", "shipping", "returns"). Tags improve retrieval accuracy and let you structure a glossary.
+  </Card>
+
+  <Card title="Actions" icon="bolt">
+    Things your agent can do beyond answering questions: create a ticket, process a return, escalate to a human. Each action has requirements that must be met.
+  </Card>
+
+  <Card title="State Predicates" icon="diagram-project">
+    Rules that define conversation flow. Based on what the user says, the agent transitions between states (e.g. "user described needs" -> "recommend product" -> "checkout").
+  </Card>
+</CardGroup>
+
+## Architecture Overview
+
+```
+User message
+    |
+    v
+[ Language Understanding (LLM) ]  -- Parses the user's intent
+    |
+    v
+[ Hypergraph Reasoning Engine ]   -- Matches against Q&A, evaluates state, selects action
+    |                                 (deterministic, no hallucination)
+    v
+[ Response Generation (LLM) ]    -- Formulates a natural language response
+    |                                 from the selected knowledge node
+    v
+Agent response
+```
+
+The LLM is only used for **language** (understanding input, generating output). All **decisions** (which answer to give, which action to take, which state to transition to) are handled by the deterministic reasoning engine.
+
+## Getting Started with the SDK
+
+<Steps>
+  <Step title="Create an agent">
+    Define your agent's name and system prompt via the SDK API.
+  </Step>
+  <Step title="Add Q&A pairs">
+    Populate your agent's knowledge base with questions and answers.
+  </Step>
+  <Step title="Organize with tags">
+    Tag your Q&A pairs by topic for better retrieval.
+  </Step>
+  <Step title="Define actions">
+    Specify what your agent can do and the requirements for each action.
+  </Step>
+  <Step title="Set up state predicates">
+    Design the conversation flow with states and transitions.
+  </Step>
+  <Step title="Chat">
+    Send messages to your agent and get hallucination-free responses.
+  </Step>
+</Steps>
+
+## Next Steps
 
 <CardGroup cols={3}>
-  <Card title="Agent Setup" icon="cog" href="/docs/agent_setup">
-    Configure and initialize your agents with custom parameters
+  <Card title="Create Your Hypergraph" icon="cog" href="/docs/agent_setup">
+    Step-by-step guide to setting up Q&A, tags, actions, and states
   </Card>
-  
-  <Card title="Agent Chat" icon="comments" href="/docs/agent_chat">
-    Manage conversations and interactions between agents
+
+  <Card title="LangChain Integration" icon="link" href="/docs/agent_chat">
+    Use your Rippletide agent as a drop-in LLM replacement in LangChain
   </Card>
-  
-  <Card title="Agent Core" icon="brain" href="/docs/Agent">
-    Deep dive into the agent architecture and advanced features
+
+  <Card title="Complete Developer Guide" icon="book" href="/docs/Agent">
+    Full API reference with executable code examples
   </Card>
 </CardGroup>

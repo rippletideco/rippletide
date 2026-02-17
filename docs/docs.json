@@ -4,7 +4,7 @@
   "theme": "mint",
   "topbarCtaButton": {
     "name": "Get Started",
-    "url": "/docs/welcome"
+    "url": "/docs/get_started"
   },
   "logo": {
     "light": "/img/rippletide_logo_navy_text_bg.svg",
@@ -34,7 +34,8 @@
           {
             "group": "Get Started",
             "pages": [
-              "index"
+              "index",
+              "docs/get_started"
             ]
           },
           {

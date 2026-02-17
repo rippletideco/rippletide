@@ -1,11 +1,58 @@
 ---
 title: MCP Server
-description: Give your AI agents persistent memory with the Rippletide MCP server
+description: Give your AI coding assistant persistent memory with the Rippletide MCP server
 ---
 
-## What is the MCP Server?
+## What is MCP?
 
-The Rippletide MCP server connects AI clients (Cursor, Claude Desktop, Claude Code) to your agent's knowledge graph. It lets your AI assistant **remember**, **recall**, and **reason** over structured knowledge and across conversations to reduce unpredictability.
+MCP (Model Context Protocol) is an open standard that lets AI assistants like Cursor, Claude Desktop, and Claude Code connect to external tools and data sources. Think of it as a plugin system for AI assistants.
+
+## What does the Rippletide MCP server do?
+
+It gives your AI assistant a **persistent memory** backed by a knowledge graph. Without it, your AI assistant forgets everything between conversations. With it, your assistant can:
+
+- **Remember** facts, decisions, preferences, and context across sessions
+- **Recall** past information by searching the knowledge graph
+- **Relate** entities to each other (e.g. "John works at Acme Corp")
+- **Invalidate** outdated information when things change
+
+Each agent gets its own **isolated knowledge graph**, so memories from one project don't leak into another.
+
+## How it works
+
+```
+Your AI assistant (Cursor, Claude, etc.)
+    |
+    | calls MCP tools (remember, recall, relate...)
+    v
+Rippletide MCP Server (mcp.rippletide.com)
+    |
+    | reads/writes to the knowledge graph
+    v
+Agent's Knowledge Graph (entities, memories, relations)
+```
+
+The AI assistant calls tools like `remember` and `recall` automatically during conversations. You don't need to do anything -- the assistant decides when to store or retrieve information based on context.
+
+## Example
+
+Here's what a conversation looks like with MCP enabled:
+
+**Conversation 1:**
+> **You:** "We decided to use PostgreSQL for the new project, budget is 50k"
+>
+> **Assistant:** *(automatically calls `remember` to store "project uses PostgreSQL" and "budget is 50k", calls `relate` to link Project -> PostgreSQL)*
+>
+> "Got it, I've noted the technology choice and budget."
+
+**Conversation 2 (days later):**
+> **You:** "What database are we using for the project?"
+>
+> **Assistant:** *(automatically calls `recall` with "project database")*
+>
+> "You decided to use PostgreSQL. The project budget is 50k."
+
+The assistant remembered across sessions because the MCP server persisted the information in the knowledge graph.
 
 ## Quick Start
 
@@ -24,6 +71,8 @@ Add this to your MCP client config:
 
 Replace `your-agent-id` with your agent ID from the [Rippletide platform](https://eval.rippletide.com).
 
+### Where to save this config
+
 <CardGroup cols={3}>
   <Card title="Cursor" icon="code">
     Save to `~/.cursor/mcp.json`
@@ -36,8 +85,33 @@ Replace `your-agent-id` with your agent ID from the [Rippletide platform](https:
   </Card>
 </CardGroup>
 
-That's it. Your AI client now has access to **7 tools** and **4 resources** for persistent memory.
+That's it. Your AI assistant now has access to **7 tools** and **4 resources** for persistent memory.
 
 <Info>
   You can find your agent ID on the agent detail page in the [Rippletide platform](https://eval.rippletide.com). Each agent gets its own isolated knowledge graph.
 </Info>
+
+## How does this relate to the Rippletide SDK?
+
+| | SDK API | MCP Server |
+|---|---------|-----------|
+| **Used by** | Your code (Python, curl) | Your AI assistant (Cursor, Claude) |
+| **Purpose** | Build agents with Q&A, tags, actions, states | Give AI assistants persistent memory |
+| **Protocol** | REST API (HTTP) | MCP protocol (tools + resources) |
+| **Knowledge** | Structured Q&A pairs for chatbots | Free-form memories, entities, relations |
+
+They both write to the same underlying knowledge graph, but through different interfaces for different use cases.
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Configuration" icon="gear" href="/docs/mcp/configuration">
+    Self-hosted setup, transport modes, environment variables
+  </Card>
+  <Card title="Tools & Resources" icon="wrench" href="/docs/mcp/tools">
+    All 7 tools and 4 resources your AI assistant can use
+  </Card>
+  <Card title="Deploy" icon="cloud" href="/docs/mcp/deploy">
+    Self-host on Railway or any cloud provider
+  </Card>
+</CardGroup>

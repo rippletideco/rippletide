@@ -1,15 +1,27 @@
 ---
-title: Tools Exposed
+title: Tools & Resources
 description: All MCP tools and resources exposed by the Rippletide MCP server
 ---
 
-## Tools
+## How tools work
 
-The MCP server exposes 7 tools that your AI client can call during conversations.
+Your AI assistant calls these tools **automatically** during conversations. You don't invoke them manually. When you mention a decision, the assistant calls `remember`. When you ask about something from the past, it calls `recall`. The tools are the building blocks of the assistant's memory.
+
+## Typical workflow
+
+Here's how the tools work together in a real conversation:
+
+1. **`remember`** -- Store a new fact ("The client wants premium support")
+2. **`relate`** -- Link entities ("Client -> wants -> premium support")
+3. **`recall`** -- Later, search for that information ("What does the client want?")
+4. **`get_context`** -- Get everything about an entity ("Tell me about the client")
+5. **`invalidate`** -- Mark outdated info ("The client switched to basic support")
+
+## Tools (7)
 
 ### remember
 
-Store a fact, preference, intent, or decision in the agent's memory, linked to entities.
+Store a fact, preference, intent, or decision in the agent's memory.
 
 ```json
 {
@@ -21,8 +33,6 @@ Store a fact, preference, intent, or decision in the agent's memory, linked to e
   "confidence": 0.95
 }
 ```
-
-**Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -43,8 +53,6 @@ Search the agent's memories by keyword or topic.
 }
 ```
 
-**Parameters:**
-
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `query` | string | Yes | Search query |
@@ -52,13 +60,17 @@ Search the agent's memories by keyword or topic.
 
 ### get_context
 
-Get all information about a specific entity — its memories, relations, and attributes.
+Get everything about a specific entity: its memories, relations, and attributes.
 
 ```json
 {
   "entity_name": "Acme Corp"
 }
 ```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `entity_name` | string | Yes | Name of the entity to look up |
 
 ### list_entities
 
@@ -70,9 +82,13 @@ List all known entities in the graph, optionally filtered by type.
 }
 ```
 
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `type` | string | No | Filter by entity type (see Entity Types below) |
+
 ### invalidate
 
-Mark a memory as no longer valid. Useful when information becomes outdated.
+Mark a memory as no longer valid. The memory is kept for history but excluded from `recall` results.
 
 ```json
 {
@@ -81,9 +97,14 @@ Mark a memory as no longer valid. Useful when information becomes outdated.
 }
 ```
 
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `memory_id` | string | Yes | ID of the memory to invalidate |
+| `reason` | string | No | Why it's being invalidated |
+
 ### relate
 
-Create a relationship between two entities. Creates entities if they don't exist yet.
+Create a directed relationship between two entities. Creates the entities automatically if they don't exist yet.
 
 ```json
 {
@@ -93,9 +114,15 @@ Create a relationship between two entities. Creates entities if they don't exist
 }
 ```
 
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `source` | string | Yes | Source entity name |
+| `target` | string | Yes | Target entity name |
+| `relation_type` | string | Yes | Type of relationship (see Relation Types below) |
+
 ### switch_agent
 
-Switch to a different agent's knowledge graph at runtime. All subsequent tool calls will target the new agent's graph.
+Switch to a different agent's knowledge graph at runtime. All subsequent tool calls target the new agent's graph.
 
 ```json
 {
@@ -103,21 +130,25 @@ Switch to a different agent's knowledge graph at runtime. All subsequent tool ca
 }
 ```
 
-Returns the previous and new agent ID, plus a health check result confirming the backend is reachable.
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `agent_id` | string | Yes | The agent ID to switch to |
+
+Returns the previous and new agent ID, plus a health check confirming the backend is reachable.
 
 ## Entity Types
 
-| Type | Description |
-|------|-------------|
-| `Person` | A person (client, employee, contact) |
-| `Organization` | A company, team, or group |
-| `Product` | A product or service |
-| `Amount` | A monetary amount or quantity |
-| `Date` | A date or time reference |
-| `Location` | A physical or virtual location |
-| `Concept` | An abstract concept or topic |
-| `Decision` | A decision that was made |
-| `Action` | An action that was taken or planned |
+| Type | Description | Example |
+|------|-------------|---------|
+| `Person` | A person | John Doe, a client, an employee |
+| `Organization` | A company, team, or group | Acme Corp, Engineering team |
+| `Product` | A product or service | Rippletide, Samsung TV RED43 |
+| `Amount` | A monetary amount or quantity | $50,000 budget, 100 users |
+| `Date` | A date or time reference | Q2 2025, next Monday |
+| `Location` | A physical or virtual location | Paris, staging environment |
+| `Concept` | An abstract concept or topic | Microservices, pricing strategy |
+| `Decision` | A decision that was made | "Use PostgreSQL for the project" |
+| `Action` | An action taken or planned | Deploy to production, schedule meeting |
 
 ## Relation Types
 
@@ -135,13 +166,13 @@ Returns the previous and new agent ID, plus a health check result confirming the
 | `resulted_in` | Meeting **resulted in** partnership |
 | `mentioned_with` | Product A **mentioned with** Product B |
 
-## Resources (Read-Only)
+## Resources (4, read-only)
 
-The MCP server also exposes 4 read-only resources that clients can query for the full graph state.
+Resources let the AI client read the full graph state. Unlike tools (which perform actions), resources are passive data the client can query at any time.
 
-| URI | Description |
-|-----|-------------|
-| `graph://entities` | All entities in the graph |
-| `graph://memories` | All active (non-invalidated) memories |
-| `graph://relations` | All active relations |
-| `graph://stats` | Graph statistics (entity count, memory count, etc.) |
+| URI | Description | Use case |
+|-----|-------------|----------|
+| `graph://entities` | All entities in the graph | See all known people, companies, products |
+| `graph://memories` | All active (non-invalidated) memories | Review what the assistant remembers |
+| `graph://relations` | All active relations | Understand how entities are connected |
+| `graph://stats` | Graph statistics | Check entity count, memory count, etc. |

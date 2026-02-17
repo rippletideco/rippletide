@@ -1,12 +1,56 @@
 ---
-title: "Trust Platform Overview"
-description: "Comprehensive platform for building, monitoring, and securing AI agents"
+title: "Trust Platform"
+description: "Build, monitor, and secure your AI agents from a single dashboard"
 ---
 
-## Next Steps
+## What is the Trust Platform?
+
+The Trust Platform at [trust.rippletide.com](https://trust.rippletide.com) is a web interface for building and managing your AI agents visually. Instead of writing API calls, you can configure your agent's knowledge, processes, and guardrails through a guided UI.
+
+## Key Features
 
 <CardGroup cols={2}>
-  <Card title="Integrations" icon="plug" href="/docs/trust-platform/integrations/amazon-bedrock">
-    Connect with Amazon Bedrock and other services
+  <Card title="Visual Agent Builder" icon="wand-magic-sparkles">
+    Create agents step by step: define a name, connect a knowledge source, configure processes, and set guardrails — all from the browser.
+  </Card>
+
+  <Card title="Knowledge Connectors" icon="plug">
+    Import knowledge from external sources like Amazon Bedrock, PDFs, or manual Q&A entry. The platform extracts and structures your data automatically.
+  </Card>
+
+  <Card title="Guardrail Configuration" icon="shield-halved">
+    Set safety rules your agent must follow. Guardrails are enforced at the engine level with 100% compliance — they cannot be bypassed by prompt injection.
+  </Card>
+
+  <Card title="Knowledge Visualization" icon="diagram-project">
+    See your agent's entire knowledge graph: Q&A pairs, tags, relations, and state transitions displayed as an interactive graph.
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Sign up">
+    Go to [trust.rippletide.com](https://trust.rippletide.com) and create an account.
+  </Step>
+  <Step title="Create an agent">
+    Click "Create Agent", choose "Start from scratch" or connect an external knowledge source.
+  </Step>
+  <Step title="Add knowledge">
+    Upload PDFs, connect Amazon Bedrock, or manually add Q&A pairs.
+  </Step>
+  <Step title="Configure guardrails">
+    Define the safety rules and boundaries for your agent.
+  </Step>
+  <Step title="Test and iterate">
+    Chat with your agent directly in the platform, review its knowledge graph, and refine.
+  </Step>
+</Steps>
+
+## Integrations
+
+<CardGroup cols={2}>
+  <Card title="Amazon Bedrock" icon="aws" href="/docs/trust-platform/integrations/amazon-bedrock">
+    Connect your existing Bedrock knowledge bases to Rippletide for evaluation and guardrail enforcement.
   </Card>
 </CardGroup>

@@ -1,14 +1,69 @@
 ---
 title: Get Started
-description: Quick start guide to create your first Rippletide agent
+description: Create and evaluate your first AI agent in 5 minutes
 ---
 
-    <Card
-    title="Evaluate your agent"
-    icon="link"
-    href="/components/columns"
-    arrow="true"
-    cta="Click here"
-    >
-    Evaluate your agent
-    </Card>
+## Quick Start
+
+Get up and running with Rippletide in three steps: install the CLI, point it at your agent, and see evaluation results.
+
+### 1. Install the CLI
+
+```bash
+npm install -g rippletide
+```
+
+Or run directly with npx:
+
+```bash
+npx rippletide
+```
+
+### 2. Prepare Your Test Data
+
+Create a `qanda.json` file with the questions and expected answers you want to test:
+
+```json
+[
+  {
+    "question": "What is your return policy?",
+    "answer": "We offer a 30-day return policy for most items."
+  },
+  {
+    "question": "How can I track my order?",
+    "answer": "Log into your account and go to the My Orders section."
+  }
+]
+```
+
+### 3. Run Your First Evaluation
+
+```bash
+rippletide
+```
+
+The CLI will prompt you for your agent's endpoint URL, then automatically:
+- Send each question to your agent
+- Compare responses against expected answers
+- Detect hallucinations
+- Display a pass/fail summary with a link to the detailed dashboard
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="CLI Guide" icon="terminal" href="/docs/cli_guide">
+    Learn all CLI options: templates, Pinecone, PostgreSQL, custom headers
+  </Card>
+
+  <Card title="Python SDK" icon="code" href="/docs/rippletide_client">
+    Evaluate agents programmatically from your Python code
+  </Card>
+
+  <Card title="Build an Agent" icon="rocket" href="/docs/hypergraph_overview">
+    Create a hallucination-free agent with the Rippletide SDK
+  </Card>
+
+  <Card title="MCP Server" icon="brain" href="/docs/mcp/overview">
+    Give your AI coding assistant persistent memory
+  </Card>
+</CardGroup>

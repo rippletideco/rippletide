@@ -1,11 +1,11 @@
 ---
-title: Configuration Options
+title: Configuration
 description: All configuration options for the Rippletide MCP server
 ---
 
 ## Hosted Server (Recommended)
 
-The hosted MCP server at `mcp.rippletide.com` requires no configuration beyond your agent ID:
+The fastest way to get started. No server to run, no dependencies to install:
 
 ```json
 {
@@ -18,15 +18,26 @@ The hosted MCP server at `mcp.rippletide.com` requires no configuration beyond y
 }
 ```
 
+This connects directly to Rippletide's hosted MCP server. All you need is an agent ID from the [Rippletide platform](https://eval.rippletide.com).
+
+### Where to put this config
+
+| Client | Config file location |
+|--------|---------------------|
+| **Cursor** | `~/.cursor/mcp.json` |
+| **Claude Desktop** | Claude Desktop settings > MCP |
+| **Claude Code** | `.mcp.json` at your project root |
+
 ### Agent ID
 
-Each agent ID gets its own **isolated knowledge graph**. You can find your agent ID on the agent detail page in the [Rippletide platform](https://eval.rippletide.com).
-
-You can also switch agents at runtime using the `switch_agent` tool during a conversation.
+Each agent ID maps to an **isolated knowledge graph**. Memories stored under one agent ID are invisible to another. You can:
+- Use **one agent per project** to keep knowledge separated
+- Use **one shared agent** across projects if you want cross-project memory
+- **Switch agents at runtime** using the `switch_agent` tool during a conversation
 
 ## Self-Hosted Server
 
-If you're running the MCP server yourself (see [Deploy](/docs/mcp/deploy)), you can configure it via environment variables or CLI flags. **CLI flags take priority.**
+If you need to run the MCP server yourself (e.g. for data privacy or custom backends), you can configure it via environment variables or CLI flags. **CLI flags take priority.**
 
 | Env Variable | CLI Flag | Default | Description |
 |-------------|----------|---------|-------------|
@@ -39,7 +50,9 @@ If you're running the MCP server yourself (see [Deploy](/docs/mcp/deploy)), you 
 
 ### Transport Modes
 
-**stdio (default)** — Used by local MCP clients like Cursor and Claude Desktop. The AI client spawns the MCP server as a subprocess.
+There are two ways your AI client can talk to the MCP server:
+
+**stdio** -- The AI client starts the MCP server as a subprocess and communicates via stdin/stdout. This is the default for local clients like Cursor and Claude Desktop.
 
 ```json
 {
@@ -56,7 +69,7 @@ If you're running the MCP server yourself (see [Deploy](/docs/mcp/deploy)), you 
 }
 ```
 
-**HTTP** — Used when deploying as a standalone service:
+**HTTP** -- The MCP server runs as a standalone service and the AI client connects over HTTP. Use this for remote/shared deployments.
 
 ```bash
 npx @rippletide/mcp --transport http --host 0.0.0.0 --port 8080 --api-url https://your-backend.com
@@ -64,12 +77,23 @@ npx @rippletide/mcp --transport http --host 0.0.0.0 --port 8080 --api-url https:
 
 ### Health Check
 
-On startup, the server pings `GET /api/graph/stats` on the backend. If unreachable, a warning is logged but the server still starts.
+On startup, the server pings `GET /api/graph/stats` on the backend. If unreachable, a warning is logged but the server still starts (tools will return errors until the backend is available).
 
 ### Logging
 
-All logs are JSON-formatted and written to stderr (stdout is reserved for the MCP stdio protocol).
+All logs are JSON-formatted and written to stderr (stdout is reserved for the MCP stdio protocol):
 
 ```bash
 LOG_LEVEL=debug npx @rippletide/mcp
 ```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Tools & Resources" icon="wrench" href="/docs/mcp/tools">
+    See what your AI assistant can do with the 7 tools and 4 resources
+  </Card>
+  <Card title="Deploy" icon="cloud" href="/docs/mcp/deploy">
+    Self-host on Railway or any cloud provider
+  </Card>
+</CardGroup>

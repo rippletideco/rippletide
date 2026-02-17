@@ -1,12 +1,12 @@
 ---
 title: Use the CLI
-description: How to use the CLI
+description: Evaluate your AI agents from the terminal with automatic hallucination detection
 ---
 
-The Rippletide CLI allows you to quickly evaluate your AI agents from the terminal with automatic hallucination detection.
+The Rippletide CLI lets you evaluate AI agents from the terminal with an interactive UI, real-time progress, and automatic hallucination detection.
 
-<div style={{ 
-  width: '100%', 
+<div style={{
+  width: '100%',
   backgroundColor: 'transparent',
   padding: 0,
   margin: 0,
@@ -14,7 +14,7 @@ The Rippletide CLI allows you to quickly evaluate your AI agents from the termin
 }}>
   <video
     controls
-    style={{ 
+    style={{
       width: '100%',
       height: 'auto',
       display: 'block',
@@ -34,6 +34,12 @@ The Rippletide CLI allows you to quickly evaluate your AI agents from the termin
 npm install -g rippletide
 ```
 
+Or run directly without installing:
+
+```bash
+npx rippletide
+```
+
 ## Quick Start
 
 ```bash
@@ -47,7 +53,8 @@ The CLI will interactively prompt you for:
 
 ## Knowledge Sources
 
-### 1. Local Files
+### 1. Local Files (default)
+
 Create a `qanda.json` file in your current directory:
 
 ```json
@@ -59,15 +66,67 @@ Create a `qanda.json` file in your current directory:
 ]
 ```
 
+Then run:
+
+```bash
+rippletide eval -a http://localhost:8000
+```
+
 ### 2. Pinecone Database
-- Database URL: `https://your-index.pinecone.io`
-- API key: `pcsk_...`
+
+```bash
+rippletide eval -a http://localhost:8000 -k pinecone \
+  -pu https://your-index.pinecone.io \
+  -pk pcsk_xxxxx
+```
 
 ### 3. PostgreSQL Database
+
 ```bash
-# Connection string
-postgresql://user:password@host:port/database
+rippletide eval -a http://localhost:8000 -k postgresql \
+  -pg "postgresql://user:password@host:port/database"
 ```
+
+## Templates
+
+Use pre-configured evaluation scenarios with the `-t` flag:
+
+```bash
+rippletide eval -t banking_analyst
+rippletide eval -t customer_service
+rippletide eval -t blog_to_linkedin
+```
+
+Templates include both the endpoint configuration and Q&A pairs, so you can test instantly without any setup.
+
+## Command Line Options
+
+### Basic Options
+
+| Option | Description | Example |
+|--------|-------------|---------|
+| `-t, --template <name>` | Use a pre-configured template | `rippletide eval -t banking_analyst` |
+| `-a, --agent <url>` | Agent endpoint URL | `rippletide eval -a localhost:8000` |
+| `-k, --knowledge <source>` | Knowledge source: `files`, `pinecone`, or `postgresql` | `rippletide eval -k pinecone` |
+| `--debug` | Show detailed error information | `rippletide eval --debug` |
+| `-h, --help` | Show help message | `rippletide --help` |
+
+### Custom Endpoint Options
+
+For agents that don't use the default request/response format, you can customize headers, the request body, and the response field:
+
+```bash
+rippletide eval -a http://localhost:8000 \
+  -H "Authorization: Bearer token123, X-API-Key: mykey" \
+  -B '{"prompt": "{question}"}' \
+  -rf "data.response"
+```
+
+| Option | Description |
+|--------|-------------|
+| `-H, --headers <headers>` | Custom headers, comma-separated (e.g. `"Authorization: Bearer token, X-Key: value"`) |
+| `-B, --body <template>` | Custom request body template. Use `{question}` as placeholder for the test question |
+| `-rf, --response-field <path>` | Path to the answer in the JSON response, using dot notation (e.g. `data.response`) |
 
 ## Agent Endpoint Requirements
 
@@ -80,17 +139,19 @@ Your endpoint must accept POST requests and return responses in one of these for
 // Or JSON with any of these fields
 {
   "answer": "...",
-  "response": "...", 
+  "response": "...",
   "message": "...",
   "text": "..."
 }
 ```
 
+If your endpoint uses a different format, use the `-B` and `-rf` flags above.
+
 ## Results
 
 After evaluation, you'll receive:
 - **Summary**: Total tests, passed/failed count, duration
-- **Dashboard URL**: Link to view detailed results and hallucination analysis
+- **Dashboard URL**: Link to view detailed results and hallucination analysis at [eval.rippletide.com](https://eval.rippletide.com)
 
 ## Troubleshooting
 
@@ -106,7 +167,12 @@ curl -X POST http://localhost:8000 \
   -d '{"message": "test"}'
 ```
 
+**Debug mode for detailed errors:**
+```bash
+rippletide eval --debug
+```
+
 ## Support
 
-- GitHub: [https://github.com/rippletideco/starter](https://github.com/rippletideco/starter)
-- Discord: [https://discord.gg/zUPTRH5eFv](https://discord.gg/zUPTRH5eFv)
+- GitHub: [github.com/rippletideco/starter](https://github.com/rippletideco/starter)
+- Discord: [discord.gg/zUPTRH5eFv](https://discord.gg/zUPTRH5eFv)

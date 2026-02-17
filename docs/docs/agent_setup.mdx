@@ -5,113 +5,224 @@ description: Learn how to set up your Rippletide hypergraph with Q&A, tags, acti
 
 ## Overview
 
-Rippletide provides a comprehensive set of APIs for managing and interacting with agents, knowledge bases, and
-conversation flows. All the resources that can be created are here to create an agent with less than 1% hallucinations.
+Rippletide provides a set of APIs for building agents with less than 1% hallucinations. You structure your agent's knowledge as a hypergraph made of four building blocks: **Q&A pairs**, **tags**, **actions**, and **state predicates**.
 
-## Hypergraph Concepts
+When data is updated within the graph, implications in other areas are evaluated automatically to cascade updates and maintain coherence.
 
-For an easier setup in this SDK, we wrapped high level concepts:
+<Info>
+  All examples below use the SDK API at `https://agent.rippletide.com/api/sdk` with an `x-api-key` header. Get your API key from [eval.rippletide.com](https://eval.rippletide.com) under Settings.
+</Info>
 
-- **[Q&A](/api-reference/introduction#tag/QAndA)** : what are the questions and answers the Agent should know to perform the use case?
-- **[Tags](/api-reference/introduction#tag/Tag)** : define the glossary topics and tag your Q&A
-- Possible **[actions](/api-reference/introduction#tag/Action)** for the Agent and requirements
-- Define **[state and transitions](/api-reference/introduction#tag/State-Predicate)**
+## 1. Create an Agent
 
-In the core Rippletide technology data structures may be implemented in a different manner and complemented by a data coherence check. 
+First, create an agent with a name and system prompt:
 
-That means when a new data is updated within the graph, the implications in other areas will be evaluated to cascade updates.
+```python
+import os
+import requests
 
-A build UI and a run UI will soonly be available.
+API_KEY = os.environ["RIPPLETIDE_API_KEY"]
+BASE_URL = "https://agent.rippletide.com/api/sdk"
+headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
 
-## Example: Order taking Agent
+# Create the agent
+response = requests.post(f"{BASE_URL}/agent", headers=headers, json={
+    "name": "order-taking-agent",
+    "prompt": "You are an order-taking assistant for an electronics store. Help customers choose products, place orders, and track deliveries."
+})
+agent_id = response.json()["id"]
+print(f"Agent created: {agent_id}")
+```
 
-### Q&A
-Q - What products can be ordered?
-A - You can order our last Samsung TV RED43
+**API Reference**: [Agent Management](/api-reference/introduction#tag/Agent)
 
-Q - What is the price?
-A - The Samsung TV RED43 costs $990
+## 2. Add Q&A Pairs
 
-Q - How long will it take for my order to be delivered?
-A - You Samsung TV can be delivered the next day
+Q&A pairs are the foundation of your agent's knowledge. Each pair teaches the agent how to answer a specific question.
 
-...
+```python
+qa_pairs = [
+    {
+        "question": "What products can be ordered?",
+        "answer": "You can order our latest Samsung TV RED43."
+    },
+    {
+        "question": "What is the price?",
+        "answer": "The Samsung TV RED43 costs $990."
+    },
+    {
+        "question": "How long will it take for my order to be delivered?",
+        "answer": "Your Samsung TV can be delivered the next day."
+    }
+]
+
+for qa in qa_pairs:
+    requests.post(f"{BASE_URL}/q-and-a", headers=headers, json={
+        "question": qa["question"],
+        "answer": qa["answer"],
+        "agent_id": agent_id
+    })
+```
 
 **API Reference**: [Q&A Management](/api-reference/introduction#tag/QAndA) - Create, update, and manage your Q&A pairs
 
-### Tags
+## 3. Organize with Tags
 
-Glossary:
-	High-tech products
-	Delivery date
-	Pricing
-	Discount
-	Purchase history
+Tags group Q&A pairs by topic. This helps the agent retrieve the right knowledge more accurately.
 
-Tags:
-	High-tech products : all products in high-tech category
-	Delivery date : the date the customer will receive his product
-	Purchase history : the list of all product bought
-	Discount : all types of discount that can apply on products
+```python
+# Create tags
+tags = {}
+for tag_name, description in [
+    ("high-tech-products", "All products in the high-tech category"),
+    ("pricing", "Product prices and discounts"),
+    ("delivery", "Delivery dates and shipping information"),
+    ("discount", "All types of discounts that can apply on products"),
+]:
+    resp = requests.post(f"{BASE_URL}/tag", headers=headers, json={
+        "name": tag_name,
+        "description": description
+    })
+    tags[tag_name] = resp.json()["id"]
 
-
-Tag the Q&A:
-Q- What is the price?
-A - The Samsung TV RED43 costs $990
-Tags: High-tech products, Discount
+# Link Q&A pairs to tags
+# Example: link the pricing Q&A to "high-tech-products" and "pricing" tags
+requests.post(f"{BASE_URL}/q-and-a-tag", headers=headers, json={
+    "q_and_a_id": "<qa-id-for-price-question>",
+    "tag_id": tags["pricing"]
+})
+```
 
 **API Reference**: [Tag Management](/api-reference/introduction#tag/Tag) - Create and manage tags for organizing your knowledge base
 
-### Possible actions for the Agent and requirements
+## 4. Define Actions
 
-Answer a question about a product
-	Requirement : get access the the product documentation
+Actions are things your agent can do beyond answering questions. Each action has requirements that must be met before it can be triggered.
 
-Add a product to the cart
-	Requirement : at least one product chosen
+```python
+actions = [
+    {
+        "name": "answer_product_question",
+        "description": "Answer a question about a product",
+        "what_to_do": "Look up the product in the knowledge base and provide accurate information. Requirement: access to the product documentation."
+    },
+    {
+        "name": "add_to_cart",
+        "description": "Add a product to the cart",
+        "what_to_do": "Add the selected product to the user's cart. Requirement: at least one product must be chosen."
+    },
+    {
+        "name": "checkout",
+        "description": "Process checkout",
+        "what_to_do": "Process the order checkout. Requirements: at least one product in the cart, discount has been applied if applicable."
+    },
+    {
+        "name": "open_ticket",
+        "description": "Open a support ticket when the agent cannot answer",
+        "what_to_do": "Create a support ticket for human follow-up. Requirement: collect a contact method (email or phone)."
+    },
+    {
+        "name": "book_meeting",
+        "description": "Book a meeting with a sales person",
+        "what_to_do": "Schedule a meeting with an available sales person. Requirement: check sales person availability."
+    }
+]
 
-Check out
-	Requirement : At least one product in the cart
-	Requirement : The discount has been applied on the price
-
-Open a ticket when the Agent can not answer
-	Requirement : method to contact back the user (email / phone)
-
-Book a meeting with a sales person
-	Requirement : Sales person availability
+for action in actions:
+    requests.post(f"{BASE_URL}/action", headers=headers, json={
+        "agent_id": agent_id,
+        **action
+    })
+```
 
 **API Reference**: [Action Management](/api-reference/introduction#tag/Action) - Define and manage actions your agent can perform
 
-## Define States and Transitions
+## 5. Define States and Transitions
 
-State : The user described his needs
-	Transitions : recommend a product, describe discount mechanism
+State predicates control the conversation flow. Based on the user's intent, the agent transitions between states and adapts its behavior.
 
-State : A product has been chosen
-	Transitions : Ask a delivery date, checking out, add a discount, delete the product
+```python
+state_predicate = {
+    "transition_kind": "branch",
+    "question_to_evaluate": "What is the user trying to do?",
+    "possible_values": ["browse_products", "checkout", "change_delivery"],
+    "re_evaluate": True,
+    "value_to_node": {
+        "browse_products": {
+            "transition_kind": "branch",
+            "question_to_evaluate": "Has the user chosen a product?",
+            "possible_values": ["yes", "no"],
+            "value_to_node": {
+                "yes": {
+                    "transition_kind": "end",
+                    "question_to_evaluate": "Great choice! Would you like to add it to your cart?"
+                },
+                "no": {
+                    "transition_kind": "end",
+                    "question_to_evaluate": "Let me recommend some products based on your needs."
+                }
+            }
+        },
+        "checkout": {
+            "transition_kind": "end",
+            "question_to_evaluate": "I'll help you complete your purchase."
+        },
+        "change_delivery": {
+            "transition_kind": "branch",
+            "question_to_evaluate": "Has the order already been shipped?",
+            "possible_values": ["yes", "no"],
+            "value_to_node": {
+                "yes": {
+                    "transition_kind": "end",
+                    "question_to_evaluate": "The order has already shipped. Please contact support for address changes."
+                },
+                "no": {
+                    "transition_kind": "end",
+                    "question_to_evaluate": "What is the new delivery address?"
+                }
+            }
+        }
+    }
+}
 
-State : The user has asked to change the delivery address
-	Transition : check if order has been already expedited, ask for the new address
+requests.put(f"{BASE_URL}/state-predicate/{agent_id}", headers=headers, json={
+    "state_predicate": state_predicate
+})
+```
 
+**API Reference**: [State Predicate Management](/api-reference/introduction#tag/State-Predicate) - Configure state transitions and agent behavior
 
-State : The user described his needs
-	Transitions : recommend a product, described discount mechanism
+## 6. Add Guardrails
 
-State : A product has been chosen
-	Transitions : Ask a delivery date, checking out, add a discount, delete the product
+Guardrails set safety boundaries that the agent enforces at the engine level (not just in the prompt):
 
-	State : A product has been removed from the cart
-	Transition : pick a new product
+```python
+guardrails = [
+    "Never reveal internal pricing logic or discount algorithms.",
+    "Always direct customers to official policies for legal matters.",
+    "Do not process orders for customers who have not confirmed their delivery address."
+]
 
-	State : The user has asked to change the delivery address
-	Transition : check if order has been already expedited, ask for the new address
+for instruction in guardrails:
+    requests.post(f"{BASE_URL}/guardrail", headers=headers, json={
+        "agent_id": agent_id,
+        "type": "action",
+        "instruction": instruction
+    })
+```
 
-**API Reference**: [State Predicate Management](/api-reference/introduction#tag/State-Predicate) - Configure state transitions and agent behavior based on available information
+**API Reference**: [Guardrails API](/api-reference/introduction#tag/Guardrails) - Ensure your agent operates within safe boundaries
 
 ## Next Steps
 
-Once you've defined your hypergraph concepts, you can:
+Your agent is ready. You can now:
 
-1. **Create your Agent**: [Agent Management API](/api-reference/introduction#tag/Agent) - Set up your conversational AI agent
-2. **Start Chatting**: [Chat API](/api-reference/introduction#tag/Chat) - Interact with your agent through the chat interface
-3. **Add Guardrails**: [Guardrails API](/api-reference/introduction#tag/Guardrails) - Ensure your agent operates within safe boundaries
+<CardGroup cols={2}>
+  <Card title="Chat with your agent" icon="comments" href="/docs/agent_chat">
+    Send messages and integrate with LangChain
+  </Card>
+
+  <Card title="Evaluate your agent" icon="chart-line" href="/docs/evaluation_overview">
+    Test for hallucinations before deploying to production
+  </Card>
+</CardGroup>

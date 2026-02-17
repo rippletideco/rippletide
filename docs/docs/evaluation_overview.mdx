@@ -1,20 +1,79 @@
 ---
-title: 'Overview'
-description: 'Understand how to evaluate and test your Rippletide agents'
+title: 'Evaluation Overview'
+description: 'Understand how to evaluate and test your AI agents'
 ---
 
 ## What is Agent Evaluation?
 
-Agent evaluation in Rippletide allows you to systematically test and measure the performance of your AI agents. This ensures your agents are performing optimally and meeting your requirements before deployment.
+Agent evaluation lets you systematically test your AI agent's responses against expected answers. Rippletide detects hallucinations, scores accuracy, and gives you a clear pass/fail report before you deploy.
 
-## Key Features
+## How It Works
+
+<Steps>
+  <Step title="Define expected Q&A pairs">
+    Provide questions and their expected answers in a `qanda.json` file, a Pinecone index, or a PostgreSQL database.
+  </Step>
+  <Step title="Send questions to your agent">
+    Rippletide sends each question to your agent's endpoint and collects the response.
+  </Step>
+  <Step title="Compare and score">
+    Each response is compared against the expected answer. The evaluation engine checks for factual accuracy, hallucinations, and completeness.
+  </Step>
+  <Step title="View results">
+    Get a summary with total tests, pass/fail count, duration, and a link to the detailed dashboard at [eval.rippletide.com](https://eval.rippletide.com).
+  </Step>
+</Steps>
+
+## Evaluation Criteria
+
+Each agent response is evaluated on:
+
+| Criterion | What it checks |
+|-----------|---------------|
+| **Factual accuracy** | Does the response match the expected answer's facts? |
+| **Hallucination detection** | Does the response contain information not present in the knowledge base? |
+| **Completeness** | Does the response cover all key points from the expected answer? |
+
+A response **passes** when it is factually accurate and free of hallucinations. It **fails** when it contains fabricated information or contradicts the expected answer.
+
+## Evaluation report
+
+After evaluation, each response gets:
+- A **label** (`pass` or `fail`)
+- A **justification** explaining the verdict
+- A list of **facts** extracted from the response, each labeled as correct or hallucinated
+
+```json
+{
+  "label": "fail",
+  "justification": "The response claims free shipping on all orders, which contradicts the knowledge base.",
+  "facts": [
+    { "fact": "Returns accepted within 30 days", "label": "correct" },
+    { "fact": "Free shipping on all orders", "label": "hallucination" }
+  ]
+}
+```
+
+## Two Ways to Evaluate
 
 <CardGroup cols={2}>
-  <Card title="CLI Testing" icon="terminal" href="/docs/cli_guide">
-    Use the Rippletide CLI to run comprehensive tests on your agents locally
+  <Card title="CLI" icon="terminal" href="/docs/cli_guide">
+    Run evaluations from the terminal with an interactive UI, real-time progress, and template support.
   </Card>
-  
-  <Card title="Client SDK" icon="code" href="/docs/rippletide_client">
-    Integrate evaluation directly into your Python applications
+
+  <Card title="Python SDK" icon="code" href="/docs/rippletide_client">
+    Integrate evaluation into your Python code, CI pipelines, or test suites programmatically.
   </Card>
 </CardGroup>
+
+## API Endpoints
+
+The evaluation API is separate from the SDK API:
+
+| | SDK API | Evaluation API |
+|---|---------|---------------|
+| **Purpose** | Create agents, manage knowledge, chat | Evaluate agent responses |
+| **Base URL** | `https://agent.rippletide.com/api/sdk` | Evaluation server |
+| **Auth** | `x-api-key` header | `x-api-key` header |
+
+See the [API Reference](/api-reference/introduction) for full endpoint documentation.
