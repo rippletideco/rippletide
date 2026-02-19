@@ -1,11 +1,13 @@
 ---
-title: 'Evaluation Overview'
-description: 'Understand how to evaluate and test your AI agents'
+title: 'Eval'
+description: 'Test and validate your AI agents before deployment'
 ---
 
-## What is Agent Evaluation?
+## The first step to reliable agents
 
-Agent evaluation lets you systematically test your AI agent's responses against expected answers. Rippletide detects hallucinations, scores accuracy, and gives you a clear pass/fail report before you deploy.
+Eval is the entry point to Rippletide. Before adding memory or orchestration, start by testing what your agent already does. Rippletide evaluates your agent's responses against expected answers, detects hallucinations, and gives you a clear pass/fail report.
+
+Once you know where your agent stands, you can move to the [Context Graph](/docs/mcp/overview) for persistent memory and [Orchestration](/docs/hypergraph_overview) for deterministic decision-making.
 
 ## How It Works
 
@@ -77,3 +79,17 @@ The evaluation API is separate from the SDK API:
 | **Auth** | `x-api-key` header | `x-api-key` header |
 
 See the [API Reference](/api-reference/introduction) for full endpoint documentation.
+
+## What's next?
+
+Now that you can evaluate your agent, the next step is to give it memory:
+
+<CardGroup cols={2}>
+  <Card title="Context Graph" icon="diagram-project" href="/docs/mcp/overview">
+    Give your agent persistent memory with a knowledge graph
+  </Card>
+
+  <Card title="Orchestration" icon="wand-magic-sparkles" href="/docs/hypergraph_overview">
+    Build deterministic agents with less than 1% hallucination rate
+  </Card>
+</CardGroup>

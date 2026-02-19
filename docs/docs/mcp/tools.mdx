@@ -1,6 +1,6 @@
 ---
 title: Tools & Resources
-description: All MCP tools and resources exposed by the Rippletide MCP server
+description: All tools and resources exposed by the Context Graph via MCP
 ---
 
 ## System prompt
@@ -11,12 +11,12 @@ Add this to your agent's system prompt so it knows how to use the MCP tools effe
 You have access to a persistent knowledge graph via MCP tools.
 
 TOOLS:
-- remember(content, category, entities?, confidence?) — Store a fact, preference, intent, decision, or context. Categories: fact, preference, intent, decision, context. Entity types: Person, Organization, Product, Amount, Date, Location, Concept, Decision, Action.
-- recall(query, limit?) — Search memories by keyword or topic. Always search before answering fact-based questions.
-- get_context(entity_name) — Get complete details about a specific entity and all linked memories/relationships.
-- list_entities(type?) — List all known entities, optionally filtered by type.
-- invalidate(memory_id, reason?) — Mark a memory as outdated or incorrect.
-- relate(source, target, relation_type) — Create a relationship between entities. Types: works_at, wants, has, is_a, related_to, caused, approved, declined, lives_in, resulted_in, mentioned_with.
+- remember(content, category, entities?, confidence?): Store a fact, preference, intent, decision, or context. Categories: fact, preference, intent, decision, context. Entity types: Person, Organization, Product, Amount, Date, Location, Concept, Decision, Action.
+- recall(query, limit?): Search memories by keyword or topic. Always search before answering fact-based questions.
+- get_context(entity_name): Get complete details about a specific entity and all linked memories/relationships.
+- list_entities(type?): List all known entities, optionally filtered by type.
+- invalidate(memory_id, reason?): Mark a memory as outdated or incorrect.
+- relate(source, target, relation_type): Create a relationship between entities. Types: works_at, wants, has, is_a, related_to, caused, approved, declined, lives_in, resulted_in, mentioned_with.
 
 BEST PRACTICES:
 - ALWAYS recall() before answering fact-based questions
@@ -38,11 +38,11 @@ Your AI assistant calls these tools **automatically** during conversations. You 
 
 Here's how the tools work together in a real conversation:
 
-1. **`remember`** -- Store a new fact ("The client wants premium support")
-2. **`relate`** -- Link entities ("Client -> wants -> premium support")
-3. **`recall`** -- Later, search for that information ("What does the client want?")
-4. **`get_context`** -- Get everything about an entity ("Tell me about the client")
-5. **`invalidate`** -- Mark outdated info ("The client switched to basic support")
+1. **`remember`**: Store a new fact ("The client wants premium support")
+2. **`relate`**: Link entities ("Client -> wants -> premium support")
+3. **`recall`**: Later, search for that information ("What does the client want?")
+4. **`get_context`**: Get everything about an entity ("Tell me about the client")
+5. **`invalidate`**: Mark outdated info ("The client switched to basic support")
 
 ## Tools (7)
 

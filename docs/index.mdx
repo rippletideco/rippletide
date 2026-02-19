@@ -3,42 +3,56 @@ title: Welcome
 description: Introduction to Rippletide
 ---
 
-Rippletide is a hypergraph database that powers AI Agents with deterministic decision-making capabilities.
+Rippletide is the reliability layer for AI agents. Evaluate responses, give your agents persistent memory, and orchestrate deterministic workflows, all from one platform.
 
-### Key Benefits
-- **< 1% hallucinations** - Dramatically reduces AI errors
-- **100% guardrail compliance** - Ensures all safety rules are followed
-- **Full explainability** - Understand every decision your agent makes
-- **Comprehensive evaluation** - Test and validate agent performance
+## Three pillars to reliable AI agents
 
-![Rippletide Hypergraph](/img/schema_doc.jpg)
+<Steps>
+  <Step title="Eval: Validate before you ship">
+    Test your AI agent's responses against expected answers. Rippletide detects hallucinations, scores accuracy, and gives you a clear pass/fail report. Use the CLI or the Python SDK.
 
-### How It Works
+    **When to use it:** Before every deployment, in CI pipelines, and during development to catch regressions.
 
-Unlike traditional LLM-based agents, Rippletide uses a neuro-symbolic reasoning engine for decision-making:
+    [Get started with Eval →](/docs/evaluation_overview)
+  </Step>
 
-- **LLMs** are used only for language understanding (parsing queries) and generation (formulating responses)
-- **Decision-making** is handled by our deterministic reasoning engine
-- **Actions** are selected based on quantitative evaluation, not probabilistic generation
+  <Step title="Context Graph: Give your agents memory">
+    A persistent knowledge graph that stores facts, decisions, preferences, and entity relationships across conversations. Your agents remember what matters without re-prompting.
 
-This approach ensures reliable, explainable, and safe AI agent behavior.
+    **When to use it:** When your agents need to recall past interactions, share context across sessions, or maintain structured knowledge about users, products, or projects.
 
-## Getting Started
+    [Explore the Context Graph →](/docs/mcp/overview)
+  </Step>
+
+  <Step title="Orchestration: Build deterministic agents">
+    Structure your agent's knowledge as a hypergraph of Q&A pairs, tags, actions, and state transitions. Decisions are handled by a deterministic reasoning engine, not probabilistic generation.
+
+    **When to use it:** When you need less than 1% hallucination rates, full explainability, and 100% guardrail compliance.
+
+    [Build an agent →](/docs/hypergraph_overview)
+  </Step>
+</Steps>
+
+## Quick Start
 
 <CardGroup cols={2}>
-  <Card title="Quick Start" icon="play" href="/docs/get_started">
-    Install the CLI and run your first evaluation in 5 minutes
+  <Card title="Install & Run" icon="play" href="/docs/get_started">
+    Install the CLI and evaluate your first agent in 5 minutes
   </Card>
 
-  <Card title="Evaluate Your Agent" icon="chart-line" href="/docs/evaluation_overview">
-    Understand how hallucination detection and scoring work
-  </Card>
-
-  <Card title="Build an Agent (SDK)" icon="rocket" href="/docs/hypergraph_overview">
-    Create a hallucination-free agent with the Rippletide hypergraph
-  </Card>
-
-  <Card title="MCP Server" icon="brain" href="/docs/mcp/overview">
-    Give your AI coding assistant persistent memory
+  <Card title="Trust Platform" icon="browser" href="/docs/trust-platform/overview">
+    Build, test, and deploy agents visually from one dashboard
   </Card>
 </CardGroup>
+
+## Why Rippletide?
+
+| | Without Rippletide | With Rippletide |
+|---|---|---|
+| **Hallucinations** | Variable, hard to control | Less than 1% by design |
+| **Memory** | Lost between conversations | Persistent knowledge graph |
+| **Guardrails** | Prompt-based, easy to bypass | Engine-level, 100% compliance |
+| **Explainability** | Black box | Every decision is traceable |
+| **Evaluation** | Manual spot checks | Automated, CI-ready testing |
+
+![Rippletide Hypergraph](/img/schema_doc.jpg)

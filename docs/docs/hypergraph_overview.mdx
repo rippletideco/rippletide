@@ -1,21 +1,30 @@
 ---
-title: 'Rippletide SDK'
-description: 'Build hallucination-free AI agents with the Rippletide hypergraph'
+title: 'Orchestration'
+description: 'Build deterministic AI agents with the Rippletide hypergraph'
 ---
 
-## What is the Hypergraph?
+## What is Orchestration?
 
-The Hypergraph is Rippletide's knowledge representation engine. Unlike traditional RAG (Retrieval-Augmented Generation) where an LLM retrieves chunks of text and guesses the answer, Rippletide structures knowledge as a **graph of entities, relations, and rules** that drives deterministic decision-making.
+Orchestration is the third pillar of Rippletide. After you've [evaluated your agent](/docs/evaluation_overview) and set up a [Context Graph](/docs/mcp/overview) for persistent memory, orchestration lets you build agents that make **deterministic decisions** instead of probabilistic guesses.
+
+You structure your agent's knowledge as a **hypergraph** of Q&A pairs, tags, actions, and state transitions. The LLM handles language (understanding input, generating output), but all decisions are made by a deterministic reasoning engine.
 
 **The result**: agents that hallucinate less than 1% of the time, with full explainability on every answer.
 
-## How It Differs from RAG
+## When to use it
 
-| | Traditional RAG | Rippletide Hypergraph |
+- You need guaranteed accuracy (less than 1% hallucination rate)
+- Every decision must be traceable and explainable
+- Guardrails must be enforced at the engine level, not just in prompts
+- You're building customer-facing agents (support, sales, onboarding)
+
+## How it differs from RAG
+
+| | Traditional RAG | Rippletide Orchestration |
 |---|----------------|----------------------|
 | **Knowledge storage** | Unstructured text chunks in a vector DB | Structured Q&A pairs, tags, actions, and state transitions |
 | **Decision-making** | LLM generates answers probabilistically | Deterministic reasoning engine selects the best answer |
-| **Hallucination rate** | Variable, hard to control | < 1% by design |
+| **Hallucination rate** | Variable, hard to control | Less than 1% by design |
 | **Explainability** | Black box | Every decision is traceable to a knowledge node |
 | **Guardrails** | Prompt-based, easy to bypass | Enforced at the engine level, 100% compliance |
 
@@ -47,13 +56,13 @@ Your agent's knowledge is composed of four types of building blocks:
 User message
     |
     v
-[ Language Understanding (LLM) ]  -- Parses the user's intent
+[ Language Understanding (LLM) ]       Parses the user's intent
     |
     v
-[ Hypergraph Reasoning Engine ]   -- Matches against Q&A, evaluates state, selects action
+[ Hypergraph Reasoning Engine ]       Matches against Q&A, evaluates state, selects action
     |                                 (deterministic, no hallucination)
     v
-[ Response Generation (LLM) ]    -- Formulates a natural language response
+[ Response Generation (LLM) ]        Formulates a natural language response
     |                                 from the selected knowledge node
     v
 Agent response
@@ -61,7 +70,7 @@ Agent response
 
 The LLM is only used for **language** (understanding input, generating output). All **decisions** (which answer to give, which action to take, which state to transition to) are handled by the deterministic reasoning engine.
 
-## Getting Started with the SDK
+## Getting Started
 
 <Steps>
   <Step title="Create an agent">

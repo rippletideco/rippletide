@@ -39,7 +39,7 @@
             ]
           },
           {
-            "group": "Evaluate your Agent",
+            "group": "Eval",
             "expanded": false,
             "pages": [
               "docs/evaluation_overview",
@@ -48,23 +48,23 @@
             ]
           },
           {
-            "group": "SDK",
-            "expanded": false,
-            "pages": [
-              "docs/hypergraph_overview",
-              "docs/agent_setup",
-              "docs/agent_chat",
-              "docs/Agent"
-            ]
-          },
-          {
-            "group": "MCP Server",
+            "group": "Context Graph",
             "expanded": false,
             "pages": [
               "docs/mcp/overview",
               "docs/mcp/configuration",
               "docs/mcp/tools",
               "docs/mcp/deploy"
+            ]
+          },
+          {
+            "group": "Orchestration",
+            "expanded": false,
+            "pages": [
+              "docs/hypergraph_overview",
+              "docs/agent_setup",
+              "docs/agent_chat",
+              "docs/Agent"
             ]
           },
           {
@@ -127,7 +127,7 @@
   },
   "footer": {
     "socials": {
-      "discord": "https://discord.gg/zUPTRH5eFv" ,
+      "discord": "https://discord.gg/zUPTRH5eFv",
       "github": "https://github.com/rippletideco/starter",
       "linkedin": "https://linkedin.com/company/rippletide"
     }

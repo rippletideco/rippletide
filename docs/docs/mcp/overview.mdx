@@ -1,15 +1,11 @@
 ---
-title: MCP Server
-description: Give your AI coding assistant persistent memory with the Rippletide MCP server
+title: Context Graph
+description: Give your AI agents persistent memory with a knowledge graph
 ---
 
-## What is MCP?
+## What is the Context Graph?
 
-MCP (Model Context Protocol) is an open standard that lets AI assistants like Cursor, Claude Desktop, and Claude Code connect to external tools and data sources. Think of it as a plugin system for AI assistants.
-
-## What does the Rippletide MCP server do?
-
-It gives your AI assistant a **persistent memory** backed by a knowledge graph. Without it, your AI assistant forgets everything between conversations. With it, your assistant can:
+The Context Graph is a persistent knowledge graph that gives your AI agents memory across conversations. Without it, your agent forgets everything between sessions. With it, your agent can:
 
 - **Remember** facts, decisions, preferences, and context across sessions
 - **Recall** past information by searching the knowledge graph
@@ -18,25 +14,33 @@ It gives your AI assistant a **persistent memory** backed by a knowledge graph. 
 
 Each agent gets its own **isolated knowledge graph**, so memories from one project don't leak into another.
 
+## When to use it
+
+- Your agent needs to recall past interactions or user preferences
+- You want structured knowledge (entities + relationships) instead of flat text
+- You need cross-session memory for coding assistants, support agents, or project tools
+- You want to plug memory into any MCP-compatible client (Cursor, Claude, VS Code)
+
 ## How it works
 
-```
-Your AI assistant (Cursor, Claude, etc.)
-    |
-    | calls MCP tools (remember, recall, relate...)
-    v
-Rippletide MCP Server (mcp.rippletide.com)
-    |
-    | reads/writes to the knowledge graph
-    v
-Agent's Knowledge Graph (entities, memories, relations)
-```
+<Steps>
+  <Step title="Your AI assistant (Cursor, Claude, etc.)">
+    Calls tools like `remember`, `recall`, `relate` automatically during conversations.
+  </Step>
+  <Step title="MCP (Model Context Protocol)">
+    The open transport protocol that connects AI assistants to the Context Graph. Think of MCP as the pipe. The Context Graph is what flows through it.
+  </Step>
+  <Step title="Context Graph API">
+    Reads and writes to the agent's knowledge graph.
+  </Step>
+  <Step title="Agent's Knowledge Graph">
+    Stores entities, memories, and relations. Each agent gets its own isolated graph.
+  </Step>
+</Steps>
 
-The AI assistant calls tools like `remember` and `recall` automatically during conversations. You don't need to do anything -- the assistant decides when to store or retrieve information based on context.
+You don't need to do anything. The assistant decides when to store or retrieve information based on context.
 
 ## Example
-
-Here's what a conversation looks like with MCP enabled:
 
 **Conversation 1:**
 > **You:** "We decided to use PostgreSQL for the new project, budget is 50k"
@@ -52,7 +56,7 @@ Here's what a conversation looks like with MCP enabled:
 >
 > "You decided to use PostgreSQL. The project budget is 50k."
 
-The assistant remembered across sessions because the MCP server persisted the information in the knowledge graph.
+The assistant remembered across sessions because the Context Graph persisted the information.
 
 ## Quick Start
 
@@ -72,7 +76,7 @@ Add this to your MCP client config:
 Replace `your-agent-id` with your agent ID from the [Rippletide platform](https://eval.rippletide.com).
 
 <Tip>
-  In the Rippletide playground, click the **terminal icon** in the header to get your Agent ID, MCP endpoint, and context instructions — all copyable in one click.
+  In the Rippletide playground, click the **terminal icon** in the header to get your Agent ID, MCP endpoint, and context instructions. Everything is copyable in one click.
 </Tip>
 
 For best results, add the [system prompt instructions](/docs/mcp/tools#system-prompt) to your agent's context so it knows when and how to use the tools.
@@ -97,9 +101,9 @@ That's it. Your AI assistant now has access to **7 tools** and **4 resources** f
   You can find your agent ID in the **playground** (terminal icon in the header) or on the agent detail page in the [Rippletide platform](https://eval.rippletide.com). Each agent gets its own isolated knowledge graph.
 </Info>
 
-## How does this relate to the Rippletide SDK?
+## Context Graph vs SDK API
 
-| | SDK API | MCP Server |
+| | SDK API | Context Graph (via MCP) |
 |---|---------|-----------|
 | **Used by** | Your code (Python, curl) | Your AI assistant (Cursor, Claude) |
 | **Purpose** | Build agents with Q&A, tags, actions, states | Give AI assistants persistent memory |

@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: All configuration options for the Rippletide MCP server
+description: All configuration options for connecting to the Context Graph
 ---
 
 ## Hosted Server (Recommended)
@@ -52,7 +52,7 @@ If you need to run the MCP server yourself (e.g. for data privacy or custom back
 
 There are two ways your AI client can talk to the MCP server:
 
-**stdio** -- The AI client starts the MCP server as a subprocess and communicates via stdin/stdout. This is the default for local clients like Cursor and Claude Desktop.
+**stdio**: The AI client starts the MCP server as a subprocess and communicates via stdin/stdout. This is the default for local clients like Cursor and Claude Desktop.
 
 ```json
 {
@@ -69,7 +69,7 @@ There are two ways your AI client can talk to the MCP server:
 }
 ```
 
-**HTTP** -- The MCP server runs as a standalone service and the AI client connects over HTTP. Use this for remote/shared deployments.
+**HTTP**: The MCP server runs as a standalone service and the AI client connects over HTTP. Use this for remote or shared deployments.
 
 ```bash
 npx @rippletide/mcp --transport http --host 0.0.0.0 --port 8080 --api-url https://your-backend.com

@@ -1,17 +1,38 @@
 ---
 title: "Trust Platform"
-description: "Build, monitor, and secure your AI agents from a single dashboard"
+description: "The unified dashboard for evaluating, building, and deploying reliable AI agents"
 ---
 
 ## What is the Trust Platform?
 
-The Trust Platform at [trust.rippletide.com](https://trust.rippletide.com) is a web interface for building and managing your AI agents visually. Instead of writing API calls, you can configure your agent's knowledge, processes, and guardrails through a guided UI.
+The Trust Platform at [trust.rippletide.com](https://trust.rippletide.com) is the web interface that brings together all three pillars of Rippletide in one place:
+
+<CardGroup cols={3}>
+  <Card title="Eval" icon="chart-line">
+    Run evaluations, view hallucination reports, and track agent accuracy over time. All from the dashboard.
+  </Card>
+
+  <Card title="Context Graph" icon="diagram-project">
+    Visualize your agent's knowledge graph: entities, memories, and relationships displayed as an interactive graph.
+  </Card>
+
+  <Card title="Orchestration" icon="wand-magic-sparkles">
+    Build agents step by step: define knowledge, configure processes, and set guardrails. All from the browser.
+  </Card>
+</CardGroup>
+
+## When to use it
+
+- You want a visual interface instead of writing API calls
+- You need to onboard team members who aren't developers
+- You want to visualize and debug your agent's knowledge graph
+- You need to import knowledge from external sources (PDFs, Amazon Bedrock)
 
 ## Key Features
 
 <CardGroup cols={2}>
   <Card title="Visual Agent Builder" icon="wand-magic-sparkles">
-    Create agents step by step: define a name, connect a knowledge source, configure processes, and set guardrails — all from the browser.
+    Create agents step by step: define a name, connect a knowledge source, configure processes, and set guardrails.
   </Card>
 
   <Card title="Knowledge Connectors" icon="plug">
@@ -19,7 +40,7 @@ The Trust Platform at [trust.rippletide.com](https://trust.rippletide.com) is a 
   </Card>
 
   <Card title="Guardrail Configuration" icon="shield-halved">
-    Set safety rules your agent must follow. Guardrails are enforced at the engine level with 100% compliance — they cannot be bypassed by prompt injection.
+    Set safety rules your agent must follow. Guardrails are enforced at the engine level with 100% compliance. They cannot be bypassed by prompt injection.
   </Card>
 
   <Card title="Knowledge Visualization" icon="diagram-project">
@@ -52,5 +73,9 @@ The Trust Platform at [trust.rippletide.com](https://trust.rippletide.com) is a 
 <CardGroup cols={2}>
   <Card title="Amazon Bedrock" icon="aws" href="/docs/trust-platform/integrations/amazon-bedrock">
     Connect your existing Bedrock knowledge bases to Rippletide for evaluation and guardrail enforcement.
+  </Card>
+
+  <Card title="MCP Integration" icon="plug" href="/docs/trust-platform/integrations/mcp">
+    Expose your agent as an MCP server and plug it into Cursor, Claude, VS Code, and more.
   </Card>
 </CardGroup>
