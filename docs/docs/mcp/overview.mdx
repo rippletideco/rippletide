@@ -7,19 +7,19 @@ description: Give your AI agents persistent memory with a context graph
 
 The Context Graph is a persistent context graph that gives your AI agents memory across conversations. Without it, your agent forgets everything between sessions. With it, your agent can:
 
-- **Remember** facts, decisions, preferences, and context across sessions
-- **Recall** past information by searching the context graph
-- **Relate** entities to each other (e.g. "John works at Acme Corp")
-- **Invalidate** outdated information when things change
+* **Remember** facts, decisions, preferences, and context across sessions
+* **Recall** past information by searching the context graph
+* **Relate** entities to each other (e.g. "John works at Acme Corp")
+* **Invalidate** outdated information when things change
 
 Each agent gets its own **isolated context graph**, so memories from one project don't leak into another.
 
 ## When to use it
 
-- Your agent needs to recall past interactions or user preferences
-- You want structured knowledge (entities + relationships) instead of flat text
-- You need cross-session memory for coding assistants, support agents, or project tools
-- You want to plug memory into any MCP-compatible client (Cursor, Claude, VS Code)
+* Your agent needs to recall past interactions or user preferences
+* You want structured knowledge (entities + relationships) instead of flat text
+* You need cross-session memory for coding assistants, support agents, or project tools
+* You want to plug memory into any MCP-compatible client (Cursor, Claude, VS Code)
 
 ## How it works
 
@@ -27,12 +27,15 @@ Each agent gets its own **isolated context graph**, so memories from one project
   <Step title="Your AI assistant (Cursor, Claude, etc.)">
     Calls tools like `remember`, `recall`, `relate` automatically during conversations.
   </Step>
+
   <Step title="MCP (Model Context Protocol)">
     The open transport protocol that connects AI assistants to the Context Graph. Think of MCP as the pipe. The Context Graph is what flows through it.
   </Step>
+
   <Step title="Context Graph API">
     Reads and writes to the agent's context graph.
   </Step>
+
   <Step title="Agent's Context Graph">
     Stores entities, memories, and relations. Each agent gets its own isolated graph.
   </Step>
@@ -42,21 +45,187 @@ You don't need to do anything. The assistant decides when to store or retrieve i
 
 ## Example
 
-**Conversation 1:**
-> **You:** "We decided to use PostgreSQL for the new project, budget is 50k"
->
-> **Assistant:** *(automatically calls `remember` to store "project uses PostgreSQL" and "budget is 50k", calls `relate` to link Project -> PostgreSQL)*
->
-> "Got it, I've noted the technology choice and budget."
+Here's what a conversation looks like **without** persistent memory vs. **with** the Rippletide Context Graph. The examples below rotate automatically — watch the replay.
 
-**Conversation 2 (days later):**
-> **You:** "What database are we using for the project?"
->
-> **Assistant:** *(automatically calls `recall` with "project database")*
->
-> "You decided to use PostgreSQL. The project budget is 50k."
+<div className="term-carousel">
 
-The assistant remembered across sessions because the Context Graph persisted the information.
+  {/* ── Scenario 1 – Tech stack decision (0–24s window, conv done at ≈9.3s → 14.7s soak) ── */}
+  <div className="term-scenario term-scenario--1">
+    <p className="term-scenario-label">Scenario 1 — Tech stack decision</p>
+    <div className="term-comparison">
+
+      {/* WITHOUT */}
+      <div className="term-window">
+        <div className="term-header">
+          <span className="term-dot term-dot--red" />
+          <span className="term-dot term-dot--yellow" />
+          <span className="term-dot term-dot--green" />
+          <span className="term-title">Without Context Graph</span>
+        </div>
+        <div className="term-body">
+          <div className="term-line term-label tll-0">Session 1</div>
+          <div className="term-line term-prompt tll-0p3">You: We decided to use PostgreSQL, budget is $50k</div>
+          <div className="term-line term-thinking tll-1p2"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-response tll-2p5">Assistant: Got it! I'll keep that in mind.</div>
+          <div className="term-line term-separator tll-3p2">— two days later —</div>
+          <div className="term-line term-label tll-3p7">Session 2</div>
+          <div className="term-line term-prompt tll-4p0">You: What database are we using for the project?</div>
+          <div className="term-line term-thinking tll-4p9"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-error tll-6p2">Assistant: I don't have info about a database choice. Could you remind me?</div>
+          <div className="term-line term-prompt tll-7p2">You: We discussed this Monday… PostgreSQL, remember?</div>
+          <div className="term-line term-thinking tll-8p0"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-error tll-9p3">Assistant: I apologize. I don't have access to previous conversations.</div>
+        </div>
+      </div>
+
+      {/* WITH */}
+      <div className="term-window">
+        <div className="term-header">
+          <span className="term-dot term-dot--red" />
+          <span className="term-dot term-dot--yellow" />
+          <span className="term-dot term-dot--green" />
+          <span className="term-title">With Context Graph</span>
+        </div>
+        <div className="term-body">
+          <div className="term-line term-label tll-0">Session 1</div>
+          <div className="term-line term-prompt tll-0p3">You: We decided to use PostgreSQL, budget is $50k</div>
+          <div className="term-line term-tool tll-1p2">remember("project uses PostgreSQL", category: decision)</div>
+          <div className="term-line term-tool tll-1p7">remember("budget is $50k", category: fact)</div>
+          <div className="term-line term-tool tll-2p2">relate(Project → uses → PostgreSQL)</div>
+          <div className="term-line term-thinking tll-2p7"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-response tll-3p9">Assistant: Got it, I've noted the tech choice and budget.</div>
+          <div className="term-line term-separator tll-4p7">— two days later —</div>
+          <div className="term-line term-label tll-5p2">Session 2</div>
+          <div className="term-line term-prompt tll-5p5">You: What database are we using for the project?</div>
+          <div className="term-line term-tool tll-6p3">recall("project database")</div>
+          <div className="term-line term-found tll-6p8">"project uses PostgreSQL" (confidence: 1.0)</div>
+          <div className="term-line term-thinking tll-7p3"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-response tll-8p5">Assistant: You decided on PostgreSQL. Budget is $50k.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {/* ── Scenario 2 – Client preferences (25–49s window, conv done at ≈34.3s → 14.7s soak) ── */}
+  <div className="term-scenario term-scenario--2">
+    <p className="term-scenario-label">Scenario 2 — Client preferences</p>
+    <div className="term-comparison">
+
+      {/* WITHOUT */}
+      <div className="term-window">
+        <div className="term-header">
+          <span className="term-dot term-dot--red" />
+          <span className="term-dot term-dot--yellow" />
+          <span className="term-dot term-dot--green" />
+          <span className="term-title">Without Context Graph</span>
+        </div>
+        <div className="term-body">
+          <div className="term-line term-label tll-25">Session 1</div>
+          <div className="term-line term-prompt tll-25p3">You: Sarah prefers dark mode. Her team uses Slack, not email.</div>
+          <div className="term-line term-thinking tll-26p2"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-response tll-27p5">Assistant: Noted! I'll factor that in.</div>
+          <div className="term-line term-separator tll-28p2">— next week —</div>
+          <div className="term-line term-label tll-28p7">Session 2</div>
+          <div className="term-line term-prompt tll-29p0">You: How should we send the update to Sarah's team?</div>
+          <div className="term-line term-thinking tll-29p9"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-error tll-31p2">Assistant: You could try email or Slack — do you have a preference?</div>
+          <div className="term-line term-prompt tll-32p2">You: I told you, they only use Slack…</div>
+          <div className="term-line term-thinking tll-33p0"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-error tll-34p3">Assistant: Sorry, I don't retain information between sessions.</div>
+        </div>
+      </div>
+
+      {/* WITH */}
+      <div className="term-window">
+        <div className="term-header">
+          <span className="term-dot term-dot--red" />
+          <span className="term-dot term-dot--yellow" />
+          <span className="term-dot term-dot--green" />
+          <span className="term-title">With Context Graph</span>
+        </div>
+        <div className="term-body">
+          <div className="term-line term-label tll-25">Session 1</div>
+          <div className="term-line term-prompt tll-25p3">You: Sarah prefers dark mode. Her team uses Slack, not email.</div>
+          <div className="term-line term-tool tll-26p2">remember("Sarah prefers dark mode", category: preference)</div>
+          <div className="term-line term-tool tll-26p7">remember("Sarah's team uses Slack", category: fact)</div>
+          <div className="term-line term-tool tll-27p2">relate(Sarah → communicates_via → Slack)</div>
+          <div className="term-line term-thinking tll-27p7"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-response tll-28p9">Assistant: Saved! I'll keep Sarah's preferences in mind.</div>
+          <div className="term-line term-separator tll-29p7">— next week —</div>
+          <div className="term-line term-label tll-30p2">Session 2</div>
+          <div className="term-line term-prompt tll-30p5">You: How should we send the update to Sarah's team?</div>
+          <div className="term-line term-tool tll-31p3">recall("Sarah communication")</div>
+          <div className="term-line term-found tll-31p8">"Sarah's team uses Slack" (confidence: 1.0)</div>
+          <div className="term-line term-thinking tll-32p3"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-response tll-33p5">Assistant: Send it via Slack — Sarah's team doesn't use email.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {/* ── Scenario 3 – Architecture decision (50–74s window, conv done at ≈59.3s → 14.7s soak) ── */}
+  <div className="term-scenario term-scenario--3">
+    <p className="term-scenario-label">Scenario 3 — Architecture decision</p>
+    <div className="term-comparison">
+
+      {/* WITHOUT */}
+      <div className="term-window">
+        <div className="term-header">
+          <span className="term-dot term-dot--red" />
+          <span className="term-dot term-dot--yellow" />
+          <span className="term-dot term-dot--green" />
+          <span className="term-title">Without Context Graph</span>
+        </div>
+        <div className="term-body">
+          <div className="term-line term-label tll-50">Session 1</div>
+          <div className="term-line term-prompt tll-50p3">You: We're going microservices, deploy target is Kubernetes on AWS.</div>
+          <div className="term-line term-thinking tll-51p2"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-response tll-52p5">Assistant: Great choice! Microservices scale well.</div>
+          <div className="term-line term-separator tll-53p2">— three days later —</div>
+          <div className="term-line term-label tll-53p7">Session 2</div>
+          <div className="term-line term-prompt tll-54p0">You: What's our deployment target again?</div>
+          <div className="term-line term-thinking tll-54p9"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-error tll-56p2">Assistant: I'm not sure — could be anything. Can you remind me?</div>
+          <div className="term-line term-prompt tll-57p2">You: Kubernetes on AWS! We talked about this all sprint.</div>
+          <div className="term-line term-thinking tll-58p0"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-error tll-59p3">Assistant: I'm sorry, I have no memory of prior sessions.</div>
+        </div>
+      </div>
+
+      {/* WITH */}
+      <div className="term-window">
+        <div className="term-header">
+          <span className="term-dot term-dot--red" />
+          <span className="term-dot term-dot--yellow" />
+          <span className="term-dot term-dot--green" />
+          <span className="term-title">With Context Graph</span>
+        </div>
+        <div className="term-body">
+          <div className="term-line term-label tll-50">Session 1</div>
+          <div className="term-line term-prompt tll-50p3">You: We're going microservices, deploy target is Kubernetes on AWS.</div>
+          <div className="term-line term-tool tll-51p2">remember("architecture: microservices", category: decision)</div>
+          <div className="term-line term-tool tll-51p7">remember("deploy target: Kubernetes on AWS", category: decision)</div>
+          <div className="term-line term-tool tll-52p2">relate(System → deployed_on → Kubernetes/AWS)</div>
+          <div className="term-line term-thinking tll-52p7"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-response tll-53p9">Assistant: Locked in. Microservices on Kubernetes/AWS.</div>
+          <div className="term-line term-separator tll-54p7">— three days later —</div>
+          <div className="term-line term-label tll-55p2">Session 2</div>
+          <div className="term-line term-prompt tll-55p5">You: What's our deployment target again?</div>
+          <div className="term-line term-tool tll-56p3">recall("deployment target")</div>
+          <div className="term-line term-found tll-56p8">"deploy target: Kubernetes on AWS" (confidence: 1.0)</div>
+          <div className="term-line term-thinking tll-57p3"><span className="td"/><span className="td"/><span className="td"/></div>
+          <div className="term-line term-response tll-58p5">Assistant: Kubernetes on AWS — decided in your last sprint.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+The assistant remembered across sessions because the Context Graph persisted the information. Notice the `remember`, `relate`, and `recall` tool calls — these happen automatically.
 
 ## Quick Start
 
@@ -87,9 +256,11 @@ For best results, add the [system prompt instructions](/docs/mcp/tools#system-pr
   <Card title="Cursor" icon="code">
     Save to `~/.cursor/mcp.json`
   </Card>
+
   <Card title="Claude Desktop" icon="message-bot">
     Add in Claude Desktop MCP settings
   </Card>
+
   <Card title="Claude Code" icon="terminal">
     Save to `.mcp.json` at your project root
   </Card>
@@ -103,12 +274,12 @@ That's it. Your AI assistant now has access to **7 tools** and **4 resources** f
 
 ## Context Graph vs SDK API
 
-| | SDK API | Context Graph (via MCP) |
-|---|---------|-----------|
-| **Used by** | Your code (Python, curl) | Your AI assistant (Cursor, Claude) |
-| **Purpose** | Build agents with Q&A, tags, actions, states | Give AI assistants persistent memory |
-| **Protocol** | REST API (HTTP) | MCP protocol (tools + resources) |
-| **Knowledge** | Structured Q&A pairs for chatbots | Free-form memories, entities, relations |
+|               | SDK API                                       | Context Graph (via MCP)                 |
+| ------------- | --------------------------------------------- | --------------------------------------- |
+| **Used by**   | Your code (Python, curl)                      | Your AI assistant (Cursor, Claude)      |
+| **Purpose**   | Build agents with Q&A, tags, actions, states  | Give AI assistants persistent memory    |
+| **Protocol**  | REST API (HTTP)                               | MCP protocol (tools + resources)        |
+| **Knowledge** | Structured Q&A pairs for chatbots             | Free-form memories, entities, relations |
 
 They both write to the same underlying context graph, but through different interfaces for different use cases.
 
@@ -118,9 +289,11 @@ They both write to the same underlying context graph, but through different inte
   <Card title="Configuration" icon="gear" href="/docs/mcp/configuration">
     Self-hosted setup, transport modes, environment variables
   </Card>
+
   <Card title="Tools & Resources" icon="wrench" href="/docs/mcp/tools">
     All 7 tools and 4 resources your AI assistant can use
   </Card>
+
   <Card title="Deploy" icon="cloud" href="/docs/mcp/deploy">
     Self-host on Railway or any cloud provider
   </Card>
