@@ -8,7 +8,7 @@ description: All tools and resources exposed by the Context Graph via MCP
 Add this to your agent's system prompt so it knows how to use the MCP tools effectively. You can copy it directly from the Rippletide playground (terminal icon in the header).
 
 ```text
-You have access to a persistent knowledge graph via MCP tools.
+You have access to a persistent context graph via MCP tools.
 
 TOOLS:
 - remember(content, category, entities?, confidence?): Store a fact, preference, intent, decision, or context. Categories: fact, preference, intent, decision, context. Entity types: Person, Organization, Product, Amount, Date, Location, Concept, Decision, Action.
@@ -149,7 +149,7 @@ Create a directed relationship between two entities. Creates the entities automa
 
 ### switch_agent
 
-Switch to a different agent's knowledge graph at runtime. All subsequent tool calls target the new agent's graph.
+Switch to a different agent's context graph at runtime. All subsequent tool calls target the new agent's graph.
 
 ```json
 {
