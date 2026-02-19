@@ -1,5 +1,5 @@
 ---
-title: Chat & LangChain Integration
+title: LangChain Integration
 description: Send messages to your agent and use it as a drop-in LLM in LangChain
 ---
 

@@ -3,15 +3,20 @@ title: Welcome
 description: Introduction to Rippletide
 ---
 
-Rippletide is the reliability layer for AI agents. Evaluate responses, give your agents persistent memory, and orchestrate deterministic workflows, all from one platform.
+Rippletide adds an authority layer that validates, constrains, or blocks agent actions at runtime before they impact real systems or customers.
 
-## Three pillars to reliable AI agents
+## Quick Start with Rippletide
 
+Don't know if your agent can move to production? 
 <Steps>
   <Step title="Eval: Validate before you ship">
-    Test your AI agent's responses against expected answers. Rippletide detects hallucinations, scores accuracy, and gives you a clear pass/fail report. Use the CLI or the Python SDK.
 
-    **When to use it:** Before every deployment, in CI pipelines, and during development to catch regressions.
+    
+    Plug your agent into our CLI and Rippletide auto-generates test questions to evaluate it. 
+
+    Rippletide spots hallucinations by fact-checking each output and suggests improvements when sources are missing.
+
+    **When to use it:** Before every deployment, in CI pipelines, and during development to catch regressions. Activate runtime filters once deployed.
 
     [Get started with Eval →](/docs/evaluation_overview)
   </Step>
@@ -56,3 +61,6 @@ Rippletide is the reliability layer for AI agents. Evaluate responses, give your
 | **Evaluation** | Manual spot checks | Automated, CI-ready testing |
 
 ![Rippletide Hypergraph](/img/schema_doc.jpg)
+
+Rippletide demonstrated strong measured performance on a range of use cases: customer support (from 85% to 96% resolution), deterministic UI for coding agents, credit agents, project manager agents and others.
+
