@@ -3,6 +3,33 @@ title: Tools & Resources
 description: All MCP tools and resources exposed by the Rippletide MCP server
 ---
 
+## System prompt
+
+Add this to your agent's system prompt so it knows how to use the MCP tools effectively. You can copy it directly from the Rippletide playground (terminal icon in the header).
+
+```text
+You have access to a persistent knowledge graph via MCP tools.
+
+TOOLS:
+- remember(content, category, entities?, confidence?) — Store a fact, preference, intent, decision, or context. Categories: fact, preference, intent, decision, context. Entity types: Person, Organization, Product, Amount, Date, Location, Concept, Decision, Action.
+- recall(query, limit?) — Search memories by keyword or topic. Always search before answering fact-based questions.
+- get_context(entity_name) — Get complete details about a specific entity and all linked memories/relationships.
+- list_entities(type?) — List all known entities, optionally filtered by type.
+- invalidate(memory_id, reason?) — Mark a memory as outdated or incorrect.
+- relate(source, target, relation_type) — Create a relationship between entities. Types: works_at, wants, has, is_a, related_to, caused, approved, declined, lives_in, resulted_in, mentioned_with.
+
+BEST PRACTICES:
+- ALWAYS recall() before answering fact-based questions
+- ALWAYS remember() decisions, preferences, and key facts mentioned by the user
+- Use invalidate() + remember() to correct stale information
+- Set confidence: 1.0 for explicit facts, 0.5-0.8 for inferred information
+- Create relations between entities to build a meaningful graph
+```
+
+<Tip>
+  This is the same text copied by the **"Copy context instructions"** button in the playground.
+</Tip>
+
 ## How tools work
 
 Your AI assistant calls these tools **automatically** during conversations. You don't invoke them manually. When you mention a decision, the assistant calls `remember`. When you ask about something from the past, it calls `recall`. The tools are the building blocks of the assistant's memory.
