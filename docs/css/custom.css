@@ -95,3 +95,32 @@ video ~ * {
   background: transparent !important;
 }
 
+.toc-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --sidebar-width: 220px !important;
+    --sidebar-expanded-width: 220px !important;
+  }
+
+  #content-side-layout,
+  .content-side-layout {
+    column-gap: 20px !important;
+    gap: 20px !important;
+  }
+
+  article .prose,
+  main .prose {
+    max-width: 95ch !important;
+  }
+}

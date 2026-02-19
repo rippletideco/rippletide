@@ -39,12 +39,11 @@
             ]
           },
           {
-            "group": "Eval",
+            "group": "Agent Evaluation",
             "expanded": false,
             "pages": [
               "docs/evaluation_overview",
-              "docs/cli_guide",
-              "docs/rippletide_client"
+              "docs/cli_guide"
             ]
           },
           {

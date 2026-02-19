@@ -3,13 +3,26 @@ title: Welcome
 description: Introduction to Rippletide
 ---
 
-Rippletide helps you build AI agents you can trust. Evaluate responses, give your agents persistent memory, and orchestrate deterministic workflows, all from one platform.
+Rippletide adds an authority layer that validates, constrains, or blocks agent actions at runtime before they impact real systems or customers.
+![Rippletide Hypergraph](/img/schema_doc.jpg)
 
 ## Quick Start with Rippletide
 
-Don't know if your agent can move to production? 
+<h3 className="toc-only">Eval</h3>
+<h3 className="toc-only">Context Graph</h3>
+<h3 className="toc-only">Orchestration</h3>
+
 <Steps>
-  <Step title="Eval: Validate before you ship">
+<Step
+  title={
+    <>
+      Don't know if your agent can move to production?
+      <br />
+      Eval: Validate before you ship
+    </>
+  }
+>
+
 
     
     Plug your agent into our CLI and Rippletide auto-generates test questions to evaluate it. 
@@ -21,7 +34,7 @@ Don't know if your agent can move to production?
     [Get started with Eval →](/docs/evaluation_overview)
   </Step>
 
-  <Step title="Context Graph: Give your agents memory">
+  <Step title="Context Graph: Bring the right context for a more predictable agent">
     A persistent context graph that stores facts, decisions, preferences, and entity relationships across conversations. Your agents remember what matters without re-prompting.
 
     **When to use it:** When your agents need to recall past interactions, share context across sessions, or maintain structured knowledge about users, products, or projects.
@@ -38,18 +51,6 @@ Don't know if your agent can move to production?
   </Step>
 </Steps>
 
-## Quick Start
-
-<CardGroup cols={2}>
-  <Card title="Install & Run" icon="play" href="/docs/get_started">
-    Install the CLI and evaluate your first agent in 5 minutes
-  </Card>
-
-  <Card title="Trust Platform" icon="browser" href="/docs/trust-platform/overview">
-    Build, test, and deploy agents visually from one dashboard
-  </Card>
-</CardGroup>
-
 ## Why Rippletide?
 
 | | Without Rippletide | With Rippletide |
@@ -59,8 +60,6 @@ Don't know if your agent can move to production?
 | **Guardrails** | Prompt-based, easy to bypass | Engine-level, 100% compliance |
 | **Explainability** | Black box | Every decision is traceable |
 | **Evaluation** | Manual spot checks | Automated, CI-ready testing |
-
-![Rippletide Hypergraph](/img/schema_doc.jpg)
 
 Rippletide demonstrated strong measured performance on a range of use cases: customer support (from 85% to 96% resolution), deterministic UI for coding agents, credit agents, project manager agents and others.
 
