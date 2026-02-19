@@ -26,7 +26,7 @@ The MCP server includes a `railway.json` config for one-click deployment.
   <Step title="Add environment variables">
     | Variable | Value |
     |----------|-------|
-    | `GRAPH_API_URL` | Your knowledge graph backend URL |
+    | `GRAPH_API_URL` | Your context graph backend URL |
   </Step>
   <Step title="Set Target Port">
     `8080`
@@ -50,17 +50,17 @@ npm install && npm run build
 node dist/index.js --transport http --host 0.0.0.0 --port 8080
 ```
 
-Set the `GRAPH_API_URL` environment variable to point to your knowledge graph backend.
+Set the `GRAPH_API_URL` environment variable to point to your context graph backend.
 
 **Requirements:**
 - Node.js >= 18
-- Network access to the knowledge graph backend
+- Network access to the context graph backend
 
 ## Troubleshooting
 
 <AccordionGroup>
   <Accordion title="Connection refused">
-    The knowledge graph backend isn't running or isn't reachable at `GRAPH_API_URL`. Check the URL and network connectivity.
+    The context graph backend isn't running or isn't reachable at `GRAPH_API_URL`. Check the URL and network connectivity.
   </Accordion>
   <Accordion title="Tools return empty data">
     Verify that `AGENT_ID` matches an agent that has data in the graph. Use `list_entities` to check.

@@ -1,18 +1,18 @@
 ---
 title: Context Graph
-description: Give your AI agents persistent memory with a knowledge graph
+description: Give your AI agents persistent memory with a context graph
 ---
 
 ## What is the Context Graph?
 
-The Context Graph is a persistent knowledge graph that gives your AI agents memory across conversations. Without it, your agent forgets everything between sessions. With it, your agent can:
+The Context Graph is a persistent context graph that gives your AI agents memory across conversations. Without it, your agent forgets everything between sessions. With it, your agent can:
 
 - **Remember** facts, decisions, preferences, and context across sessions
-- **Recall** past information by searching the knowledge graph
+- **Recall** past information by searching the context graph
 - **Relate** entities to each other (e.g. "John works at Acme Corp")
 - **Invalidate** outdated information when things change
 
-Each agent gets its own **isolated knowledge graph**, so memories from one project don't leak into another.
+Each agent gets its own **isolated context graph**, so memories from one project don't leak into another.
 
 ## When to use it
 
@@ -31,9 +31,9 @@ Each agent gets its own **isolated knowledge graph**, so memories from one proje
     The open transport protocol that connects AI assistants to the Context Graph. Think of MCP as the pipe. The Context Graph is what flows through it.
   </Step>
   <Step title="Context Graph API">
-    Reads and writes to the agent's knowledge graph.
+    Reads and writes to the agent's context graph.
   </Step>
-  <Step title="Agent's Knowledge Graph">
+  <Step title="Agent's Context Graph">
     Stores entities, memories, and relations. Each agent gets its own isolated graph.
   </Step>
 </Steps>
@@ -98,7 +98,7 @@ For best results, add the [system prompt instructions](/docs/mcp/tools#system-pr
 That's it. Your AI assistant now has access to **7 tools** and **4 resources** for persistent memory.
 
 <Info>
-  You can find your agent ID in the **playground** (terminal icon in the header) or on the agent detail page in the [Rippletide platform](https://eval.rippletide.com). Each agent gets its own isolated knowledge graph.
+  You can find your agent ID in the **playground** (terminal icon in the header) or on the agent detail page in the [Rippletide platform](https://eval.rippletide.com). Each agent gets its own isolated context graph.
 </Info>
 
 ## Context Graph vs SDK API
@@ -110,7 +110,7 @@ That's it. Your AI assistant now has access to **7 tools** and **4 resources** f
 | **Protocol** | REST API (HTTP) | MCP protocol (tools + resources) |
 | **Knowledge** | Structured Q&A pairs for chatbots | Free-form memories, entities, relations |
 
-They both write to the same underlying knowledge graph, but through different interfaces for different use cases.
+They both write to the same underlying context graph, but through different interfaces for different use cases.
 
 ## Next steps
 
