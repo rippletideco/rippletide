@@ -1,0 +1,65 @@
+---
+title: Quickstart
+description: Get the Context Graph running in your MCP client in minutes
+---
+
+## Quick Start
+
+Add this to your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "rippletide-kg": {
+      "type": "url",
+      "url": "https://mcp.rippletide.com/mcp?agentId=your-agent-id"
+    }
+  }
+}
+```
+
+Replace `your-agent-id` with your agent ID from the [Rippletide platform](https://eval.rippletide.com).
+
+<Tip>
+  In the Rippletide playground, click the **terminal icon** in the header to get your Agent ID, MCP endpoint, and context instructions. Everything is copyable in one click.
+</Tip>
+
+For best results, add the [system prompt instructions](/docs/mcp/tools#system-prompt) to your agent's context so it knows when and how to use the tools.
+
+### Where to save this config
+
+<CardGroup cols={3}>
+  <Card title="Cursor" icon="code">
+    Save to `~/.cursor/mcp.json`
+  </Card>
+
+  <Card title="Claude Desktop" icon="message-bot">
+    Add in Claude Desktop MCP settings
+  </Card>
+
+  <Card title="Claude Code" icon="terminal">
+    Save to `.mcp.json` at your project root
+  </Card>
+</CardGroup>
+
+That's it. Your AI assistant now has access to **7 tools** and **4 resources** for persistent memory.
+
+<Info>
+  You can find your agent ID in the **playground** (terminal icon in the header) or on the agent detail page in the [Rippletide platform](https://eval.rippletide.com). Each agent gets its own isolated context graph.
+</Info>
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Configuration" icon="gear" href="/docs/mcp/configuration">
+    Self-hosted setup, transport modes, environment variables
+  </Card>
+
+  <Card title="Tools & Resources" icon="wrench" href="/docs/mcp/tools">
+    All 7 tools and 4 resources your AI assistant can use
+  </Card>
+
+  <Card title="Deploy" icon="cloud" href="/docs/mcp/configuration#deploy">
+    Self-host on Railway or any cloud provider
+  </Card>
+</CardGroup>

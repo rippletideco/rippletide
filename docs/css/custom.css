@@ -1,3 +1,69 @@
+/* Hide the first sidebar group label (Welcome) so only the page link shows */
+#sidebar .sidebar-group:first-of-type .sidebar-group-header,
+#sidebar .sidebar-group:first-of-type .sidebar-group-icon,
+.sidebar .sidebar-group:first-of-type .sidebar-group-header,
+.sidebar .sidebar-group:first-of-type .sidebar-group-icon,
+[id="sidebar"] .sidebar-group:first-of-type .sidebar-group-header,
+[id="sidebar"] .sidebar-group:first-of-type .sidebar-group-icon,
+[class*="sidebar-group"]:first-of-type [class*="sidebar-group-header"],
+[class*="sidebar-group"]:first-of-type [class*="sidebar-group-icon"] {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+}
+
+/* Remove blank space above first group (Welcome page link) */
+#sidebar .sidebar-group:first-of-type,
+.sidebar .sidebar-group:first-of-type,
+[id="sidebar"] .sidebar-group:first-of-type,
+[class*="sidebar-group"]:first-of-type {
+  padding-top: 0 !important;
+  margin-top: -12px !important;
+}
+
+/* Hide any divider above the first sidebar group */
+#sidebar .sidebar-nav-group-divider:first-of-type,
+.sidebar .sidebar-nav-group-divider:first-of-type,
+[class*="sidebar"] [class*="sidebar-nav-group-divider"]:first-of-type {
+  display: none !important;
+}
+
+/* Remove top gap in sidebar content (first item is Welcome) */
+#sidebar .sidebar-content > *:first-child,
+.sidebar .sidebar-content > *:first-child,
+[id="sidebar"] [class*="sidebar-content"] > *:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Element to element: gap between consecutive items */
+#sidebar .sidebar-group:not(:first-of-type) > * + *,
+.sidebar .sidebar-group:not(:first-of-type) > * + *,
+[class*="sidebar-group"]:not(:first-of-type) > * + * {
+  margin-top: 8px !important;
+}
+#sidebar .sidebar-group:not(:first-of-type) a + a,
+.sidebar .sidebar-group:not(:first-of-type) a + a,
+[class*="sidebar-group"]:not(:first-of-type) a + a {
+  margin-top: 8px !important;
+}
+
+/* Category name to first item: same gap as between items (header margin-bottom) */
+#sidebar .sidebar-group:not(:first-of-type) .sidebar-group-header,
+.sidebar .sidebar-group:not(:first-of-type) .sidebar-group-header,
+[class*="sidebar-group"]:not(:first-of-type) [class*="sidebar-group-header"] {
+  margin-bottom: 8px !important;
+}
+#sidebar .sidebar-group:not(:first-of-type) .sidebar-group-header + *,
+.sidebar .sidebar-group:not(:first-of-type) .sidebar-group-header + *,
+[id="sidebar"] .sidebar-group:not(:first-of-type) [class*="sidebar-group-header"] + *,
+[class*="sidebar-group"]:not(:first-of-type) [class*="sidebar-group-header"] + * {
+  margin-top: 0 !important;
+}
+
 /* Headings with toc-only: visible in table of contents, hidden in main content */
 .toc-only {
   position: absolute !important;

@@ -1,5 +1,5 @@
 ---
-title: Context Graph
+title: Overview
 description: Give your AI agents persistent memory with a context graph
 ---
 
@@ -55,65 +55,13 @@ Here is a live environment where you can test the Context Graph. On the left, a 
   srcDoc={`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'SF Mono','Fira Code','Cascadia Code',monospace;background:transparent;color:#e0e0e0}.container{max-width:100%}.header-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#1a1a2e;border-radius:8px 8px 0 0;border-bottom:1px solid #333}.session-id{font-weight:bold;font-size:13px;color:#e0e0e0;font-family:monospace}.refresh-btn{background:#2d2d44;color:#ccc;border:1px solid #444;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px}.refresh-btn:hover{background:#3a3a55;color:#fff}.term-comparison{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;background:#0d0d1a}.term-window{background:#1a1a2e;border-radius:10px;overflow:hidden;border:1px solid #2a2a44}.term-title-bar{display:flex;align-items:center;padding:8px 12px;background:#252540;gap:8px}.term-dot{width:10px;height:10px;border-radius:50%}.term-dot.r{background:#ff5f57}.term-dot.y{background:#febc2e}.term-dot.g{background:#28c840}.term-title{flex:1;text-align:center;font-size:12px;color:#888}.term-body{padding:12px;min-height:480px;max-height:480px;overflow-y:auto;font-size:13px;line-height:1.6}.term-line{margin-bottom:4px;word-wrap:break-word}.term-prompt{color:#5eead4}.term-prompt::before{content:'> ';color:#666}.term-response{color:#e0e0e0}.term-response::before{content:'&#187; ';color:#666}.term-tool{color:#a78bfa;padding-left:16px;font-size:12px}.term-tool::before{content:'[tool] ';font-weight:bold}.term-found{color:#fbbf24;padding-left:24px;font-size:12px;font-style:italic}.term-error{color:#f87171}.term-label{color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}.term-thinking{display:flex;gap:4px;padding:4px 0}.td{width:6px;height:6px;background:#5eead4;border-radius:50%;animation:bounce 1.2s infinite ease-in-out}.td:nth-child(2){animation-delay:.2s}.td:nth-child(3){animation-delay:.4s}@keyframes bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}.input-area{display:flex;gap:8px;padding:12px;background:#0d0d1a;border-radius:0 0 8px 8px}.input-area input{flex:1;background:#1a1a2e;border:1px solid #333;color:#e0e0e0;padding:10px 14px;border-radius:8px;font-size:14px;outline:none;font-family:inherit}.input-area input:focus{border-color:#5eead4}.input-area input::placeholder{color:#555}.input-area button{background:#238636;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px}.input-area button:disabled{background:#23863688;cursor:not-allowed}@media(max-width:600px){.term-comparison{grid-template-columns:1fr}}</style></head><body><div class="container"><div class="header-bar"><span>Agent ID: <span class="session-id" id="sessionIdDisplay">generating...</span></span><button class="refresh-btn" onclick="handleRefreshContext()">&#8635; New Conversation</button></div><div class="term-comparison"><div class="term-window"><div class="term-title-bar"><div class="term-dot r"></div><div class="term-dot y"></div><div class="term-dot g"></div><div class="term-title">Without Context Graph</div></div><div class="term-body" id="vanillaBody"></div></div><div class="term-window"><div class="term-title-bar"><div class="term-dot r"></div><div class="term-dot y"></div><div class="term-dot g"></div><div class="term-title">With Context Graph</div></div><div class="term-body" id="mcpBody"></div></div></div><form class="input-area" onsubmit="handleSend(event)"><input type="text" id="chatInput" placeholder="Type a message... (e.g. My project uses React)" oninput="toggleButton()" autocomplete="off" /><button type="submit" id="sendBtn" disabled>Send</button></form></div><script>var API_URL='http://localhost:3042';var sessionId='';var isLoading=false;var vanillaHistory=[];var mcpHistory=[];function generateUUID(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16)})}function initSession(){sessionId=generateUUID();vanillaHistory=[];mcpHistory=[];document.getElementById('sessionIdDisplay').innerText=sessionId}function toggleButton(){var input=document.getElementById('chatInput').value.trim();document.getElementById('sendBtn').disabled=!input||isLoading}function handleRefreshContext(){vanillaHistory=[];mcpHistory=[];document.getElementById('vanillaBody').innerHTML='<div class=\\'term-line term-label\\'>New conversation started</div>';document.getElementById('mcpBody').innerHTML='<div class=\\'term-line term-label\\'>New conversation started</div>';document.getElementById('chatInput').value='';toggleButton()}function addMessage(targetId,type,content){var body=document.getElementById(targetId);var div=document.createElement('div');div.className='term-line '+type;if(type==='term-thinking'){div.innerHTML='<span class=\\'td\\'></span><span class=\\'td\\'></span><span class=\\'td\\'></span>'}else{var prefix='';if(type==='term-prompt')prefix='You: ';else if(type==='term-response'||type==='term-error')prefix='Assistant: ';div.innerText=prefix+content}body.appendChild(div);body.scrollTop=body.scrollHeight;return div}async function handleSend(e){e.preventDefault();var inputEl=document.getElementById('chatInput');var userMessage=inputEl.value.trim();if(!userMessage||isLoading)return;isLoading=true;toggleButton();inputEl.value='';addMessage('vanillaBody','term-prompt',userMessage);addMessage('mcpBody','term-prompt',userMessage);var vThinking=addMessage('vanillaBody','term-thinking','');var mThinking=addMessage('mcpBody','term-thinking','');try{var results=await Promise.all([fetch(API_URL+'/api/chat-playground/vanilla',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:userMessage,sessionId:sessionId,history:vanillaHistory})}).catch(function(){return null}),fetch(API_URL+'/api/chat-playground/mcp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:userMessage,sessionId:sessionId,history:mcpHistory})}).catch(function(){return null})]);var vanillaRes=results[0];var mcpRes=results[1];vThinking.remove();mThinking.remove();var vanillaResponse='';var mcpResponse='';if(vanillaRes&&vanillaRes.ok){var data=await vanillaRes.json();if(data.error){addMessage('vanillaBody','term-error',data.error)}else{vanillaResponse=data.response;addMessage('vanillaBody','term-response',data.response)}}else{addMessage('vanillaBody','term-error','Connection failed.')}if(mcpRes&&mcpRes.ok){var data2=await mcpRes.json();if(data2.error){addMessage('mcpBody','term-error',data2.error)}else{mcpResponse=data2.response;if(data2.tools){data2.tools.forEach(function(tool){if(tool.name==='remember'||tool.name==='relate'){addMessage('mcpBody','term-tool',tool.name+'('+tool.params+')')}else if(tool.name==='recall'){addMessage('mcpBody','term-tool','recall("'+tool.params+'")');if(tool.result)addMessage('mcpBody','term-found','"'+tool.result+'"')}})}addMessage('mcpBody','term-response',data2.response)}}else{addMessage('mcpBody','term-error','Connection failed.')}if(vanillaResponse)vanillaHistory.push({user:userMessage,assistant:vanillaResponse});if(mcpResponse)mcpHistory.push({user:userMessage,assistant:mcpResponse})}catch(err){vThinking.remove();mThinking.remove();addMessage('vanillaBody','term-error','Error connecting to API.');addMessage('mcpBody','term-error','Error connecting to API.')}finally{isLoading=false;toggleButton()}}initSession()</script></body></html>`}
 />
 
-## Quick Start
-
-Add this to your MCP client config:
-
-```json
-{
-  "mcpServers": {
-    "rippletide-kg": {
-      "type": "url",
-      "url": "https://mcp.rippletide.com/mcp?agentId=your-agent-id"
-    }
-  }
-}
-```
-
-Replace `your-agent-id` with your agent ID from the [Rippletide platform](https://eval.rippletide.com).
-
-<Tip>
-  In the Rippletide playground, click the **terminal icon** in the header to get your Agent ID, MCP endpoint, and context instructions. Everything is copyable in one click.
-</Tip>
-
-For best results, add the [system prompt instructions](/docs/mcp/tools#system-prompt) to your agent's context so it knows when and how to use the tools.
-
-### Where to save this config
-
-<CardGroup cols={3}>
-  <Card title="Cursor" icon="code">
-    Save to `~/.cursor/mcp.json`
-  </Card>
-
-  <Card title="Claude Desktop" icon="message-bot">
-    Add in Claude Desktop MCP settings
-  </Card>
-
-  <Card title="Claude Code" icon="terminal">
-    Save to `.mcp.json` at your project root
-  </Card>
-</CardGroup>
-
-That's it. Your AI assistant now has access to **7 tools** and **4 resources** for persistent memory.
-
-<Info>
-  You can find your agent ID in the **playground** (terminal icon in the header) or on the agent detail page in the [Rippletide platform](https://eval.rippletide.com). Each agent gets its own isolated context graph.
-</Info>
-
-## Context Graph vs SDK API
-
-|               | SDK API                                       | Context Graph (via MCP)                 |
-| ------------- | --------------------------------------------- | --------------------------------------- |
-| **Used by**   | Your code (Python, curl)                      | Your AI assistant (Cursor, Claude)      |
-| **Purpose**   | Build agents with Q&A, tags, actions, states  | Give AI assistants persistent memory    |
-| **Protocol**  | REST API (HTTP)                               | MCP protocol (tools + resources)        |
-| **Knowledge** | Structured Q&A pairs for chatbots             | Free-form memories, entities, relations |
-
-They both write to the same underlying context graph, but through different interfaces for different use cases.
-
 ## Next steps
 
 <CardGroup cols={3}>
+  <Card title="Quickstart" icon="rocket" href="/docs/mcp/quickstart">
+    Get the Context Graph running in your MCP client in minutes
+  </Card>
+
   <Card title="Configuration" icon="gear" href="/docs/mcp/configuration">
     Self-hosted setup, transport modes, environment variables
   </Card>
@@ -122,7 +70,7 @@ They both write to the same underlying context graph, but through different inte
     All 7 tools and 4 resources your AI assistant can use
   </Card>
 
-  <Card title="Deploy" icon="cloud" href="/docs/mcp/deploy">
+  <Card title="Deploy" icon="cloud" href="/docs/mcp/configuration#deploy">
     Self-host on Railway or any cloud provider
   </Card>
 </CardGroup>

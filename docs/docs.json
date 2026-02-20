@@ -4,7 +4,7 @@
   "theme": "mint",
   "topbarCtaButton": {
     "name": "Get Started",
-    "url": "/docs/get_started"
+    "url": "/docs"
   },
   "logo": {
     "light": "/img/rippletide_logo_navy_text_bg.svg",
@@ -32,14 +32,13 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Welcome",
             "pages": [
-              "index",
-              "docs/get_started"
+              "index"
             ]
           },
           {
-            "group": "Evaluate your Agent",
+            "group": "Agent Evaluation",
             "expanded": false,
             "pages": [
               "docs/evaluation_overview",
@@ -52,13 +51,13 @@
             "expanded": false,
             "pages": [
               "docs/mcp/overview",
+              "docs/mcp/quickstart",
               "docs/mcp/configuration",
-              "docs/mcp/tools",
-              "docs/mcp/deploy"
+              "docs/mcp/tools"
             ]
           },
           {
-            "group": "Decision runtime",
+            "group": "Decision Runtime",
             "expanded": true,
             "pages": [
               {
