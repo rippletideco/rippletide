@@ -48,18 +48,6 @@
             ]
           },
           {
-            "group": "SDK",
-            "expanded": false,
-            "pages": [
-              "docs/hypergraph_overview",
-              "docs/agent_setup",
-              "docs/agent_chat",
-              "docs/Agent",
-              "docs/agent_api_reference",
-              "docs/agent_advanced"
-            ]
-          },
-          {
             "group": "Context Graph",
             "expanded": false,
             "pages": [
@@ -70,12 +58,31 @@
             ]
           },
           {
-            "group": "Trust Platform",
-            "expanded": false,
+            "group": "Decision runtime",
+            "expanded": true,
             "pages": [
-              "docs/trust-platform/overview",
+              {
+                "group": "SDK",
+                "expanded": false,
+                "pages": [
+                  "docs/hypergraph_overview",
+                  "docs/agent_setup",
+                  "docs/agent_chat",
+                  "docs/Agent",
+                  "docs/agent_api_reference",
+                  "docs/agent_advanced"
+                ]
+              },
+              {
+                "group": "Trust Platform",
+                "expanded": false,
+                "pages": [
+                  "docs/trust-platform/overview"
+                ]
+              },
               {
                 "group": "Integrations",
+                "expanded": false,
                 "pages": [
                   "docs/trust-platform/integrations/amazon-bedrock",
                   "docs/trust-platform/integrations/mcp"
