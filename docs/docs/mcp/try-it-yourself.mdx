@@ -1,53 +1,13 @@
 ---
-title: Overview
-description: Give your AI agents persistent memory with a context graph
+title: Try it yourself
+description: Test the Context Graph interactively
 ---
 
-## What is the Context Graph?
+## Interactive Playground
 
-The Context Graph is a persistent context graph that gives your AI agents memory across conversations. Without it, your agent forgets everything between sessions. With it, your agent can:
+Here is an interactive **live** playground where you can test the Context Graph from scratch. On the left, a standard agent without memory. On the right, the same agent with an **empty** live Context Graph.
 
-* **Remember** facts, decisions, preferences, and context across sessions
-* **Recall** past information by searching the context graph
-* **Relate** entities to each other (e.g. "John works at Acme Corp")
-* **Invalidate** outdated information when things change
-
-Each agent gets its own **isolated context graph**, so memories from one project don't leak into another.
-
-## When to use it
-
-* Your agent needs to recall past interactions or user preferences
-* You want structured knowledge (entities + relationships) instead of flat text
-* You need cross-session memory for coding assistants, support agents, or project tools
-* You want to plug memory into any MCP-compatible client (Cursor, Claude, VS Code)
-
-## How it works
-
-<Steps>
-  <Step title="Your AI assistant (Cursor, Claude, etc.)">
-    Calls tools like `remember`, `recall`, `relate` automatically during conversations.
-  </Step>
-
-  <Step title="MCP (Model Context Protocol)">
-    The open transport protocol that connects AI assistants to the Context Graph. Think of MCP as the pipe. The Context Graph is what flows through it.
-  </Step>
-
-  <Step title="Context Graph API">
-    Reads and writes to the agent's context graph.
-  </Step>
-
-  <Step title="Agent's Context Graph">
-    Stores entities, memories, and relations. Each agent gets its own isolated graph.
-  </Step>
-</Steps>
-
-You don't need to do anything. The assistant decides when to store or retrieve information based on context.
-
-## Example
-
-Here is an interactive **live** environment where you can test the comparison. On the left, a standard agent without memory. On the right, the same agent with a real Context Graph via the playground proxy.
-
-For this Overview demo, the right side is preloaded with **code best practices**. Try asking: "How should I format a React component?"
+Try teaching the agent on the right project facts, then ask it to recall them.
 
 <iframe
   width="100%"
@@ -217,7 +177,7 @@ For this Overview demo, the right side is preloaded with **code best practices**
 <body>
   <div class="container">
     <div class="header-bar">
-      <span>Demo ID: <span class="session-id" id="sessionIdDisplay">overview-preloaded</span></span>
+      <span>Demo ID: <span class="session-id" id="sessionIdDisplay">try-it-yourself-empty</span></span>
       <button class="refresh-btn" type="button" onclick="handleRefreshContext()">New Conversation</button>
     </div>
 
@@ -249,7 +209,7 @@ For this Overview demo, the right side is preloaded with **code best practices**
       <input
         type="text"
         id="chatInput"
-        placeholder="Type a message... (e.g. How should I format a React component?)"
+        placeholder="Type a message... (e.g. Remember that our stack is React and Tailwind)"
         oninput="toggleButton()"
         autocomplete="off"
       />
@@ -259,9 +219,9 @@ For this Overview demo, the right side is preloaded with **code best practices**
 
   <script>
     var API_BASE = 'https://playground-proxy-docs.vercel.app';
-    var MCP_AGENT_CHAT_URL = 'https://agent-evalserver-production.up.railway.app/api/agents/51e43552-0cc3-4029-bc81-8e489e3d4235/chat';
-    var MCP_AGENT_ID = '51e43552-0cc3-4029-bc81-8e489e3d4235';
-    var DEMO_ID = 'overview-live-preloaded';
+    var DEMO_ID = 'try-it-yourself-live';
+    var DEMO_MODE = 'empty';
+    var PRELOADED_MEMORIES = [];
 
     var sessionId = '';
     var isLoading = false;
@@ -338,9 +298,7 @@ For this Overview demo, the right side is preloaded with **code best practices**
       return postJSON('/api/chat-playground/mcp', {
         message: message,
         sessionId: sessionId,
-        history: [],
-        chatAgentUrl: MCP_AGENT_CHAT_URL,
-        agentId: MCP_AGENT_ID
+        history: []
       });
     }
 
@@ -363,11 +321,23 @@ For this Overview demo, the right side is preloaded with **code best practices**
     }
 
     async function preloadMemories() {
+      if (DEMO_MODE !== 'preloaded') return;
+
       isBootstrapping = true;
       toggleButton();
-      addMessage('mcpBody', 'term-label', 'Using preloaded context from agent endpoint');
-      addMessage('mcpBody', 'term-tool', 'agent: ' + MCP_AGENT_ID);
-      addMessage('mcpBody', 'term-label', 'Ready: ask about React component formatting');
+      addMessage('mcpBody', 'term-label', 'Preloading context graph...');
+
+      for (var i = 0; i < PRELOADED_MEMORIES.length; i++) {
+        var rememberPrompt = 'Remember that ' + PRELOADED_MEMORIES[i];
+        try {
+          await callMcp(rememberPrompt);
+        } catch (error) {
+          addMessage('mcpBody', 'term-error', 'Preload failed: ' + error.message);
+          break;
+        }
+      }
+
+      addMessage('mcpBody', 'term-tool', 'bootstrap completed (' + PRELOADED_MEMORIES.length + ' remembers)');
       isBootstrapping = false;
       toggleButton();
     }
@@ -378,7 +348,7 @@ For this Overview demo, the right side is preloaded with **code best practices**
 
       document.getElementById('sessionIdDisplay').innerText = DEMO_ID + ' / ' + sessionId;
       addMessage('vanillaBody', 'term-label', 'No long-term memory (live call)');
-      addMessage('mcpBody', 'term-label', 'With live Context Graph memory');
+      addMessage('mcpBody', 'term-label', 'Context graph starts empty');
       await preloadMemories();
     }
 
@@ -438,23 +408,3 @@ For this Overview demo, the right side is preloaded with **code best practices**
 </body>
 </html>`}
 />
-
-## Next steps
-
-<CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/docs/mcp/quickstart">
-    Get the Context Graph running in your MCP client in minutes
-  </Card>
-
-  <Card title="Configuration" icon="gear" href="/docs/mcp/configuration">
-    Self-hosted setup, transport modes, environment variables
-  </Card>
-
-  <Card title="Tools & Resources" icon="wrench" href="/docs/mcp/tools">
-    All 7 tools and 4 resources your AI assistant can use
-  </Card>
-
-  <Card title="Try it yourself" icon="play" href="/docs/mcp/try-it-yourself">
-    Test the Context Graph interactively in our playground
-  </Card>
-</CardGroup>
