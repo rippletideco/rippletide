@@ -1,11 +1,11 @@
 ---
-title: 'Orchestration'
+title: 'Decision runtime'
 description: 'Build deterministic AI agents with the Rippletide hypergraph'
 ---
 
-## What is Orchestration?
+## What is Decision runtime?
 
-Orchestration is the third pillar of Rippletide. After you've [evaluated your agent](/docs/evaluation_overview) and set up a [Context Graph](/docs/mcp/overview) for persistent memory, orchestration lets you build agents that make **deterministic decisions** instead of probabilistic guesses.
+Decision runtime is the third pillar of Rippletide. After you've [evaluated your agent](/docs/evaluation_overview) and set up a [Context Graph](/docs/mcp/overview) for persistent memory, decision runtime lets you build agents that make **deterministic decisions** instead of probabilistic guesses.
 
 You structure your agent's knowledge as a **hypergraph** of Q&A pairs, tags, actions, and state transitions. The LLM handles language (understanding input, generating output), but all decisions are made by a deterministic reasoning engine.
 
@@ -20,7 +20,7 @@ You structure your agent's knowledge as a **hypergraph** of Q&A pairs, tags, act
 
 ## How it differs from RAG
 
-| | Traditional RAG | Rippletide Orchestration |
+| | Traditional RAG | Rippletide Decision runtime |
 |---|----------------|----------------------|
 | **Knowledge storage** | Unstructured text chunks in a vector DB | Structured Q&A pairs, tags, actions, and state transitions |
 | **Decision-making** | LLM generates answers probabilistically | Deterministic reasoning engine selects the best answer |
