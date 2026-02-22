@@ -212,5 +212,5 @@ Need help or found a bug?
 - **GitHub Issues**: [Report bugs](https://github.com/rippletideco/starter/issues)
 
 ---
+Built with ❤️ by the [Rippletide](https://rippletide.com) team
 
-Built with ❤️ by the Rippletide team
