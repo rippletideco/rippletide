@@ -125,15 +125,3 @@ Rippletide uses a hypergraph-based knowledge representation system:
 4. **Actions**: Functions that agents can perform
 5. **State Predicates**: Rules that govern agent behavior and state transitions
 6. **Guardrails**: Safety constraints that prevent inappropriate responses
-
-## Next Steps
-
-<CardGroup cols={2}>
-  <Card title="SDK API Reference" icon="code" href="/docs/agent_api_reference">
-    All SDK endpoints for agent, knowledge, action, guardrail, and chat management
-  </Card>
-
-  <Card title="Advanced Guide" icon="book" href="/docs/agent_advanced">
-    Configuration, state management, LangChain integration, complete examples, and best practices
-  </Card>
-</CardGroup>
