@@ -8,7 +8,7 @@
 
 
 <p align="center">
-  <a href="https://eval.rippletide.com">Web Platform</a>
+  <a href="https://trust.rippletide.com">Web Platform</a>
   ·
   <a href="https://github.com/rippletideco/starter">GitHub</a>
   ·
