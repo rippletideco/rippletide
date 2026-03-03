@@ -34,7 +34,7 @@ type Step =
   | 'complete';
 
 const knowledgeSources = [
-  { label: 'Local Files (qanda.json)', value: 'files', description: 'Use qanda.json from current directory' },
+  { label: 'Local Files (qanda.json)', value: 'files', description: 'Use a question-answer file (qanda.json) from the current directory' },
   { label: 'PDF Document', value: 'pdf', description: 'Upload and extract knowledge from a PDF file' },
   { label: 'Pinecone', value: 'pinecone', description: 'Fetch Q&A from Pinecone database' },
   { label: 'PostgreSQL Database', value: 'postgresql', description: 'Connect to PostgreSQL database' },
@@ -844,6 +844,12 @@ export const App: React.FC<AppProps> = ({
             options={knowledgeSources}
             onSelect={handleSourceSelect}
           />
+          <Box marginTop={1} flexDirection="column">
+            <Text dimColor>Example qanda.json format:</Text>
+            <Box paddingLeft={2} flexDirection="column">
+              <Text dimColor>{`[ { "question": "What are your hours?", "answer": "Mon-Fri 9am-6pm" } ]`}</Text>
+            </Box>
+          </Box>
         </Box>
       )}
 
