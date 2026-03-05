@@ -162,15 +162,23 @@ video:focus-within {
   transition: none !important;
 }
 
-video + *,
-video ~ * {
-  pointer-events: none !important;
-}
 
 [class*="overlay"]:has(video),
 [class*="overlay"] video {
   opacity: 1 !important;
   filter: none !important;
   background: transparent !important;
+}
+
+/* Hide built-in prev/next footer navigation buttons */
+[class*="prev-next"],
+[class*="PrevNext"],
+[class*="pagination"],
+nav[aria-label="pagination"],
+nav[aria-label="Pagination"],
+.prev-next-nav,
+article + nav,
+main nav:last-child {
+  display: none !important;
 }
 

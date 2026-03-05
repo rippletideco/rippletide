@@ -1,0 +1,61 @@
+---
+title: Overview
+description: Give your coding agents persistent memory for consistent conventions across sessions
+---
+
+## The problem
+
+Coding agents (Claude Code, Codex, Cursor) each have their own way to persist context — `CLAUDE.md`, `.cursorrules`, local memory files. But these mechanisms have two limits:
+
+1. **They don't scale in size.** Local files like `CLAUDE.md` are injected into the system prompt, which means they eat into the context window. The more rules you add, the less room the agent has to work. The Context Graph stores knowledge externally and the agent queries only what it needs via `recall` and `get_context`.
+
+2. **They're siloed per engineer.** When one engineer defines coding rules in their agent, the rest of the team never sees them. Scale that to 10 engineers running parallel agents, and you get 10 diverging sets of conventions. Each agent "remembers," but none of them share.
+
+## How the Context Graph fixes this
+
+The [Context Graph](/docs/mcp/overview) gives your coding agents persistent, structured memory. Instead of re-explaining your conventions every session, you store them once in the graph. Every agent session reads from the same source of truth.
+
+The graph stores your engineering standards as entities and relations:
+
+- **Naming conventions** — `camelCase` for variables, `PascalCase` for components, `UPPER_SNAKE_CASE` for constants
+- **Architectural patterns** — where to put hooks, how to structure API routes, which state management to use
+- **Design system rules** — approved components, spacing tokens, color usage
+- **Error handling policies** — how to handle API failures, logging standards, retry strategies
+
+When a coding agent starts a session, it pulls this context automatically via MCP tools like `recall` and `get_context`. No copy-pasting. No "remember to add this to the system prompt."
+
+## Supported coding agents
+
+The `connect` command generates configs for:
+
+| Agent | Config file | Format |
+|-------|------------|--------|
+| **Claude Code** | `.mcp.json` | JSON — `mcpServers` object |
+| **Cursor** | `.mcp.json` | JSON — same file, same format |
+| **Codex** | `.codex/config.toml` | TOML — `[mcp_servers]` table |
+
+All three read from the same Context Graph endpoint. The conventions are defined once and consumed everywhere.
+
+## Demo
+
+<video
+  autoPlay
+  muted
+  loop
+  playsInline
+  style={{ width: '100%', borderRadius: '10px' }}
+  src="/img/coding-agents-demo.mp4"
+/>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Connect" icon="plug" href="/docs/coding-agents/connect">
+    Wire up your coding agent to a Context Graph in one command
+  </Card>
+
+  <Card title="Team Governance" icon="users" href="/docs/coding-agents/team-governance">
+    Scale conventions across engineers and repositories
+  </Card>
+</CardGroup>
+

@@ -58,6 +58,15 @@
             ]
           },
           {
+            "group": "Coding Agents",
+            "expanded": false,
+            "pages": [
+              "docs/coding-agents/overview",
+              "docs/coding-agents/connect",
+              "docs/coding-agents/team-governance"
+            ]
+          },
+          {
             "group": "Decision Runtime",
             "expanded": true,
             "pages": [
