@@ -48,22 +48,22 @@
           },
           {
             "group": "Context Graph",
-            "expanded": false,
+            "expanded": true,
             "pages": [
               "docs/mcp/overview",
               "docs/mcp/quickstart",
               "docs/mcp/configuration",
               "docs/mcp/tools",
-              "docs/mcp/try-it-yourself"
-            ]
-          },
-          {
-            "group": "Coding Agents",
-            "expanded": false,
-            "pages": [
-              "docs/coding-agents/overview",
-              "docs/coding-agents/connect",
-              "docs/coding-agents/team-governance"
+              "docs/mcp/try-it-yourself",
+              {
+                "group": "Coding Agents (Use case)",
+                "expanded": false,
+                "pages": [
+                  "docs/coding-agents/overview",
+                  "docs/coding-agents/connect",
+                  "docs/coding-agents/team-governance"
+                ]
+              }
             ]
           },
           {
