@@ -1,0 +1,12 @@
+{
+  "name": "rippletide-mcp-darwin-x64",
+  "version": "0.1.6",
+  "description": "Rippletide MCP binary for macOS Intel",
+  "os": ["darwin"],
+  "cpu": ["x64"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rippletide/setup_MCP"
+  }
+}

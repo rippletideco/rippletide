@@ -1,0 +1,103 @@
+name: Release Coding Agent
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  WORKING_DIR: context-graph/examples/coding-agent
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            npm-pkg: rippletide-mcp-darwin-arm64
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            npm-pkg: rippletide-mcp-darwin-x64
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            npm-pkg: rippletide-mcp-linux-x64
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            npm-pkg: rippletide-mcp-win32-x64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build
+        working-directory: ${{ env.WORKING_DIR }}
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Copy binary to npm package (Unix)
+        if: runner.os != 'Windows'
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          cp target/${{ matrix.target }}/release/rippletide-cli npm/${{ matrix.npm-pkg }}/rippletide-mcp
+
+      - name: Copy binary to npm package (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          copy target\${{ matrix.target }}\release\rippletide-cli.exe npm\${{ matrix.npm-pkg }}\rippletide-mcp.exe
+        shell: cmd
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.npm-pkg }}
+          path: ${{ env.WORKING_DIR }}/npm/${{ matrix.npm-pkg }}/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Copy artifacts into npm packages
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64; do
+            cp -r $GITHUB_WORKSPACE/artifacts/$pkg/* npm/$pkg/
+            chmod +x npm/$pkg/rippletide-mcp
+          done
+          cp -r $GITHUB_WORKSPACE/artifacts/rippletide-mcp-win32-x64/* npm/rippletide-mcp-win32-x64/
+
+      - name: Publish platform packages
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64 rippletide-mcp-win32-x64; do
+            npm publish npm/$pkg/ --access public
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish main package
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npm publish npm/rippletide-mcp/ --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
