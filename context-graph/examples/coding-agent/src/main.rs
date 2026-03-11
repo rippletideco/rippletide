@@ -17,9 +17,9 @@ struct Cli {
 
 #[derive(clap::Subcommand)]
 enum Commands {
-    /// Connect and configure MCP
+    /// Connect and configure the project files
     Connect {
-        /// Enable read-only mode for the MCP connection
+        /// Reserved for backward compatibility
         #[arg(long)]
         read_only: bool,
     },
@@ -28,10 +28,8 @@ enum Commands {
 }
 
 const LOCAL_API_URL: &str = "http://localhost:3000";
-const LOCAL_MCP_BASE: &str = "http://localhost:3000/mcp";
 
 const PROD_API_URL: &str = "https://dashboard-rippletide.up.railway.app/coding-agent";
-const PROD_MCP_BASE: &str = "https://mcp.rippletide.com/mcp";
 
 const SIGN_UP_PATH: &str = "/api/auth/sign-up/email";
 const UPLOAD_URL: &str = "https://coding-agent-staging.up.railway.app/upload";
@@ -76,13 +74,6 @@ impl Config {
         match self.environment {
             Environment::Local => LOCAL_API_URL,
             Environment::Production => PROD_API_URL,
-        }
-    }
-
-    fn mcp_base_url(&self) -> &str {
-        match self.environment {
-            Environment::Local => LOCAL_MCP_BASE,
-            Environment::Production => PROD_MCP_BASE,
         }
     }
 }
@@ -331,110 +322,11 @@ fn build_agent_instructions() -> String {
 fn ensure_agent_files() -> io::Result<u8> {
     let cwd = std::env::current_dir()?;
     let content = build_agent_instructions();
-    let mut changed = 0u8;
     for name in ["AGENTS.md", "CLAUDE.md"] {
         let path = cwd.join(name);
-        let needs_write = if path.exists() {
-            let existing = fs::read_to_string(&path)?;
-            existing != content
-        } else {
-            true
-        };
-        if needs_write {
-            fs::write(&path, &content)?;
-            changed += 1;
-        }
+        fs::write(&path, &content)?;
     }
-    Ok(changed)
-}
-
-fn ensure_mcp_config(mcp_base: &str, read_only: bool) -> io::Result<bool> {
-    let mcp_path = std::env::current_dir()?.join(".mcp.json");
-    let expected_url = if read_only {
-        format!("{mcp_base}?read_only=true")
-    } else {
-        mcp_base.to_string()
-    };
-
-    let mut root = if mcp_path.exists() {
-        let content = fs::read_to_string(&mcp_path)?;
-        serde_json::from_str::<serde_json::Value>(&content)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
-    } else {
-        serde_json::json!({ "mcpServers": {} })
-    };
-
-    let servers = root
-        .as_object_mut()
-        .and_then(|o| o.entry("mcpServers").or_insert_with(|| serde_json::json!({})).as_object_mut())
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "mcpServers is not an object"))?;
-
-    if let Some(existing) = servers.get("rippletide-kg") {
-        if existing.get("url").and_then(|v| v.as_str()) == Some(&expected_url) {
-            return Ok(false);
-        }
-    }
-
-    servers.insert(
-        "rippletide-kg".into(),
-        serde_json::json!({
-            "type": "http",
-            "url": expected_url,
-        }),
-    );
-
-    let json = serde_json::to_string_pretty(&root)
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-    fs::write(&mcp_path, json)?;
-    Ok(true)
-}
-
-fn ensure_codex_config(mcp_base: &str, read_only: bool) -> io::Result<bool> {
-    let codex_dir = std::env::current_dir()?.join(".codex");
-    let codex_path = codex_dir.join("config.toml");
-    let expected_url = if read_only {
-        format!("{mcp_base}?read_only=true")
-    } else {
-        mcp_base.to_string()
-    };
-
-    let mut root: toml::Value = if codex_path.exists() {
-        let content = fs::read_to_string(&codex_path)?;
-        content
-            .parse::<toml::Value>()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
-    } else {
-        toml::Value::Table(toml::map::Map::new())
-    };
-
-    let table = root
-        .as_table_mut()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "root is not a table"))?;
-
-    let servers = table
-        .entry("mcp_servers")
-        .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
-        .as_table_mut()
-        .ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidData, "mcp_servers is not a table")
-        })?;
-
-    if let Some(existing) = servers.get("rippletide-kg") {
-        if existing.get("url").and_then(|v| v.as_str()) == Some(&expected_url) {
-            return Ok(false);
-        }
-    }
-
-    let mut entry = toml::map::Map::new();
-    entry.insert("type".into(), toml::Value::String("http".into()));
-    entry.insert("url".into(), toml::Value::String(expected_url));
-    servers.insert("rippletide-kg".into(), toml::Value::Table(entry));
-
-    fs::create_dir_all(&codex_dir)?;
-    let toml_str =
-        toml::to_string_pretty(&root).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-    fs::write(&codex_path, toml_str)?;
-    Ok(true)
+    Ok(2)
 }
 
 const HOOK_SCRIPT: &str = r#"#!/bin/bash
@@ -546,21 +438,7 @@ fn agent_files_exist() -> bool {
     cwd.join("AGENTS.md").exists() && cwd.join("CLAUDE.md").exists()
 }
 
-fn configure_all(config: &Config, read_only: bool) {
-    let mcp_base = config.mcp_base_url();
-
-    match ensure_mcp_config(mcp_base, read_only) {
-        Ok(true) => println!("  [+] .mcp.json created"),
-        Ok(false) => println!("  [=] .mcp.json already up to date"),
-        Err(e) => eprintln!("  [!] .mcp.json error: {e}"),
-    }
-
-    match ensure_codex_config(mcp_base, read_only) {
-        Ok(true) => println!("  [+] .codex/config.toml created"),
-        Ok(false) => println!("  [=] .codex/config.toml already up to date"),
-        Err(e) => eprintln!("  [!] .codex/config.toml error: {e}"),
-    }
-
+fn configure_all() {
     match ensure_agent_files() {
         Ok(0) => println!("  [=] AGENTS.md / CLAUDE.md already up to date"),
         Ok(n) => println!("  [+] {n} agent file(s) created"),
@@ -829,7 +707,7 @@ fn main() -> io::Result<()> {
         return logout();
     }
 
-    let read_only = match &cli.command {
+    let _read_only = match &cli.command {
         Some(Commands::Connect { read_only }) => *read_only,
         None => false,
         _ => unreachable!(),
@@ -858,7 +736,7 @@ fn main() -> io::Result<()> {
             println!();
             login(&mut config)?;
             println!();
-            configure_all(&config, read_only);
+            configure_all();
             if let Some(ref uid) = config.user_id {
                 println!();
                 upload_sessions(uid)?;
@@ -868,11 +746,11 @@ fn main() -> io::Result<()> {
             println!("  Logged in as: {}", config.email.as_deref().unwrap_or("?"));
             println!("  Agent files missing — creating...");
             println!();
-            configure_all(&config, read_only);
+            configure_all();
         }
         (true, true) => {
             println!("  Good to go!");
-            configure_all(&config, read_only);
+            configure_all();
         }
     }
 
