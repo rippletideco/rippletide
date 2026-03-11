@@ -1,6 +1,6 @@
 {
   "name": "rippletide-mcp-darwin-x64",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Rippletide MCP binary for macOS Intel",
   "os": ["darwin"],
   "cpu": ["x64"],

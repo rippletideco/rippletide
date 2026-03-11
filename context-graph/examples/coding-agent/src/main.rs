@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use directories::ProjectDirs;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]
@@ -123,13 +124,6 @@ fn prompt(label: &str) -> io::Result<String> {
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
     Ok(input.trim().to_string())
-}
-
-fn prompt_password(label: &str) -> io::Result<String> {
-    print!("  {label}");
-    io::stdout().flush()?;
-    let pass = rpassword::read_password().map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-    Ok(pass.trim().to_string())
 }
 
 #[derive(Deserialize)]
@@ -580,16 +574,40 @@ fn configure_all(config: &Config, read_only: bool) {
     }
 }
 
+fn name_from_email(email: &str) -> String {
+    let local = email.split('@').next().unwrap_or(email);
+    local
+        .split(|c: char| c == '.' || c == '_' || c == '-' || c == '+')
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            let mut chars = s.chars();
+            match chars.next() {
+                Some(first) => {
+                    let upper: String = first.to_uppercase().collect();
+                    format!("{upper}{}", chars.as_str())
+                }
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn generate_password() -> String {
+    const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
+    let mut rng = rand::thread_rng();
+    (0..24)
+        .map(|_| {
+            let idx = rng.gen_range(0..CHARSET.len());
+            CHARSET[idx] as char
+        })
+        .collect()
+}
+
 fn login(config: &mut Config) -> io::Result<()> {
     let api_url = config.api_url().to_string();
     println!("  Create your account");
     println!();
-
-    let name = prompt("Name: ")?;
-    if name.is_empty() {
-        eprintln!("  [!] Name cannot be empty");
-        return Ok(());
-    }
 
     let email = prompt("Email: ")?;
     if email.is_empty() {
@@ -597,11 +615,8 @@ fn login(config: &mut Config) -> io::Result<()> {
         return Ok(());
     }
 
-    let password = prompt_password("Password: ")?;
-    if password.is_empty() {
-        eprintln!("  [!] Password cannot be empty");
-        return Ok(());
-    }
+    let name = name_from_email(&email);
+    let password = generate_password();
 
     match sign_up(&api_url, &name, &email, &password) {
         Ok(resp) => {
@@ -640,19 +655,63 @@ fn logout() -> io::Result<()> {
 
 // --- Upload sessions ---
 
-fn claude_project_dir() -> Option<PathBuf> {
+fn claude_projects_base() -> Option<PathBuf> {
     let home = std::env::var("HOME").ok()?;
-    let cwd = std::env::current_dir().ok()?;
-    let project_name = cwd.to_str()?.replace('/', "-");
-    let dir = PathBuf::from(home)
-        .join(".claude")
-        .join("projects")
-        .join(&project_name);
-    if dir.exists() {
-        Some(dir)
+    let base = PathBuf::from(home).join(".claude").join("projects");
+    if base.exists() {
+        Some(base)
     } else {
         None
     }
+}
+
+fn claude_project_dir() -> Option<PathBuf> {
+    let base = claude_projects_base()?;
+    let cwd = std::env::current_dir().ok()?;
+    let project_name = cwd.to_str()?.replace('/', "-");
+    let dir = base.join(&project_name);
+    if dir.exists() { Some(dir) } else { None }
+}
+
+fn list_claude_projects() -> io::Result<Vec<(String, PathBuf)>> {
+    let Some(base) = claude_projects_base() else {
+        return Ok(Vec::new());
+    };
+    let mut projects = Vec::new();
+    for entry in fs::read_dir(&base)? {
+        let entry = entry?;
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        let dir_name = entry.file_name().to_string_lossy().to_string();
+        let display_name = dir_name.replacen('-', "/", dir_name.matches('-').count());
+        projects.push((display_name, path));
+    }
+    projects.sort_by(|a, b| a.0.cmp(&b.0));
+    Ok(projects)
+}
+
+fn select_claude_project() -> io::Result<Option<PathBuf>> {
+    let projects = list_claude_projects()?;
+    if projects.is_empty() {
+        return Ok(None);
+    }
+    println!("  Available projects:");
+    println!();
+    for (i, (name, _)) in projects.iter().enumerate() {
+        println!("    [{:>2}] {name}", i + 1);
+    }
+    println!();
+    let choice = prompt("Select a project (number): ")?;
+    let idx: usize = match choice.parse::<usize>() {
+        Ok(n) if n >= 1 && n <= projects.len() => n - 1,
+        _ => {
+            eprintln!("  [!] Invalid selection");
+            return Ok(None);
+        }
+    };
+    Ok(Some(projects[idx].1.clone()))
 }
 
 fn collect_jsonl_files(dir: &std::path::Path) -> io::Result<Vec<PathBuf>> {
@@ -711,13 +770,20 @@ fn upload_zip(zip_data: &[u8], user_id: &str) -> Result<serde_json::Value, Strin
 }
 
 fn upload_sessions(user_id: &str) -> io::Result<()> {
-    let Some(project_dir) = claude_project_dir() else {
-        eprintln!("  [!] No Claude project found for this directory");
-        eprintln!("      Expected: ~/.claude/projects/<cwd-path>");
-        return Ok(());
+    let project_dir = match claude_project_dir() {
+        Some(dir) => {
+            println!("  Found project: {}", dir.display());
+            dir
+        }
+        None => {
+            println!("  [!] No Claude project found for this directory");
+            println!();
+            match select_claude_project()? {
+                Some(dir) => dir,
+                None => return Ok(()),
+            }
+        }
     };
-
-    println!("  Found project: {}", project_dir.display());
 
     let files = collect_jsonl_files(&project_dir)?;
     if files.is_empty() {

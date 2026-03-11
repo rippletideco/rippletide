@@ -1,6 +1,6 @@
 [package]
 name = "rippletide-cli"
-version = "0.1.0"
+version = "0.2.2"
 edition = "2021"
 
 [dependencies]
@@ -11,5 +11,5 @@ ureq = { version = "2", features = ["json"] }
 open = "5"
 toml = "0.8"
 clap = { version = "4", features = ["derive"] }
-rpassword = "5"
 zip = { version = "2", default-features = false, features = ["deflate"] }
+rand = "0.8"
