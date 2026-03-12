@@ -28,7 +28,7 @@ if [[ -z "$PAYLOAD" ]]; then
   exit 0
 fi
 
-RESPONSE=$(curl -s --max-time 180 -X POST "https://coding-agent.up.railway.app/query" \
+RESPONSE=$(curl -s --max-time 180 -X POST "https://coding-agent.up.railway.app/query-rules" \
   -H "Content-Type: application/json" \
   -H "X-User-Id: $USER_ID" \
   -d "$PAYLOAD" 2>/dev/null)

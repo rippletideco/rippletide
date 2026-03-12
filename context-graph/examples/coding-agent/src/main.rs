@@ -129,6 +129,23 @@ struct SignUpResponse {
     user: SignUpUser,
 }
 
+fn extract_session_cookie(resp: &ureq::Response) -> Option<String> {
+    for value in resp.all("set-cookie") {
+        // Cookie may be prefixed with __Secure- in production
+        let rest = value
+            .strip_prefix("__Secure-better-auth.session_token=")
+            .or_else(|| value.strip_prefix("better-auth.session_token="));
+        if let Some(rest) = rest {
+            // Take everything before the first ';'
+            let token = rest.split(';').next().unwrap_or(rest);
+            if !token.is_empty() {
+                return Some(token.to_string());
+            }
+        }
+    }
+    None
+}
+
 fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<SignUpResponse, String> {
     let url = format!("{}{}", api_url, SIGN_UP_PATH);
     let resp = ureq::post(&url)
@@ -138,9 +155,12 @@ fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<Sig
             "password": password,
         }))
         .map_err(|e| format!("Network error: {e}"))?;
-    let sign_up_resp: SignUpResponse = resp
+    let cookie = extract_session_cookie(&resp)
+        .ok_or_else(|| "No session cookie in response".to_string())?;
+    let mut sign_up_resp: SignUpResponse = resp
         .into_json()
         .map_err(|e| format!("Invalid response: {e}"))?;
+    sign_up_resp.token = cookie;
     Ok(sign_up_resp)
 }
 
@@ -379,7 +399,7 @@ fn name_from_email(email: &str) -> String {
 }
 
 fn generate_password() -> String {
-    const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
+    const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let mut rng = rand::thread_rng();
     (0..24)
         .map(|_| {
