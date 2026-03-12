@@ -2,6 +2,9 @@
 
 # Read hook input from stdin
 hook_input=$(cat)
+if [[ -z "${hook_input//[[:space:]]/}" ]]; then
+  exit 0
+fi
 
 # Read user_id from Rippletide config (macOS or Linux)
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
@@ -17,11 +20,18 @@ if [[ -z "$USER_ID" ]]; then
   exit 0
 fi
 
-# Query coding rules
-RESPONSE=$(curl -s --max-time 10 -X POST "https://coding-agent-staging.up.railway.app/query" \
+# Query coding rules for the current user request
+PAYLOAD=$(jq -Rn \
+  --arg query "$hook_input" \
+  '{query: $query, beam_width: 2, beam_max_depth: 8}' 2>/dev/null)
+if [[ -z "$PAYLOAD" ]]; then
+  exit 0
+fi
+
+RESPONSE=$(curl -s --max-time 180 -X POST "https://coding-agent.up.railway.app/query" \
   -H "Content-Type: application/json" \
   -H "X-User-Id: $USER_ID" \
-  -d '{"query":"What are all the coding rules and conventions?","beam_width":5,"beam_max_depth":8}' 2>/dev/null)
+  -d "$PAYLOAD" 2>/dev/null)
 
 ANSWER=$(echo "$RESPONSE" | jq -r '.answer // empty' 2>/dev/null)
 if [[ -z "$ANSWER" ]]; then

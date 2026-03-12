@@ -32,7 +32,7 @@ const LOCAL_API_URL: &str = "http://localhost:3000";
 const PROD_API_URL: &str = "https://dashboard-rippletide.up.railway.app/coding-agent";
 
 const SIGN_UP_PATH: &str = "/api/auth/sign-up/email";
-const UPLOAD_URL: &str = "https://coding-agent-staging.up.railway.app/upload";
+const UPLOAD_URL: &str = "https://coding-agent.up.railway.app/upload";
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -146,173 +146,72 @@ fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<Sig
 
 // --- CWD bootstrap helpers ---
 
-const AGENT_INSTRUCTIONS: &str = r#"# Coding Style -- Official Instructions
+const AGENT_INSTRUCTIONS: &str = r#"# Hook-First Planning Instructions
 
 ## Objective
 
-Define and systematically enforce the official coding style.
+Use the `UserPromptSubmit` hook as the first source of truth for coding
+rules and planning guidance.
 
-All memory and graph operations described below rely on the MCP
-**rippletide-kg** toolset.
+These instructions apply to both `AGENTS.md` and `CLAUDE.md`.
 
-These instructions define:
+## Hook-First Rule
 
--   When the coding style must be stored or updated
--   When it must be retrieved and enforced
+Before answering any request that may lead to planning, code generation,
+refactoring, architecture, or tests, you MUST first use the hook-injected
+context tagged `[Coding Rules from Rippletide]` when it is present.
 
-------------------------------------------------------------------------
+This requirement applies especially to plan mode requests such as:
 
-# 1. Storing or Updating the Coding Style
+- `/plan ...`
+- requests that ask for a step-by-step implementation plan
+- requests that ask what should be built before writing code
 
-## Trigger Condition
+## Required Behavior Before Plan Mode
 
-This section MUST be executed whenever a user:
+When the user enters a plan-style request, the assistant must treat the
+hook result as input that is processed before producing the plan.
 
--   Makes a comment about the coding style
--   Requests a modification of a rule
--   Adds a new coding constraint
--   Refines naming, architecture, typing, testing, or error-handling
-    preferences
--   Explicitly says something like:
-    -   "From now on, I want..."
-    -   "Change the way we handle..."
-    -   "Update my coding style to..."
+If hook rules are present:
 
-Any feedback impacting how code should be written must trigger this
-process.
+1. Begin the response by explicitly naming the rules being applied.
+2. Make the plan consistent with those rules.
+3. Keep the rules visible in the response so the user can see what drove
+   the plan.
 
-------------------------------------------------------------------------
+Use a direct format such as:
 
-## 1.1 Use `build_graph` for Batch Rule Creation
+`Applying rules: Rule A, Rule B, Rule C`
 
-When creating or updating the coding style with multiple rules, use
-`build_graph` to create all entities, relations, and memories in a
-single atomic call. This replaces the need to call `remember()` and
-`relate()` multiple times.
+If the hook returns no rules, say so explicitly before continuing:
 
-Example — creating the style entity, 4 rules, and their relations in
-one shot:
+`Applying rules: none returned by hook`
 
-``` json
-build_graph({
-  "entities": [
-    { "name": "CodingStyle_SokMoul_v1", "type": "Concept", "attributes": { "kind": "coding_style", "description": "Official coding style (v1)" } },
-    { "name": "Rule_01_Typing", "type": "Concept", "attributes": { "kind": "coding_rule", "rule": "Always use explicit typing (TypeScript/Python), no implicit any" } },
-    { "name": "Rule_02_ShortFunctions", "type": "Concept", "attributes": { "kind": "coding_rule", "rule": "Functions must not exceed 30 lines; otherwise extract helpers" } },
-    { "name": "Rule_03_Naming", "type": "Concept", "attributes": { "kind": "coding_rule", "rule": "camelCase for variables/functions, PascalCase for classes/types, UPPER_SNAKE_CASE for constants" } },
-    { "name": "Rule_04_ErrorHandling", "type": "Concept", "attributes": { "kind": "coding_rule", "rule": "Proper error handling: never silently swallow errors; use typed errors or controlled exceptions" } }
-  ],
-  "relations": [
-    { "source": "CodingStyle_SokMoul_v1", "target": "Rule_01_Typing", "relation_type": "has" },
-    { "source": "CodingStyle_SokMoul_v1", "target": "Rule_02_ShortFunctions", "relation_type": "has" },
-    { "source": "CodingStyle_SokMoul_v1", "target": "Rule_03_Naming", "relation_type": "has" },
-    { "source": "CodingStyle_SokMoul_v1", "target": "Rule_04_ErrorHandling", "relation_type": "has" }
-  ],
-  "memories": [
-    { "content": "Official coding style (v1) with typing, function size, naming, and error handling rules", "category": "fact", "entity_names": ["CodingStyle_SokMoul_v1"] }
-  ]
-})
-```
+## Required Behavior Before Code Generation
 
-If the style entity already exists, do NOT recreate it. Only add new
-rules and relations.
+Before generating code, examples, patches, refactors, or tests:
 
-------------------------------------------------------------------------
+1. Read the hook-injected rules first.
+2. State which rules are being applied.
+3. Ensure the implementation follows those rules.
+4. If relevant, explain which rule changed the implementation or plan.
 
-## 1.2 Adding a Single Rule
+## Query Source
 
-For adding just one rule at a time, you can still use `build_graph`
-with a single entity and relation:
+The hook query should use the user's current request text, not a fixed
+prompt. For example, if the user submits:
 
-``` json
-build_graph({
-  "entities": [
-    { "name": "Rule_05_NewRule", "type": "Concept", "attributes": { "kind": "coding_rule", "rule": "Description of the new rule" } }
-  ],
-  "relations": [
-    { "source": "CodingStyle_SokMoul_v1", "target": "Rule_05_NewRule", "relation_type": "has" }
-  ]
-})
-```
+`/plan write a hello world`
 
-------------------------------------------------------------------------
+then the hook query should contain that exact text as the request being
+evaluated.
 
-## 1.3 Invalidating a Rule
+## Enforcement
 
-If a rule becomes obsolete, mark it using:
+Do not produce planning or code output silently.
 
-``` json
-invalidate({
-  "memory_id": "<id of the rule memory>",
-  "reason": "Rule replaced or no longer applicable"
-})
-```
-
-------------------------------------------------------------------------
-
-## 1.4 Suggest the Dashboard After Any Rule Change
-
-After successfully storing, updating, or deleting a coding rule, you
-MUST inform the user that they can view and manage all their rules on
-the dashboard:
-
-> You can view all your coding rules on the Rippletide dashboard.
-
-This message must be displayed every time a rule is added, modified,
-or invalidated.
-
-------------------------------------------------------------------------
-
-# 2. Mandatory Retrieval Before Code Generation
-
-## Trigger Condition
-
-This section MUST be executed before:
-
--   Generating new code
--   Refactoring existing code
--   Providing implementation examples
--   Suggesting architectural patterns
--   Writing tests
--   Producing snippets or full modules
-
-No code-related output may be produced without first retrieving the
-coding style.
-
-------------------------------------------------------------------------
-
-## 2.1 Using Hook-Injected Rules
-
-A UserPromptSubmit hook automatically queries the Rippletide knowledge
-graph and injects coding rules into the conversation context via a
-system-reminder tagged `[Coding Rules from Rippletide]`.
-
-When you see this context:
-
-1.  **Acknowledge the rules** — begin your response by briefly listing
-    which coding rules you will apply (e.g. "Applying rules: Validate
-    Before Automating, Explicit Typing, ...").
-2.  **Comply with every rule** — the generated code MUST follow all
-    injected rules including naming conventions, structural constraints,
-    error-handling standards, and any other active rules.
-3.  If no rules are injected (hook missing or empty response), fall back
-    to `get_context` on the MCP:
-
-``` json
-get_context({
-  "entity": "CodingStyle_SokMoul_v1"
-})
-```
-
-------------------------------------------------------------------------
-
-## Enforcement Rule
-
-No code generation must occur without first checking for injected rules
-or retrieving them via the MCP.
-
-If the coding style is missing, incomplete, or inconsistent, it must be
-reconstructed before proceeding.
+Always make the active rules explicit first when responding to plan mode
+or code-related requests.
 "#;
 
 fn build_agent_instructions() -> String {
@@ -333,6 +232,9 @@ const HOOK_SCRIPT: &str = r#"#!/bin/bash
 
 # Read hook input from stdin
 hook_input=$(cat)
+if [[ -z "${hook_input//[[:space:]]/}" ]]; then
+  exit 0
+fi
 
 # Read user_id from Rippletide config (macOS or Linux)
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
@@ -348,11 +250,18 @@ if [[ -z "$USER_ID" ]]; then
   exit 0
 fi
 
-# Query coding rules
-RESPONSE=$(curl -s --max-time 10 -X POST "https://coding-agent-staging.up.railway.app/query" \
+# Query coding rules for the current user request
+PAYLOAD=$(jq -Rn \
+  --arg query "$hook_input" \
+  '{query: $query, beam_width: 2, beam_max_depth: 8}' 2>/dev/null)
+if [[ -z "$PAYLOAD" ]]; then
+  exit 0
+fi
+
+RESPONSE=$(curl -s --max-time 180 -X POST "https://coding-agent.up.railway.app/query-rules" \
   -H "Content-Type: application/json" \
   -H "X-User-Id: $USER_ID" \
-  -d '{"query":"What are all the coding rules and conventions?","beam_width":5,"beam_max_depth":8}' 2>/dev/null)
+  -d "$PAYLOAD" 2>/dev/null)
 
 ANSWER=$(echo "$RESPONSE" | jq -r '.answer // empty' 2>/dev/null)
 if [[ -z "$ANSWER" ]]; then
@@ -380,7 +289,7 @@ const CLAUDE_SETTINGS: &str = r#"{
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/fetch-rules.sh\"",
-            "timeout": 15
+            "timeout": 180
           }
         ]
       }
@@ -417,9 +326,7 @@ fn ensure_claude_hooks() -> io::Result<bool> {
 
     // Write settings.json
     let needs_settings = if settings_path.exists() {
-        let existing = fs::read_to_string(&settings_path)?;
-        // Check if hooks are already configured
-        !existing.contains("fetch-rules.sh")
+        fs::read_to_string(&settings_path)? != CLAUDE_SETTINGS
     } else {
         true
     };

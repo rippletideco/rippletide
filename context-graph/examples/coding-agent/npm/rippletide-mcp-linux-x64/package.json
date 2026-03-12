@@ -1,6 +1,6 @@
 {
   "name": "rippletide-mcp-linux-x64",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Rippletide MCP binary for Linux x64",
   "os": ["linux"],
   "cpu": ["x64"],
