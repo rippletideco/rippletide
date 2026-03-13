@@ -29,14 +29,14 @@ your-project/
 └── AGENTS.md              # Agent instructions (auto-generated)
 ```
 
-The `.mcp.json` points to the Rippletide MCP endpoint:
+The `.mcp.json` points to the Rippletide MCP endpoint with your agent ID:
 
 ```json
 {
   "mcpServers": {
-    "rippletide": {
+    "rippletide-kg": {
       "type": "http",
-      "url": "https://mcp.rippletide.com/mcp"
+      "url": "https://mcp.rippletide.com/mcp?agentId=<agent_id>"
     }
   }
 }
