@@ -1,9 +1,9 @@
 {
-  "name": "rippletide-mcp-darwin-x64",
+  "name": "rippletide-mcp-win32-arm64",
   "version": "0.3.2",
-  "description": "Rippletide MCP binary for macOS Intel",
-  "os": ["darwin"],
-  "cpu": ["x64"],
+  "description": "Rippletide MCP binary for Windows ARM64",
+  "os": ["win32"],
+  "cpu": ["arm64"],
   "license": "MIT",
   "repository": {
     "type": "git",

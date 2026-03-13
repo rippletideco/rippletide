@@ -12,16 +12,14 @@ Add this to your MCP client config:
   "mcpServers": {
     "rippletide": {
       "type": "url",
-      "url": "https://mcp.rippletide.com/mcp?agentId=your-agent-id"
+      "url": "https://mcp.rippletide.com/mcp"
     }
   }
 }
 ```
 
-Replace `your-agent-id` with your agent ID from the [Rippletide platform](https://trust.rippletide.com).
-
 <Tip>
-  In the Rippletide playground, click the **terminal icon** in the header to get your Agent ID, MCP endpoint, and context instructions. Everything is copyable in one click.
+  In your agent's **Launch page** you can find everything you need to connect your agent — MCP endpoint, context instructions, and more.
 </Tip>
 
 For best results, add the [system prompt instructions](/docs/mcp/tools#system-prompt) to your agent's context so it knows when and how to use the tools.
@@ -44,9 +42,6 @@ For best results, add the [system prompt instructions](/docs/mcp/tools#system-pr
 
 That's it. Your AI assistant now has access to **7 tools** and **4 resources** for persistent memory.
 
-<Info>
-  You can find your agent ID in the **playground** (terminal icon in the header) or on the agent detail page in the [Rippletide platform](https://trust.rippletide.com). Each agent gets its own isolated context graph.
-</Info>
 
 ## Next steps
 

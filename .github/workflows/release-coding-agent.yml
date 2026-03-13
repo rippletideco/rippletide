@@ -28,11 +28,23 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             npm-pkg: rippletide-mcp-win32-x64
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            npm-pkg: rippletide-mcp-win32-arm64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            npm-pkg: rippletide-mcp-linux-arm64
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install cross-compilation tools (Linux ARM64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -42,6 +54,8 @@ jobs:
       - name: Build
         working-directory: ${{ env.WORKING_DIR }}
         run: cargo build --release --target ${{ matrix.target }}
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && 'aarch64-linux-gnu-gcc' || '' }}
 
       - name: Copy binary to npm package (Unix)
         if: runner.os != 'Windows'
@@ -81,16 +95,17 @@ jobs:
       - name: Copy artifacts into npm packages
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64; do
+          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64 rippletide-mcp-linux-arm64; do
             cp -r $GITHUB_WORKSPACE/artifacts/$pkg/* npm/$pkg/
             chmod +x npm/$pkg/rippletide-mcp
           done
           cp -r $GITHUB_WORKSPACE/artifacts/rippletide-mcp-win32-x64/* npm/rippletide-mcp-win32-x64/
+          cp -r $GITHUB_WORKSPACE/artifacts/rippletide-mcp-win32-arm64/* npm/rippletide-mcp-win32-arm64/
 
       - name: Publish platform packages
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64 rippletide-mcp-win32-x64; do
+          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64 rippletide-mcp-linux-arm64 rippletide-mcp-win32-x64 rippletide-mcp-win32-arm64; do
             npm publish npm/$pkg/ --access public
           done
         env:

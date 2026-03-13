@@ -1,5 +1,10 @@
+mod rules;
+mod scan;
+mod ui;
+
 use std::fs;
 use std::io;
+use std::io::Write;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
@@ -9,12 +14,8 @@ use directories::ProjectDirs;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-mod rules;
-mod scan;
-mod ui;
-
 #[derive(Parser)]
-#[command(name = "rippletide", about = "Rippletide MCP")]
+#[command(name = "rippletide", about = "Rippletide CLI")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -27,6 +28,9 @@ enum Commands {
         /// Reserved for backward compatibility
         #[arg(long)]
         read_only: bool,
+        /// Use an existing Rippletide agent id (skips account onboarding)
+        #[arg(long)]
+        agent_id: Option<String>,
     },
     /// Log out and remove stored credentials
     Logout,
@@ -65,6 +69,7 @@ impl std::fmt::Display for Environment {
 struct Config {
     user_id: Option<String>,
     session_token: Option<String>,
+    agent_id: Option<String>,
     email: Option<String>,
     api_url: Option<String>,
     #[serde(default)]
@@ -113,6 +118,14 @@ fn save_config(config: &Config) -> io::Result<()> {
 }
 
 // --- Email auth ---
+
+fn prompt(label: &str) -> io::Result<String> {
+    print!("  {label}");
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    Ok(input.trim().to_string())
+}
 
 #[derive(Deserialize)]
 struct SignUpUser {
@@ -233,23 +246,14 @@ fn build_agent_instructions() -> String {
     AGENT_INSTRUCTIONS.to_string()
 }
 
-fn ensure_agent_files() -> io::Result<bool> {
+fn ensure_agent_files() -> io::Result<u8> {
     let cwd = std::env::current_dir()?;
     let content = build_agent_instructions();
-    let mut changed = false;
     for name in ["AGENTS.md", "CLAUDE.md"] {
         let path = cwd.join(name);
-        let needs_write = if path.exists() {
-            fs::read_to_string(&path)? != content
-        } else {
-            true
-        };
-        if needs_write {
-            fs::write(&path, &content)?;
-            changed = true;
-        }
+        fs::write(&path, &content)?;
     }
-    Ok(changed)
+    Ok(2)
 }
 
 const HOOK_SCRIPT: &str = r#"#!/bin/bash
@@ -332,6 +336,7 @@ fn ensure_claude_hooks() -> io::Result<bool> {
 
     let mut changed = false;
 
+    // Write hook script
     let needs_script = if script_path.exists() {
         fs::read_to_string(&script_path)? != HOOK_SCRIPT
     } else {
@@ -347,6 +352,7 @@ fn ensure_claude_hooks() -> io::Result<bool> {
         changed = true;
     }
 
+    // Write settings.json
     let needs_settings = if settings_path.exists() {
         fs::read_to_string(&settings_path)? != CLAUDE_SETTINGS
     } else {
@@ -360,25 +366,12 @@ fn ensure_claude_hooks() -> io::Result<bool> {
     Ok(changed)
 }
 
-struct ConfigureResult {
-    agents_error: Option<String>,
-    hooks_error: Option<String>,
-}
-
-fn configure_all() -> ConfigureResult {
-    let agents_error = match ensure_agent_files() {
-        Ok(_) => None,
-        Err(e) => Some(format!("{e}")),
-    };
-
-    let hooks_error = match ensure_claude_hooks() {
-        Ok(_) => None,
-        Err(e) => Some(format!("{e}")),
-    };
-
-    ConfigureResult {
-        agents_error,
-        hooks_error,
+fn configure_all() {
+    if let Err(e) = ensure_agent_files() {
+        ui::print_error(&format!("Agent files error: {e}"));
+    }
+    if let Err(e) = ensure_claude_hooks() {
+        ui::print_error(&format!(".claude/hooks error: {e}"));
     }
 }
 
@@ -402,7 +395,7 @@ fn name_from_email(email: &str) -> String {
 }
 
 fn generate_password() -> String {
-    const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
     let mut rng = rand::thread_rng();
     (0..24)
         .map(|_| {
@@ -414,16 +407,18 @@ fn generate_password() -> String {
 
 struct LoginResult {
     success: bool,
+    dashboard_url: Option<String>,
 }
 
 fn login(config: &mut Config) -> io::Result<LoginResult> {
     let api_url = config.api_url().to_string();
+    println!("  Create your account");
+    println!();
 
-    println!("  Enter your email to create your workspace");
-    let email = ui::styled_prompt("")?;
+    let email = prompt("Email: ")?;
     if email.is_empty() {
         ui::print_error("Email cannot be empty");
-        return Ok(LoginResult { success: false });
+        return Ok(LoginResult { success: false, dashboard_url: None });
     }
 
     let name = name_from_email(&email);
@@ -432,6 +427,7 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
     match sign_up(&api_url, &name, &email, &password) {
         Ok(resp) => {
             config.user_id = Some(resp.user.id);
+            config.agent_id = config.user_id.clone();
             config.email = Some(resp.user.email);
             let dashboard_url = format!(
                 "https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
@@ -443,27 +439,25 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
             ui::print_success("Workspace created");
             thread::sleep(Duration::from_millis(150));
             ui::print_success("MCP endpoint reserved");
-            println!();
-            ui::print_sub(&format!("Dashboard: {dashboard_url}"));
-            Ok(LoginResult { success: true })
+            Ok(LoginResult { success: true, dashboard_url: Some(dashboard_url) })
         }
         Err(e) => {
             ui::print_error(&e);
-            Ok(LoginResult { success: false })
+            Ok(LoginResult { success: false, dashboard_url: None })
         }
     }
 }
 
 fn logout() -> io::Result<()> {
     let Some(path) = config_path() else {
-        ui::print_error("Cannot determine config directory");
+        println!("  [!] Cannot determine config directory");
         return Ok(());
     };
     if path.exists() {
         fs::remove_file(&path)?;
-        ui::print_success("Logged out — credentials removed");
+        println!("  [+] Logged out — credentials removed");
     } else {
-        ui::print_success("Already logged out (no config found)");
+        println!("  [=] Already logged out (no config found)");
     }
     Ok(())
 }
@@ -518,11 +512,11 @@ fn select_claude_project() -> io::Result<Option<PathBuf>> {
         println!("    [{:>2}] {name}", i + 1);
     }
     println!();
-    let choice = ui::styled_prompt("Select a project (number): ")?;
+    let choice = prompt("Select a project (number): ")?;
     let idx: usize = match choice.parse::<usize>() {
         Ok(n) if n >= 1 && n <= projects.len() => n - 1,
         _ => {
-            ui::print_error("Invalid selection");
+            eprintln!("  [!] Invalid selection");
             return Ok(None);
         }
     };
@@ -608,18 +602,8 @@ fn upload_sessions(user_id: &str) -> io::Result<()> {
     match upload_zip(&zip_data, user_id) {
         Ok(resp) => {
             ui::finish_spinner(&sp, "Sessions uploaded");
-            if let Ok(pretty) = serde_json::to_string_pretty(&resp) {
-                ui::print_sub("Upload API response:");
-                for line in pretty.lines() {
-                    ui::print_sub(line);
-                }
-            }
-            println!();
-            if let Some(n) = resp.get("messages_extracted").and_then(|v| v.as_u64()) {
-                ui::print_sub(&format!("Messages extracted: {n}"));
-            }
-            if let Some(n) = resp.get("graph_node_count").and_then(|v| v.as_u64()) {
-                ui::print_sub(&format!("Graph nodes: {n}"));
+            if let Some(msg) = resp.get("message").and_then(|v| v.as_str()) {
+                ui::print_sub(msg);
             }
             if let Some(summary) = resp.get("rules_summary").and_then(|v| v.as_str()) {
                 if !summary.is_empty() {
@@ -1280,19 +1264,7 @@ fn run_side_by_side_checks(
 }
 
 fn run_configure_phase() {
-    let result = configure_all();
-
-    match result.agents_error {
-        Some(e) => ui::print_error(&format!("Agent files error: {e}")),
-        None => ui::print_success("AGENTS.md configured"),
-    }
-
-    thread::sleep(Duration::from_millis(150));
-
-    match result.hooks_error {
-        Some(e) => ui::print_error(&format!(".claude/hooks error: {e}")),
-        None => ui::print_success(".claude/hooks configured"),
-    }
+    configure_all();
 }
 
 fn main() -> io::Result<()> {
@@ -1302,11 +1274,12 @@ fn main() -> io::Result<()> {
         return logout();
     }
 
-    let _read_only = match &cli.command {
-        Some(Commands::Connect { read_only }) => *read_only,
-        None => false,
+    let (read_only, explicit_agent_id) = match &cli.command {
+        Some(Commands::Connect { read_only, agent_id }) => (*read_only, agent_id.clone()),
+        None => (false, None),
         _ => unreachable!(),
     };
+    let _ = read_only;
 
     let mut config = load_config();
 
@@ -1318,21 +1291,46 @@ fn main() -> io::Result<()> {
         }
     }
 
+    println!();
+    println!("  Rippletide CLI");
+    println!();
+
+    if let Some(agent_id) = explicit_agent_id {
+        let trimmed = agent_id.trim();
+        if trimmed.is_empty() {
+            eprintln!("  [!] --agent-id cannot be empty");
+            return Ok(());
+        }
+        println!("  Using explicit agent id (account-free setup)");
+        println!();
+        config.user_id = Some(trimmed.to_string());
+        config.agent_id = Some(trimmed.to_string());
+        config.session_token = None;
+        save_config(&config)?;
+    }
+
     let cwd = std::env::current_dir()?;
+    let is_logged_in = config.session_token.is_some();
 
     // Phase 1 — Header
     ui::print_header("Rippletide MCP");
 
-    let is_logged_in = config.session_token.is_some();
-
     // Phase 2 — Auth (if not logged in)
-    if !is_logged_in {
+    let dashboard_url = if !is_logged_in {
         let login_result = login(&mut config)?;
         println!();
         if !login_result.success {
             return Ok(());
         }
-    }
+        login_result.dashboard_url
+    } else {
+        config.session_token.as_ref().map(|token| {
+            format!(
+                "https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
+                token
+            )
+        })
+    };
 
     // Phase 3 — Repository scan
     let scan_result = run_scan_phase(&cwd);
@@ -1369,12 +1367,17 @@ fn main() -> io::Result<()> {
     // Phase 7 — Configure files
     run_configure_phase();
 
-    // Phase 7 — Upload sessions (only on first login)
+    // Phase 8 — Upload sessions (only on first login)
     if !is_logged_in {
         if let Some(ref uid) = config.user_id {
             println!();
             upload_sessions(uid)?;
         }
+    }
+
+    if let Some(url) = &dashboard_url {
+        println!();
+        ui::print_sub(&format!("Dashboard: {url}"));
     }
 
     println!();
