@@ -1,6 +1,6 @@
 {
   "name": "rippletide-mcp-win32-arm64",
-  "version": "0.2.9",
+  "version": "0.3.0",
   "description": "Rippletide MCP binary for Windows ARM64",
   "os": ["win32"],
   "cpu": ["arm64"],
