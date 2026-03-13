@@ -8,6 +8,7 @@ const PLATFORMS = {
   "darwin-x64": "rippletide-mcp-darwin-x64",
   "linux-x64": "rippletide-mcp-linux-x64",
   "win32-x64": "rippletide-mcp-win32-x64",
+  "win32-arm64": "rippletide-mcp-win32-arm64",
 };
 
 const platformKey = `${process.platform}-${process.arch}`;
