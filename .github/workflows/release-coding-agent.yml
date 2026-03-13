@@ -28,6 +28,9 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             npm-pkg: rippletide-mcp-win32-x64
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            npm-pkg: rippletide-mcp-win32-arm64
 
     runs-on: ${{ matrix.os }}
 
@@ -86,11 +89,12 @@ jobs:
             chmod +x npm/$pkg/rippletide-mcp
           done
           cp -r $GITHUB_WORKSPACE/artifacts/rippletide-mcp-win32-x64/* npm/rippletide-mcp-win32-x64/
+          cp -r $GITHUB_WORKSPACE/artifacts/rippletide-mcp-win32-arm64/* npm/rippletide-mcp-win32-arm64/
 
       - name: Publish platform packages
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64 rippletide-mcp-win32-x64; do
+          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64 rippletide-mcp-win32-x64 rippletide-mcp-win32-arm64; do
             npm publish npm/$pkg/ --access public
           done
         env:
