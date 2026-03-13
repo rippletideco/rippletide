@@ -1,20 +1,15 @@
 use std::fs;
 use std::io;
+use std::io::Write;
 use std::path::PathBuf;
-use std::thread;
-use std::time::Duration;
 
 use clap::Parser;
 use directories::ProjectDirs;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-mod rules;
-mod scan;
-mod ui;
-
 #[derive(Parser)]
-#[command(name = "rippletide", about = "Rippletide MCP")]
+#[command(name = "rippletide", about = "Rippletide CLI")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -27,6 +22,9 @@ enum Commands {
         /// Reserved for backward compatibility
         #[arg(long)]
         read_only: bool,
+        /// Use an existing Rippletide agent id (skips account onboarding)
+        #[arg(long)]
+        agent_id: Option<String>,
     },
     /// Log out and remove stored credentials
     Logout,
@@ -35,6 +33,7 @@ enum Commands {
 const LOCAL_API_URL: &str = "http://localhost:3000";
 
 const PROD_API_URL: &str = "https://dashboard-rippletide.up.railway.app/coding-agent";
+const DEFAULT_MCP_URL: &str = "https://mcp.rippletide.com/mcp";
 
 const SIGN_UP_PATH: &str = "/api/auth/sign-up/email";
 const UPLOAD_URL: &str = "https://coding-agent.up.railway.app/upload";
@@ -65,6 +64,7 @@ impl std::fmt::Display for Environment {
 struct Config {
     user_id: Option<String>,
     session_token: Option<String>,
+    agent_id: Option<String>,
     email: Option<String>,
     api_url: Option<String>,
     #[serde(default)]
@@ -114,6 +114,14 @@ fn save_config(config: &Config) -> io::Result<()> {
 
 // --- Email auth ---
 
+fn prompt(label: &str) -> io::Result<String> {
+    print!("  {label}");
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    Ok(input.trim().to_string())
+}
+
 #[derive(Deserialize)]
 struct SignUpUser {
     id: String,
@@ -126,21 +134,6 @@ struct SignUpResponse {
     user: SignUpUser,
 }
 
-fn extract_session_cookie(resp: &ureq::Response) -> Option<String> {
-    for value in resp.all("set-cookie") {
-        let rest = value
-            .strip_prefix("__Secure-better-auth.session_token=")
-            .or_else(|| value.strip_prefix("better-auth.session_token="));
-        if let Some(rest) = rest {
-            let token = rest.split(';').next().unwrap_or(rest);
-            if !token.is_empty() {
-                return Some(token.to_string());
-            }
-        }
-    }
-    None
-}
-
 fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<SignUpResponse, String> {
     let url = format!("{}{}", api_url, SIGN_UP_PATH);
     let resp = ureq::post(&url)
@@ -150,12 +143,9 @@ fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<Sig
             "password": password,
         }))
         .map_err(|e| format!("Network error: {e}"))?;
-    let cookie = extract_session_cookie(&resp)
-        .ok_or_else(|| "No session cookie in response".to_string())?;
-    let mut sign_up_resp: SignUpResponse = resp
+    let sign_up_resp: SignUpResponse = resp
         .into_json()
         .map_err(|e| format!("Invalid response: {e}"))?;
-    sign_up_resp.token = cookie;
     Ok(sign_up_resp)
 }
 
@@ -233,23 +223,147 @@ fn build_agent_instructions() -> String {
     AGENT_INSTRUCTIONS.to_string()
 }
 
-fn ensure_agent_files() -> io::Result<bool> {
+fn ensure_agent_files() -> io::Result<u8> {
     let cwd = std::env::current_dir()?;
     let content = build_agent_instructions();
-    let mut changed = false;
     for name in ["AGENTS.md", "CLAUDE.md"] {
         let path = cwd.join(name);
-        let needs_write = if path.exists() {
-            fs::read_to_string(&path)? != content
-        } else {
-            true
-        };
-        if needs_write {
-            fs::write(&path, &content)?;
-            changed = true;
-        }
+        fs::write(&path, &content)?;
     }
+    Ok(2)
+}
+
+fn mcp_agent_endpoint(agent_id: &str) -> String {
+    format!("{DEFAULT_MCP_URL}?agentId={agent_id}")
+}
+
+fn ensure_json_mcp_config(path: &PathBuf, server_name: &str, server_value: serde_json::Value) -> io::Result<bool> {
+    let mut config = if path.exists() {
+        let existing = fs::read_to_string(path).unwrap_or_else(|_| "{}".to_string());
+        serde_json::from_str(&existing).unwrap_or_else(|_| serde_json::json!({}))
+    } else {
+        serde_json::json!({})
+    };
+
+    let original = config.clone();
+    if config.as_object_mut().is_none() {
+        config = serde_json::json!({});
+    }
+
+    let root_obj = config.as_object_mut().unwrap();
+    let servers = root_obj
+        .entry("mcpServers")
+        .or_insert_with(|| serde_json::json!({}));
+    if !servers.is_object() {
+        *servers = serde_json::json!({});
+    }
+
+    let servers_obj = servers.as_object_mut().unwrap();
+    servers_obj.insert(server_name.to_string(), server_value);
+
+    let changed = config != original;
+    if changed {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(path, serde_json::to_string_pretty(&config)?)?;
+    }
+
     Ok(changed)
+}
+
+fn ensure_dot_mcp_config(agent_id: &str) -> io::Result<bool> {
+    let cwd = std::env::current_dir()?;
+    let path = cwd.join(".mcp.json");
+    let endpoint = mcp_agent_endpoint(agent_id);
+    let server_value = serde_json::json!({
+        "type": "http",
+        "url": endpoint
+    });
+    ensure_json_mcp_config(&path, "rippletide", server_value)
+}
+
+fn ensure_codex_config(agent_id: &str) -> io::Result<bool> {
+    let cwd = std::env::current_dir()?;
+    let dir = cwd.join(".codex");
+    let path = dir.join("config.toml");
+    let endpoint = mcp_agent_endpoint(agent_id);
+
+    let mut content = if path.exists() {
+        let existing = fs::read_to_string(&path).unwrap_or_default();
+        existing.parse::<toml::Value>().unwrap_or_else(|_| toml::Value::Table(toml::Table::new()))
+    } else {
+        toml::Value::Table(toml::Table::new())
+    };
+
+    if content.as_table_mut().is_none() {
+        content = toml::Value::Table(toml::Table::new());
+    }
+
+    let original = content.clone();
+    {
+        let root = content.as_table_mut().unwrap();
+        let servers = root
+            .entry("mcp_servers".to_string())
+            .or_insert_with(|| toml::Value::Table(toml::Table::new()));
+        if servers.as_table_mut().is_none() {
+            *servers = toml::Value::Table(toml::Table::new());
+        }
+        let servers_table = servers.as_table_mut().unwrap();
+
+        let mut server = toml::Table::new();
+        server.insert("command".into(), toml::Value::String("npx".into()));
+        server.insert(
+            "args".into(),
+            toml::Value::Array(vec![
+                toml::Value::String("-y".into()),
+                toml::Value::String("mcp-remote".into()),
+                toml::Value::String(endpoint),
+            ]),
+        );
+        servers_table.insert("rippletide".into(), toml::Value::Table(server));
+    }
+
+    let changed = content != original;
+    if changed {
+        fs::create_dir_all(&dir)?;
+        fs::write(&path, content.to_string())?;
+    }
+
+    Ok(changed)
+}
+
+fn claude_desktop_config_path() -> Option<PathBuf> {
+    if cfg!(target_os = "macos") {
+        let home = std::env::var("HOME").ok()?;
+        return Some(PathBuf::from(home).join("Library/Application Support/Claude/claude_desktop_config.json"));
+    }
+
+    if cfg!(target_os = "windows") {
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            return Some(PathBuf::from(appdata).join("Claude\\claude_desktop_config.json"));
+        }
+        if let Ok(home) = std::env::var("USERPROFILE") {
+            return Some(PathBuf::from(home).join("AppData\\Roaming\\Claude\\claude_desktop_config.json"));
+        }
+        return None;
+    }
+
+    let home = std::env::var("HOME").ok()?;
+    Some(PathBuf::from(home).join(".config/Claude/claude_desktop_config.json"))
+}
+
+fn ensure_claude_desktop_config(agent_id: &str) -> io::Result<bool> {
+    let path = match claude_desktop_config_path() {
+        Some(p) => p,
+        None => return Ok(false),
+    };
+    let endpoint = mcp_agent_endpoint(agent_id);
+    let server_value = serde_json::json!({
+        "command": "npx",
+        "args": ["-y", "mcp-remote", endpoint]
+    });
+    ensure_json_mcp_config(&path, "rippletide", server_value)
 }
 
 const HOOK_SCRIPT: &str = r#"#!/bin/bash
@@ -332,6 +446,7 @@ fn ensure_claude_hooks() -> io::Result<bool> {
 
     let mut changed = false;
 
+    // Write hook script
     let needs_script = if script_path.exists() {
         fs::read_to_string(&script_path)? != HOOK_SCRIPT
     } else {
@@ -347,6 +462,7 @@ fn ensure_claude_hooks() -> io::Result<bool> {
         changed = true;
     }
 
+    // Write settings.json
     let needs_settings = if settings_path.exists() {
         fs::read_to_string(&settings_path)? != CLAUDE_SETTINGS
     } else {
@@ -360,25 +476,49 @@ fn ensure_claude_hooks() -> io::Result<bool> {
     Ok(changed)
 }
 
-struct ConfigureResult {
-    agents_error: Option<String>,
-    hooks_error: Option<String>,
+fn agent_files_exist() -> bool {
+    let Ok(cwd) = std::env::current_dir() else {
+        return false;
+    };
+    cwd.join("AGENTS.md").exists() && cwd.join("CLAUDE.md").exists()
 }
 
-fn configure_all() -> ConfigureResult {
-    let agents_error = match ensure_agent_files() {
-        Ok(_) => None,
-        Err(e) => Some(format!("{e}")),
+fn configure_all() {
+    configure_all_for_agent(None)
+}
+
+fn configure_all_for_agent(agent_id: Option<&str>) {
+    match ensure_agent_files() {
+        Ok(0) => println!("  [=] AGENTS.md / CLAUDE.md already up to date"),
+        Ok(n) => println!("  [+] {n} agent file(s) created"),
+        Err(e) => eprintln!("  [!] Agent files error: {e}"),
+    }
+
+    match ensure_claude_hooks() {
+        Ok(true) => println!("  [+] .claude/hooks configured"),
+        Ok(false) => println!("  [=] .claude/hooks already up to date"),
+        Err(e) => eprintln!("  [!] .claude/hooks error: {e}"),
+    }
+
+    let Some(agent_id) = agent_id else {
+        println!("  [=] Skipped MCP client config generation (agent id unavailable)");
+        return;
     };
 
-    let hooks_error = match ensure_claude_hooks() {
-        Ok(_) => None,
-        Err(e) => Some(format!("{e}")),
-    };
-
-    ConfigureResult {
-        agents_error,
-        hooks_error,
+    match ensure_dot_mcp_config(agent_id) {
+        Ok(true) => println!("  [+] .mcp.json configured"),
+        Ok(false) => println!("  [=] .mcp.json already up to date"),
+        Err(e) => eprintln!("  [!] .mcp.json error: {e}"),
+    }
+    match ensure_codex_config(agent_id) {
+        Ok(true) => println!("  [+] .codex/config.toml configured"),
+        Ok(false) => println!("  [=] .codex/config.toml already up to date"),
+        Err(e) => eprintln!("  [!] .codex/config.toml error: {e}"),
+    }
+    match ensure_claude_desktop_config(agent_id) {
+        Ok(true) => println!("  [+] Claude Desktop config configured"),
+        Ok(false) => println!("  [=] Claude Desktop config already up to date"),
+        Err(e) => eprintln!("  [!] Claude Desktop config error: {e}"),
     }
 }
 
@@ -402,7 +542,7 @@ fn name_from_email(email: &str) -> String {
 }
 
 fn generate_password() -> String {
-    const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
     let mut rng = rand::thread_rng();
     (0..24)
         .map(|_| {
@@ -412,19 +552,15 @@ fn generate_password() -> String {
         .collect()
 }
 
-struct LoginResult {
-    success: bool,
-    dashboard_url: Option<String>,
-}
-
-fn login(config: &mut Config) -> io::Result<LoginResult> {
+fn login(config: &mut Config) -> io::Result<()> {
     let api_url = config.api_url().to_string();
+    println!("  Create your account");
+    println!();
 
-    println!("  Enter your email to create your workspace");
-    let email = ui::styled_prompt("")?;
+    let email = prompt("Email: ")?;
     if email.is_empty() {
-        ui::print_error("Email cannot be empty");
-        return Ok(LoginResult { success: false, dashboard_url: None });
+        eprintln!("  [!] Email cannot be empty");
+        return Ok(());
     }
 
     let name = name_from_email(&email);
@@ -433,36 +569,35 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
     match sign_up(&api_url, &name, &email, &password) {
         Ok(resp) => {
             config.user_id = Some(resp.user.id);
+            config.agent_id = config.user_id.clone();
             config.email = Some(resp.user.email);
-            let dashboard_url = format!(
-                "https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
+            println!("  [+] Account created!");
+            println!();
+            println!(
+                "  Dashboard: https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
                 resp.token
             );
             config.session_token = Some(resp.token);
             save_config(config)?;
-            println!();
-            ui::print_success("Workspace created");
-            thread::sleep(Duration::from_millis(150));
-            ui::print_success("MCP endpoint reserved");
-            Ok(LoginResult { success: true, dashboard_url: Some(dashboard_url) })
         }
         Err(e) => {
-            ui::print_error(&e);
-            Ok(LoginResult { success: false, dashboard_url: None })
+            eprintln!("  [!] {e}");
         }
     }
+
+    Ok(())
 }
 
 fn logout() -> io::Result<()> {
     let Some(path) = config_path() else {
-        ui::print_error("Cannot determine config directory");
+        println!("  [!] Cannot determine config directory");
         return Ok(());
     };
     if path.exists() {
         fs::remove_file(&path)?;
-        ui::print_success("Logged out — credentials removed");
+        println!("  [+] Logged out — credentials removed");
     } else {
-        ui::print_success("Already logged out (no config found)");
+        println!("  [=] Already logged out (no config found)");
     }
     Ok(())
 }
@@ -517,11 +652,11 @@ fn select_claude_project() -> io::Result<Option<PathBuf>> {
         println!("    [{:>2}] {name}", i + 1);
     }
     println!();
-    let choice = ui::styled_prompt("Select a project (number): ")?;
+    let choice = prompt("Select a project (number): ")?;
     let idx: usize = match choice.parse::<usize>() {
         Ok(n) if n >= 1 && n <= projects.len() => n - 1,
         _ => {
-            ui::print_error("Invalid selection");
+            eprintln!("  [!] Invalid selection");
             return Ok(None);
         }
     };
@@ -585,9 +720,12 @@ fn upload_zip(zip_data: &[u8], user_id: &str) -> Result<serde_json::Value, Strin
 
 fn upload_sessions(user_id: &str) -> io::Result<()> {
     let project_dir = match claude_project_dir() {
-        Some(dir) => dir,
+        Some(dir) => {
+            println!("  Found project: {}", dir.display());
+            dir
+        }
         None => {
-            ui::print_sub("No Claude project found for this directory");
+            println!("  [!] No Claude project found for this directory");
             println!();
             match select_claude_project()? {
                 Some(dir) => dir,
@@ -598,98 +736,39 @@ fn upload_sessions(user_id: &str) -> io::Result<()> {
 
     let files = collect_jsonl_files(&project_dir)?;
     if files.is_empty() {
+        eprintln!("  [!] No .jsonl session files found");
         return Ok(());
     }
 
-    let sp = ui::start_spinner(&format!("Uploading {} session file(s)...", files.len()));
-    let zip_data = create_sessions_zip(&files, &project_dir)?;
+    println!("  Zipping {} session file(s)...", files.len());
+    let zip_data =
+        create_sessions_zip(&files, &project_dir)?;
+    println!("  Uploading ({:.1} KB)...", zip_data.len() as f64 / 1024.0);
 
     match upload_zip(&zip_data, user_id) {
         Ok(resp) => {
-            ui::finish_spinner(&sp, "Sessions uploaded");
+            println!("  [+] Upload successful!");
+            if let Some(msg) = resp.get("message").and_then(|v| v.as_str()) {
+                println!("      {msg}");
+            }
             if let Some(n) = resp.get("messages_extracted").and_then(|v| v.as_u64()) {
-                ui::print_sub(&format!("Messages extracted: {n}"));
+                println!("      Messages extracted: {n}");
+            }
+            if let Some(n) = resp.get("clauses_segmented").and_then(|v| v.as_u64()) {
+                println!("      Clauses segmented: {n}");
+            }
+            if let Some(n) = resp.get("buckets_induced").and_then(|v| v.as_u64()) {
+                println!("      Buckets induced: {n}");
             }
             if let Some(n) = resp.get("graph_node_count").and_then(|v| v.as_u64()) {
-                ui::print_sub(&format!("Graph nodes: {n}"));
+                println!("      Graph nodes: {n}");
             }
         }
         Err(e) => {
-            sp.finish_and_clear();
-            ui::print_error(&e);
+            eprintln!("  [!] {e}");
         }
     }
     Ok(())
-}
-
-fn run_scan_phase(cwd: &std::path::Path) -> scan::RepoScanResult {
-    let sp = ui::start_spinner("Analyzing current repository...");
-    let result = scan::scan_repo(cwd);
-    thread::sleep(Duration::from_millis(600));
-    ui::finish_spinner(&sp, "Scanning repository structure");
-    println!();
-
-    if result.has_claude_md {
-        ui::print_success("CLAUDE.md detected");
-    }
-    ui::print_success(&format!("{} source files", result.source_file_count));
-    ui::print_success(&format!("{} test files", result.test_file_count));
-    if result.mcp_tool_count > 0 {
-        ui::print_success(&format!("{} MCP tools", result.mcp_tool_count));
-    }
-
-    result
-}
-
-fn run_rules_phase(cwd: &std::path::Path) {
-    let sp = ui::start_spinner("Reading assistant instructions");
-    thread::sleep(Duration::from_millis(800));
-    ui::finish_spinner(&sp, "Reading assistant instructions");
-    println!();
-
-    ui::print_sub("Parsing CLAUDE.md");
-    thread::sleep(Duration::from_millis(300));
-    ui::print_sub("Extracting rules");
-    thread::sleep(Duration::from_millis(300));
-    ui::print_sub("Normalizing constraints");
-    thread::sleep(Duration::from_millis(300));
-    println!();
-
-    let count = rules::count_rules_in_claude_md(cwd);
-    ui::print_success(&format!("{count} explicit rules detected"));
-}
-
-fn run_conventions_phase() {
-    let sp = ui::start_spinner("Inferring repository conventions");
-    thread::sleep(Duration::from_millis(800));
-    ui::finish_spinner(&sp, "Inferring repository conventions");
-    println!();
-
-    ui::print_sub("Analyzing file structure");
-    thread::sleep(Duration::from_millis(300));
-    ui::print_sub("Analyzing test patterns");
-    thread::sleep(Duration::from_millis(300));
-    ui::print_sub("Analyzing API usage");
-    thread::sleep(Duration::from_millis(300));
-    println!();
-
-    ui::print_result("Detected patterns");
-}
-
-fn run_configure_phase() {
-    let result = configure_all();
-
-    match result.agents_error {
-        Some(e) => ui::print_error(&format!("Agent files error: {e}")),
-        None => ui::print_success("AGENTS.md configured"),
-    }
-
-    thread::sleep(Duration::from_millis(150));
-
-    match result.hooks_error {
-        Some(e) => ui::print_error(&format!(".claude/hooks error: {e}")),
-        None => ui::print_success(".claude/hooks configured"),
-    }
 }
 
 fn main() -> io::Result<()> {
@@ -699,11 +778,12 @@ fn main() -> io::Result<()> {
         return logout();
     }
 
-    let _read_only = match &cli.command {
-        Some(Commands::Connect { read_only }) => *read_only,
-        None => false,
+    let (read_only, explicit_agent_id) = match &cli.command {
+        Some(Commands::Connect { read_only, agent_id }) => (*read_only, agent_id.clone()),
+        None => (false, None),
         _ => unreachable!(),
     };
+    let _ = read_only;
 
     let mut config = load_config();
 
@@ -715,53 +795,66 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let cwd = std::env::current_dir()?;
+    println!();
+    println!("  Rippletide CLI");
+    println!();
 
-    // Phase 1 — Header
-    ui::print_header("Rippletide MCP");
-
-    let is_logged_in = config.session_token.is_some();
-
-    // Phase 2 — Auth (if not logged in)
-    let mut dashboard_url: Option<String> = None;
-    if !is_logged_in {
-        let login_result = login(&mut config)?;
-        println!();
-        if !login_result.success {
+    if let Some(agent_id) = explicit_agent_id {
+        let trimmed = agent_id.trim();
+        if trimmed.is_empty() {
+            eprintln!("  [!] --agent-id cannot be empty");
             return Ok(());
         }
-        dashboard_url = login_result.dashboard_url;
-    }
-
-    // Phase 3 — Repository scan
-    let scan_result = run_scan_phase(&cwd);
-    println!();
-
-    // Phase 4 — Reading assistant instructions (if CLAUDE.md exists)
-    if scan_result.has_claude_md {
-        run_rules_phase(&cwd);
+        println!("  Using explicit agent id (account-free setup)");
         println!();
+        config.user_id = Some(trimmed.to_string());
+        config.agent_id = Some(trimmed.to_string());
+        config.session_token = None;
+        save_config(&config)?;
     }
 
-    // Phase 5 — Inferring conventions
-    run_conventions_phase();
-    println!();
+    let effective_agent_id = config
+        .agent_id
+        .as_ref()
+        .or(config.user_id.as_ref())
+        .cloned();
 
-    // Phase 6 — Configure files
-    run_configure_phase();
+    let is_connected = config.session_token.is_some() || effective_agent_id.is_some();
+    let has_agent_files = agent_files_exist();
 
-    // Phase 7 — Upload sessions (only on first login)
-    if !is_logged_in {
-        if let Some(ref uid) = config.user_id {
+    match (is_logged_in, has_agent_files) {
+        (false, _) => {
+            println!("  Not logged in.");
             println!();
-            upload_sessions(uid)?;
+            login(&mut config)?;
+            println!();
+            let agent_id = config
+                .agent_id
+                .as_ref()
+                .or(config.user_id.as_ref())
+                .cloned();
+            configure_all_for_agent(agent_id.as_deref());
+            if let Some(ref uid) = agent_id {
+                println!();
+                upload_sessions(uid)?;
+            }
         }
-    }
-
-    // Show dashboard URL last
-    if let Some(url) = dashboard_url {
-        println!();
-        ui::print_sub(&format!("Dashboard: {url}"));
+        (true, false) => {
+            println!("  Logged in as: {}", config.email.as_deref().unwrap_or("?"));
+            println!("  Agent files missing — creating...");
+            println!();
+            configure_all_for_agent(effective_agent_id.as_deref());
+            if let Some(uid) = effective_agent_id.clone() {
+                upload_sessions(uid)?;
+            }
+        }
+        (true, true) => {
+            println!("  Good to go!");
+            configure_all_for_agent(effective_agent_id.as_deref());
+            if let Some(uid) = effective_agent_id.clone() {
+                upload_sessions(uid)?;
+            }
+        }
     }
 
     println!();
