@@ -1,6 +1,6 @@
 [package]
 name = "rippletide-cli"
-version = "0.2.5"
+version = "0.2.6"
 edition = "2021"
 
 [dependencies]
@@ -13,3 +13,6 @@ toml = "0.8"
 clap = { version = "4", features = ["derive"] }
 zip = { version = "2", default-features = false, features = ["deflate"] }
 rand = "0.8"
+colored = "2"
+indicatif = "0.17"
+walkdir = "2"

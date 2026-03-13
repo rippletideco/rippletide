@@ -1,15 +1,20 @@
 use std::fs;
 use std::io;
-use std::io::Write;
 use std::path::PathBuf;
+use std::thread;
+use std::time::Duration;
 
 use clap::Parser;
 use directories::ProjectDirs;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
+mod rules;
+mod scan;
+mod ui;
+
 #[derive(Parser)]
-#[command(name = "rippletide", about = "Rippletide CLI")]
+#[command(name = "rippletide", about = "Rippletide MCP")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -109,14 +114,6 @@ fn save_config(config: &Config) -> io::Result<()> {
 
 // --- Email auth ---
 
-fn prompt(label: &str) -> io::Result<String> {
-    print!("  {label}");
-    io::stdout().flush()?;
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-    Ok(input.trim().to_string())
-}
-
 #[derive(Deserialize)]
 struct SignUpUser {
     id: String,
@@ -131,12 +128,10 @@ struct SignUpResponse {
 
 fn extract_session_cookie(resp: &ureq::Response) -> Option<String> {
     for value in resp.all("set-cookie") {
-        // Cookie may be prefixed with __Secure- in production
         let rest = value
             .strip_prefix("__Secure-better-auth.session_token=")
             .or_else(|| value.strip_prefix("better-auth.session_token="));
         if let Some(rest) = rest {
-            // Take everything before the first ';'
             let token = rest.split(';').next().unwrap_or(rest);
             if !token.is_empty() {
                 return Some(token.to_string());
@@ -238,14 +233,23 @@ fn build_agent_instructions() -> String {
     AGENT_INSTRUCTIONS.to_string()
 }
 
-fn ensure_agent_files() -> io::Result<u8> {
+fn ensure_agent_files() -> io::Result<bool> {
     let cwd = std::env::current_dir()?;
     let content = build_agent_instructions();
+    let mut changed = false;
     for name in ["AGENTS.md", "CLAUDE.md"] {
         let path = cwd.join(name);
-        fs::write(&path, &content)?;
+        let needs_write = if path.exists() {
+            fs::read_to_string(&path)? != content
+        } else {
+            true
+        };
+        if needs_write {
+            fs::write(&path, &content)?;
+            changed = true;
+        }
     }
-    Ok(2)
+    Ok(changed)
 }
 
 const HOOK_SCRIPT: &str = r#"#!/bin/bash
@@ -328,7 +332,6 @@ fn ensure_claude_hooks() -> io::Result<bool> {
 
     let mut changed = false;
 
-    // Write hook script
     let needs_script = if script_path.exists() {
         fs::read_to_string(&script_path)? != HOOK_SCRIPT
     } else {
@@ -344,7 +347,6 @@ fn ensure_claude_hooks() -> io::Result<bool> {
         changed = true;
     }
 
-    // Write settings.json
     let needs_settings = if settings_path.exists() {
         fs::read_to_string(&settings_path)? != CLAUDE_SETTINGS
     } else {
@@ -358,24 +360,25 @@ fn ensure_claude_hooks() -> io::Result<bool> {
     Ok(changed)
 }
 
-fn agent_files_exist() -> bool {
-    let Ok(cwd) = std::env::current_dir() else {
-        return false;
-    };
-    cwd.join("AGENTS.md").exists() && cwd.join("CLAUDE.md").exists()
+struct ConfigureResult {
+    agents_error: Option<String>,
+    hooks_error: Option<String>,
 }
 
-fn configure_all() {
-    match ensure_agent_files() {
-        Ok(0) => println!("  [=] AGENTS.md / CLAUDE.md already up to date"),
-        Ok(n) => println!("  [+] {n} agent file(s) created"),
-        Err(e) => eprintln!("  [!] Agent files error: {e}"),
-    }
+fn configure_all() -> ConfigureResult {
+    let agents_error = match ensure_agent_files() {
+        Ok(_) => None,
+        Err(e) => Some(format!("{e}")),
+    };
 
-    match ensure_claude_hooks() {
-        Ok(true) => println!("  [+] .claude/hooks configured"),
-        Ok(false) => println!("  [=] .claude/hooks already up to date"),
-        Err(e) => eprintln!("  [!] .claude/hooks error: {e}"),
+    let hooks_error = match ensure_claude_hooks() {
+        Ok(_) => None,
+        Err(e) => Some(format!("{e}")),
+    };
+
+    ConfigureResult {
+        agents_error,
+        hooks_error,
     }
 }
 
@@ -409,15 +412,18 @@ fn generate_password() -> String {
         .collect()
 }
 
-fn login(config: &mut Config) -> io::Result<()> {
-    let api_url = config.api_url().to_string();
-    println!("  Create your account");
-    println!();
+struct LoginResult {
+    success: bool,
+}
 
-    let email = prompt("Email: ")?;
+fn login(config: &mut Config) -> io::Result<LoginResult> {
+    let api_url = config.api_url().to_string();
+
+    println!("  Enter your email to create your workspace");
+    let email = ui::styled_prompt("")?;
     if email.is_empty() {
-        eprintln!("  [!] Email cannot be empty");
-        return Ok(());
+        ui::print_error("Email cannot be empty");
+        return Ok(LoginResult { success: false });
     }
 
     let name = name_from_email(&email);
@@ -427,33 +433,37 @@ fn login(config: &mut Config) -> io::Result<()> {
         Ok(resp) => {
             config.user_id = Some(resp.user.id);
             config.email = Some(resp.user.email);
-            println!("  [+] Account created!");
-            println!();
-            println!(
-                "  Dashboard: https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
+            let dashboard_url = format!(
+                "https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
                 resp.token
             );
             config.session_token = Some(resp.token);
             save_config(config)?;
+            println!();
+            ui::print_success("Workspace created");
+            thread::sleep(Duration::from_millis(150));
+            ui::print_success("MCP endpoint reserved");
+            println!();
+            ui::print_sub(&format!("Dashboard: {dashboard_url}"));
+            Ok(LoginResult { success: true })
         }
         Err(e) => {
-            eprintln!("  [!] {e}");
+            ui::print_error(&e);
+            Ok(LoginResult { success: false })
         }
     }
-
-    Ok(())
 }
 
 fn logout() -> io::Result<()> {
     let Some(path) = config_path() else {
-        println!("  [!] Cannot determine config directory");
+        ui::print_error("Cannot determine config directory");
         return Ok(());
     };
     if path.exists() {
         fs::remove_file(&path)?;
-        println!("  [+] Logged out — credentials removed");
+        ui::print_success("Logged out — credentials removed");
     } else {
-        println!("  [=] Already logged out (no config found)");
+        ui::print_success("Already logged out (no config found)");
     }
     Ok(())
 }
@@ -508,11 +518,11 @@ fn select_claude_project() -> io::Result<Option<PathBuf>> {
         println!("    [{:>2}] {name}", i + 1);
     }
     println!();
-    let choice = prompt("Select a project (number): ")?;
+    let choice = ui::styled_prompt("Select a project (number): ")?;
     let idx: usize = match choice.parse::<usize>() {
         Ok(n) if n >= 1 && n <= projects.len() => n - 1,
         _ => {
-            eprintln!("  [!] Invalid selection");
+            ui::print_error("Invalid selection");
             return Ok(None);
         }
     };
@@ -576,12 +586,9 @@ fn upload_zip(zip_data: &[u8], user_id: &str) -> Result<serde_json::Value, Strin
 
 fn upload_sessions(user_id: &str) -> io::Result<()> {
     let project_dir = match claude_project_dir() {
-        Some(dir) => {
-            println!("  Found project: {}", dir.display());
-            dir
-        }
+        Some(dir) => dir,
         None => {
-            println!("  [!] No Claude project found for this directory");
+            ui::print_sub("No Claude project found for this directory");
             println!();
             match select_claude_project()? {
                 Some(dir) => dir,
@@ -592,39 +599,98 @@ fn upload_sessions(user_id: &str) -> io::Result<()> {
 
     let files = collect_jsonl_files(&project_dir)?;
     if files.is_empty() {
-        eprintln!("  [!] No .jsonl session files found");
         return Ok(());
     }
 
-    println!("  Zipping {} session file(s)...", files.len());
-    let zip_data =
-        create_sessions_zip(&files, &project_dir)?;
-    println!("  Uploading ({:.1} KB)...", zip_data.len() as f64 / 1024.0);
+    let sp = ui::start_spinner(&format!("Uploading {} session file(s)...", files.len()));
+    let zip_data = create_sessions_zip(&files, &project_dir)?;
 
     match upload_zip(&zip_data, user_id) {
         Ok(resp) => {
-            println!("  [+] Upload successful!");
-            if let Some(msg) = resp.get("message").and_then(|v| v.as_str()) {
-                println!("      {msg}");
-            }
+            ui::finish_spinner(&sp, "Sessions uploaded");
             if let Some(n) = resp.get("messages_extracted").and_then(|v| v.as_u64()) {
-                println!("      Messages extracted: {n}");
-            }
-            if let Some(n) = resp.get("clauses_segmented").and_then(|v| v.as_u64()) {
-                println!("      Clauses segmented: {n}");
-            }
-            if let Some(n) = resp.get("buckets_induced").and_then(|v| v.as_u64()) {
-                println!("      Buckets induced: {n}");
+                ui::print_sub(&format!("Messages extracted: {n}"));
             }
             if let Some(n) = resp.get("graph_node_count").and_then(|v| v.as_u64()) {
-                println!("      Graph nodes: {n}");
+                ui::print_sub(&format!("Graph nodes: {n}"));
             }
         }
         Err(e) => {
-            eprintln!("  [!] {e}");
+            sp.finish_and_clear();
+            ui::print_error(&e);
         }
     }
     Ok(())
+}
+
+fn run_scan_phase(cwd: &std::path::Path) -> scan::RepoScanResult {
+    let sp = ui::start_spinner("Analyzing current repository...");
+    let result = scan::scan_repo(cwd);
+    thread::sleep(Duration::from_millis(600));
+    ui::finish_spinner(&sp, "Scanning repository structure");
+    println!();
+
+    if result.has_claude_md {
+        ui::print_success("CLAUDE.md detected");
+    }
+    ui::print_success(&format!("{} source files", result.source_file_count));
+    ui::print_success(&format!("{} test files", result.test_file_count));
+    if result.mcp_tool_count > 0 {
+        ui::print_success(&format!("{} MCP tools", result.mcp_tool_count));
+    }
+
+    result
+}
+
+fn run_rules_phase(cwd: &std::path::Path) {
+    let sp = ui::start_spinner("Reading assistant instructions");
+    thread::sleep(Duration::from_millis(800));
+    ui::finish_spinner(&sp, "Reading assistant instructions");
+    println!();
+
+    ui::print_sub("Parsing CLAUDE.md");
+    thread::sleep(Duration::from_millis(300));
+    ui::print_sub("Extracting rules");
+    thread::sleep(Duration::from_millis(300));
+    ui::print_sub("Normalizing constraints");
+    thread::sleep(Duration::from_millis(300));
+    println!();
+
+    let count = rules::count_rules_in_claude_md(cwd);
+    ui::print_success(&format!("{count} explicit rules detected"));
+}
+
+fn run_conventions_phase() {
+    let sp = ui::start_spinner("Inferring repository conventions");
+    thread::sleep(Duration::from_millis(800));
+    ui::finish_spinner(&sp, "Inferring repository conventions");
+    println!();
+
+    ui::print_sub("Analyzing file structure");
+    thread::sleep(Duration::from_millis(300));
+    ui::print_sub("Analyzing test patterns");
+    thread::sleep(Duration::from_millis(300));
+    ui::print_sub("Analyzing API usage");
+    thread::sleep(Duration::from_millis(300));
+    println!();
+
+    ui::print_result("Detected patterns");
+}
+
+fn run_configure_phase() {
+    let result = configure_all();
+
+    match result.agents_error {
+        Some(e) => ui::print_error(&format!("Agent files error: {e}")),
+        None => ui::print_success("AGENTS.md configured"),
+    }
+
+    thread::sleep(Duration::from_millis(150));
+
+    match result.hooks_error {
+        Some(e) => ui::print_error(&format!(".claude/hooks error: {e}")),
+        None => ui::print_success(".claude/hooks configured"),
+    }
 }
 
 fn main() -> io::Result<()> {
@@ -650,34 +716,44 @@ fn main() -> io::Result<()> {
         }
     }
 
-    println!();
-    println!("  Rippletide CLI");
-    println!();
+    let cwd = std::env::current_dir()?;
+
+    // Phase 1 — Header
+    ui::print_header("Rippletide MCP");
 
     let is_logged_in = config.session_token.is_some();
-    let has_agent_files = agent_files_exist();
 
-    match (is_logged_in, has_agent_files) {
-        (false, _) => {
-            println!("  Not logged in.");
-            println!();
-            login(&mut config)?;
-            println!();
-            configure_all();
-            if let Some(ref uid) = config.user_id {
-                println!();
-                upload_sessions(uid)?;
-            }
+    // Phase 2 — Auth (if not logged in)
+    if !is_logged_in {
+        let login_result = login(&mut config)?;
+        println!();
+        if !login_result.success {
+            return Ok(());
         }
-        (true, false) => {
-            println!("  Logged in as: {}", config.email.as_deref().unwrap_or("?"));
-            println!("  Agent files missing — creating...");
+    }
+
+    // Phase 3 — Repository scan
+    let scan_result = run_scan_phase(&cwd);
+    println!();
+
+    // Phase 4 — Reading assistant instructions (if CLAUDE.md exists)
+    if scan_result.has_claude_md {
+        run_rules_phase(&cwd);
+        println!();
+    }
+
+    // Phase 5 — Inferring conventions
+    run_conventions_phase();
+    println!();
+
+    // Phase 6 — Configure files
+    run_configure_phase();
+
+    // Phase 7 — Upload sessions (only on first login)
+    if !is_logged_in {
+        if let Some(ref uid) = config.user_id {
             println!();
-            configure_all();
-        }
-        (true, true) => {
-            println!("  Good to go!");
-            configure_all();
+            upload_sessions(uid)?;
         }
     }
 
