@@ -414,6 +414,7 @@ fn generate_password() -> String {
 
 struct LoginResult {
     success: bool,
+    dashboard_url: Option<String>,
 }
 
 fn login(config: &mut Config) -> io::Result<LoginResult> {
@@ -423,7 +424,7 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
     let email = ui::styled_prompt("")?;
     if email.is_empty() {
         ui::print_error("Email cannot be empty");
-        return Ok(LoginResult { success: false });
+        return Ok(LoginResult { success: false, dashboard_url: None });
     }
 
     let name = name_from_email(&email);
@@ -443,13 +444,11 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
             ui::print_success("Workspace created");
             thread::sleep(Duration::from_millis(150));
             ui::print_success("MCP endpoint reserved");
-            println!();
-            ui::print_sub(&format!("Dashboard: {dashboard_url}"));
-            Ok(LoginResult { success: true })
+            Ok(LoginResult { success: true, dashboard_url: Some(dashboard_url) })
         }
         Err(e) => {
             ui::print_error(&e);
-            Ok(LoginResult { success: false })
+            Ok(LoginResult { success: false, dashboard_url: None })
         }
     }
 }
@@ -724,12 +723,14 @@ fn main() -> io::Result<()> {
     let is_logged_in = config.session_token.is_some();
 
     // Phase 2 — Auth (if not logged in)
+    let mut dashboard_url: Option<String> = None;
     if !is_logged_in {
         let login_result = login(&mut config)?;
         println!();
         if !login_result.success {
             return Ok(());
         }
+        dashboard_url = login_result.dashboard_url;
     }
 
     // Phase 3 — Repository scan
@@ -755,6 +756,12 @@ fn main() -> io::Result<()> {
             println!();
             upload_sessions(uid)?;
         }
+    }
+
+    // Show dashboard URL last
+    if let Some(url) = dashboard_url {
+        println!();
+        ui::print_sub(&format!("Dashboard: {url}"));
     }
 
     println!();
