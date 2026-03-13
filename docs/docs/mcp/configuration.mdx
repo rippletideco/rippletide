@@ -12,13 +12,13 @@ The fastest way to get started. No server to run, no dependencies to install:
   "mcpServers": {
     "rippletide": {
       "type": "url",
-      "url": "https://mcp.rippletide.com/mcp"
+      "url": "https://mcp.rippletide.com/mcp?agentId=your-agent-id"
     }
   }
 }
 ```
 
-This connects directly to Rippletide's hosted MCP server.
+This connects directly to Rippletide's hosted MCP server. All you need is an agent ID from the [Rippletide platform](https://eval.rippletide.com).
 
 ### Where to put this config
 
@@ -27,6 +27,13 @@ This connects directly to Rippletide's hosted MCP server.
 | **Cursor** | `~/.cursor/mcp.json` |
 | **Claude Desktop** | Claude Desktop settings > MCP |
 | **Claude Code** | `.mcp.json` at your project root |
+
+### Agent ID
+
+Each agent ID maps to an **isolated context graph**. Memories stored under one agent ID are invisible to another. You can:
+- Use **one agent per project** to keep knowledge separated
+- Use **one shared agent** across projects if you want cross-project memory
+- **Switch agents at runtime** using the `switch_agent` tool during a conversation
 
 ## Self-Hosted
 
@@ -43,6 +50,7 @@ Configure the server via environment variables or CLI flags. **CLI flags take pr
 | Env Variable | CLI Flag | Default | Description |
 |-------------|----------|---------|-------------|
 | `GRAPH_API_URL` | `--api-url` | `http://localhost:3000` | Context graph backend URL |
+| `AGENT_ID` | `--agent-id` | `"default"` | Target agent's graph |
 | `TRANSPORT` | `--transport` | `stdio` | `stdio` for local, `http` for remote |
 | `PORT` | `--port` | `8080` | Port for HTTP transport |
 | `HOST` | `--host` | `127.0.0.1` | Bind address for HTTP transport |
@@ -61,7 +69,8 @@ There are two ways your AI client can talk to the MCP server:
       "command": "npx",
       "args": ["-y", "@rippletide/mcp"],
       "env": {
-        "GRAPH_API_URL": "http://localhost:3000"
+        "GRAPH_API_URL": "http://localhost:3000",
+        "AGENT_ID": "your-agent-id"
       }
     }
   }
@@ -144,7 +153,7 @@ Set the `GRAPH_API_URL` environment variable to point to your context graph back
     The context graph backend isn't running or isn't reachable at `GRAPH_API_URL`. Check the URL and network connectivity.
   </Accordion>
   <Accordion title="Tools return empty data">
-    Use `list_entities` to check what data is available in the graph.
+    Verify that `AGENT_ID` matches an agent that has data in the graph. Use `list_entities` to check.
   </Accordion>
   <Accordion title="Can't see logs">
     All logs go to stderr (stdout is reserved for MCP stdio protocol). Use `LOG_LEVEL=debug` for verbose output.
