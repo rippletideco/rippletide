@@ -724,7 +724,7 @@ fn call_claude(path: &std::path::Path, prompt: &str) -> Result<String, String> {
     use std::process::{Command, Stdio};
 
     let mut cmd = Command::new("claude");
-    cmd.args(["-p", prompt, "--output-format", "stream-json", "--verbose", "--model", "sonnet"])
+    cmd.args(["-p", prompt, "--output-format", "stream-json", "--verbose", "--model", "opus"])
         .current_dir(path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
