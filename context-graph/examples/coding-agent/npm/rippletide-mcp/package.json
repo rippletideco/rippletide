@@ -10,7 +10,8 @@
     "rippletide-mcp-darwin-x64": "0.3.0",
     "rippletide-mcp-linux-x64": "0.3.0",
     "rippletide-mcp-win32-x64": "0.3.0",
-    "rippletide-mcp-win32-arm64": "0.3.0"
+    "rippletide-mcp-win32-arm64": "0.3.0",
+    "rippletide-mcp-linux-arm64": "0.3.0"
   },
   "license": "MIT",
   "repository": {
