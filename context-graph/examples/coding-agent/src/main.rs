@@ -1381,8 +1381,16 @@ fn main() -> io::Result<()> {
     // Phase 7 — Configure files
     run_configure_phase();
 
-    // Show dashboard URL last
-    if let Some(url) = dashboard_url {
+    // Show dashboard URL — always, from stored token or fresh login
+    let final_url = dashboard_url.or_else(|| {
+        config.session_token.as_ref().map(|token| {
+            format!(
+                "https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
+                token
+            )
+        })
+    });
+    if let Some(url) = final_url {
         println!();
         ui::print_sub(&format!("Dashboard: {url}"));
     }
