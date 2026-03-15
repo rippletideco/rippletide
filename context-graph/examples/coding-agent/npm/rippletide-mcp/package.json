@@ -1,17 +1,17 @@
 {
   "name": "rippletide-mcp",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "Rippletide MCP CLI — prebuilt Rust binary launcher",
   "bin": {
     "rippletide-mcp": "bin/cli.js"
   },
   "optionalDependencies": {
-    "rippletide-mcp-darwin-arm64": "0.3.8",
-    "rippletide-mcp-darwin-x64": "0.3.8",
-    "rippletide-mcp-linux-x64": "0.3.8",
-    "rippletide-mcp-win32-x64": "0.3.8",
-    "rippletide-mcp-win32-arm64": "0.3.8",
-    "rippletide-mcp-linux-arm64": "0.3.8"
+    "rippletide-mcp-darwin-arm64": "0.3.9",
+    "rippletide-mcp-darwin-x64": "0.3.9",
+    "rippletide-mcp-linux-x64": "0.3.9",
+    "rippletide-mcp-win32-x64": "0.3.9",
+    "rippletide-mcp-win32-arm64": "0.3.9",
+    "rippletide-mcp-linux-arm64": "0.3.9"
   },
   "license": "MIT",
   "repository": {
