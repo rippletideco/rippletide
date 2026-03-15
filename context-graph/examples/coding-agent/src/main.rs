@@ -33,10 +33,14 @@ enum Commands {
 }
 
 const LOCAL_API_URL: &str = "http://localhost:3000";
+const LOCAL_AUTH_URL: &str = "http://localhost:3000";
 
 const PROD_API_URL: &str = "https://dashboard-rippletide.up.railway.app/coding-agent";
+const PROD_AUTH_URL: &str = "https://dashboard-rippletide.up.railway.app";
 
 const SIGN_UP_PATH: &str = "/api/auth/sign-up/email";
+const SEND_OTP_PATH: &str = "/api/auth/email-otp/send-verification-otp";
+const SIGN_IN_OTP_PATH: &str = "/api/auth/sign-in/email-otp";
 const UPLOAD_URL: &str = "https://coding-agent.up.railway.app/upload";
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
@@ -79,6 +83,13 @@ impl Config {
         match self.environment {
             Environment::Local => LOCAL_API_URL,
             Environment::Production => PROD_API_URL,
+        }
+    }
+
+    fn auth_url(&self) -> &str {
+        match self.environment {
+            Environment::Local => LOCAL_AUTH_URL,
+            Environment::Production => PROD_AUTH_URL,
         }
     }
 }
@@ -141,7 +152,12 @@ fn extract_session_cookie(resp: &ureq::Response) -> Option<String> {
     None
 }
 
-fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<SignUpResponse, String> {
+enum SignUpError {
+    UserAlreadyExists,
+    Other(String),
+}
+
+fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<SignUpResponse, SignUpError> {
     let url = format!("{}{}", api_url, SIGN_UP_PATH);
     let resp = ureq::post(&url)
         .send_json(serde_json::json!({
@@ -149,14 +165,68 @@ fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<Sig
             "email": email,
             "password": password,
         }))
-        .map_err(|e| format!("Network error: {e}"))?;
+        .map_err(|e| {
+            if let ureq::Error::Status(_code, response) = e {
+                if let Ok(body) = response.into_json::<serde_json::Value>() {
+                    if body.get("code").and_then(|c| c.as_str()) == Some("USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+                        return SignUpError::UserAlreadyExists;
+                    }
+                    let msg = body.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error");
+                    return SignUpError::Other(msg.to_string());
+                }
+                SignUpError::Other("Server error".to_string())
+            } else {
+                SignUpError::Other(format!("Network error: {e}"))
+            }
+        })?;
     let cookie = extract_session_cookie(&resp)
-        .ok_or_else(|| "No session cookie in response".to_string())?;
+        .ok_or_else(|| SignUpError::Other("No session cookie in response".to_string()))?;
     let mut sign_up_resp: SignUpResponse = resp
         .into_json()
-        .map_err(|e| format!("Invalid response: {e}"))?;
+        .map_err(|e| SignUpError::Other(format!("Invalid response: {e}")))?;
     sign_up_resp.token = cookie;
     Ok(sign_up_resp)
+}
+
+fn send_otp(api_url: &str, email: &str) -> Result<(), String> {
+    let url = format!("{}{}", api_url, SEND_OTP_PATH);
+    ureq::post(&url)
+        .send_json(serde_json::json!({
+            "email": email,
+            "type": "sign-in",
+        }))
+        .map_err(|e| format!("Failed to send OTP: {e}"))?;
+    Ok(())
+}
+
+#[derive(Deserialize)]
+struct OtpSignInUser {
+    id: String,
+    email: String,
+}
+
+#[derive(Deserialize)]
+struct OtpSignInResponse {
+    token: String,
+    user: OtpSignInUser,
+}
+
+fn sign_in_with_otp(api_url: &str, email: &str, otp: &str) -> Result<OtpSignInResponse, String> {
+    let url = format!("{}{}", api_url, SIGN_IN_OTP_PATH);
+    let resp = ureq::post(&url)
+        .send_json(serde_json::json!({
+            "email": email,
+            "otp": otp,
+        }))
+        .map_err(|e| format!("OTP sign-in failed: {e}"))?;
+    let cookie = extract_session_cookie(&resp);
+    let mut otp_resp: OtpSignInResponse = resp
+        .into_json()
+        .map_err(|e| format!("Invalid OTP response: {e}"))?;
+    if let Some(c) = cookie {
+        otp_resp.token = c;
+    }
+    Ok(otp_resp)
 }
 
 // --- CWD bootstrap helpers ---
@@ -418,7 +488,7 @@ struct LoginResult {
 }
 
 fn login(config: &mut Config) -> io::Result<LoginResult> {
-    let api_url = config.api_url().to_string();
+    let auth_url = config.auth_url().to_string();
 
     println!("  Enter your email to create your workspace");
     let email = ui::styled_prompt("")?;
@@ -430,7 +500,7 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
     let name = name_from_email(&email);
     let password = generate_password();
 
-    match sign_up(&api_url, &name, &email, &password) {
+    match sign_up(&auth_url, &name, &email, &password) {
         Ok(resp) => {
             config.user_id = Some(resp.user.id);
             config.email = Some(resp.user.email);
@@ -446,7 +516,43 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
             ui::print_success("MCP endpoint reserved");
             Ok(LoginResult { success: true, dashboard_url: Some(dashboard_url) })
         }
-        Err(e) => {
+        Err(SignUpError::UserAlreadyExists) => {
+            println!();
+            ui::print_info("Account already exists — signing in with OTP");
+            if let Err(e) = send_otp(&auth_url, &email) {
+                ui::print_error(&e);
+                return Ok(LoginResult { success: false, dashboard_url: None });
+            }
+            ui::print_success("Verification code sent to your email");
+            println!();
+            let otp = ui::styled_prompt("Enter OTP code: ")?;
+            if otp.is_empty() {
+                ui::print_error("OTP code cannot be empty");
+                return Ok(LoginResult { success: false, dashboard_url: None });
+            }
+            match sign_in_with_otp(&auth_url, &email, &otp) {
+                Ok(resp) => {
+                    config.user_id = Some(resp.user.id);
+                    config.email = Some(resp.user.email);
+                    let dashboard_url = format!(
+                        "https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
+                        resp.token
+                    );
+                    config.session_token = Some(resp.token);
+                    save_config(config)?;
+                    println!();
+                    ui::print_success("Signed in successfully");
+                    thread::sleep(Duration::from_millis(150));
+                    ui::print_success("MCP endpoint reserved");
+                    Ok(LoginResult { success: true, dashboard_url: Some(dashboard_url) })
+                }
+                Err(e) => {
+                    ui::print_error(&e);
+                    Ok(LoginResult { success: false, dashboard_url: None })
+                }
+            }
+        }
+        Err(SignUpError::Other(e)) => {
             ui::print_error(&e);
             Ok(LoginResult { success: false, dashboard_url: None })
         }

@@ -39,6 +39,11 @@ pub fn print_result(text: &str) {
     println!("  {}", text.yellow());
 }
 
+pub fn print_info(text: &str) {
+    pause();
+    println!("  {} {}", "→".cyan(), text.cyan());
+}
+
 pub fn print_error(text: &str) {
     eprintln!("  {}", text.red());
 }
