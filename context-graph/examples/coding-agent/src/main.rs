@@ -1013,9 +1013,9 @@ fn run_side_by_side_checks(
     user_id: Option<&str>,
 ) -> bool {
     use colored::Colorize;
-    use std::io::Write;
+    use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
     use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
-    use std::sync::{Arc, Mutex};
+    use std::sync::Arc;
 
     const WAITING: u8 = 0;
     const RUNNING: u8 = 1;
@@ -1050,81 +1050,119 @@ fn run_side_by_side_checks(
         })
         .collect();
 
-    let max_rule_lines = std::cmp::max(COMMON_RULES.len(), DEFAULT_USER_RULES.len());
+    // --- Fetch user rules first (with spinner) ---
+    let sp = ui::start_spinner("Fetching user rules from graph…");
+    let mut had_graph = true;
+    let user_rules: Vec<String> = match user_id.map(fetch_rules) {
+        Some(FetchRulesResult::Rules(text)) => {
+            text.lines()
+                .map(|l| l.trim().trim_start_matches('-').trim().to_string())
+                .filter(|l| !l.is_empty())
+                .collect()
+        }
+        Some(FetchRulesResult::NoGraph) => {
+            had_graph = false;
+            DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
+        }
+        Some(FetchRulesResult::Error(_)) | None => {
+            DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
+        }
+    };
+    ui::finish_spinner(&sp, "User rules loaded");
 
-    // Shared state
+    let user_display: Vec<String> = user_rules
+        .iter()
+        .map(|r| {
+            let s = format!("• {}", r);
+            if s.chars().count() > col_width {
+                let t: String = s.chars().take(col_width - 1).collect();
+                format!("{}…", t)
+            } else {
+                s
+            }
+        })
+        .collect();
+
+    let user_rules_str: String = user_rules.iter().map(|r| format!("- {r}\n")).collect();
+    let max_rule_lines = std::cmp::max(common_display.len(), user_display.len());
+
+    // --- Shared state ---
     let common_state: Arc<Vec<AtomicU8>> =
         Arc::new((0..n).map(|_| AtomicU8::new(WAITING)).collect());
     let user_state: Arc<Vec<AtomicU8>> =
         Arc::new((0..n).map(|_| AtomicU8::new(WAITING)).collect());
-    let all_done = Arc::new(AtomicBool::new(false));
     let common_done = Arc::new(AtomicUsize::new(0));
     let user_done = Arc::new(AtomicUsize::new(0));
-    let user_fetching = Arc::new(AtomicBool::new(true));
-    let user_rules_display: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let all_done = Arc::new(AtomicBool::new(false));
 
-    let total_lines = 2 + max_rule_lines + 1 + n;
+    // --- Build live table with MultiProgress ---
+    let mp = MultiProgress::new();
+    let line_style = ProgressStyle::default_spinner()
+        .template("{msg}")
+        .expect("invalid line template");
 
-    // Hide cursor
-    print!("\x1b[?25l");
-    io::stdout().flush().ok();
+    // Header line (dynamic — shows progress counts)
+    let hdr_pb = mp.add(ProgressBar::new_spinner());
+    hdr_pb.set_style(line_style.clone());
+    hdr_pb.enable_steady_tick(Duration::from_millis(80));
 
-    // --- Initial render ---
-    {
-        let left_hdr = format!("Common Rules (0/{})", n);
-        let left_vis = left_hdr.len();
-        let left_pad = col_width.saturating_sub(left_vis);
-        let right_hdr = "User Inferred Rules (fetching…)";
-        println!(
-            "  {}{}{}{}",
-            left_hdr.yellow().bold(),
-            " ".repeat(left_pad),
-            gap,
-            right_hdr.green().bold()
-        );
-    }
-    let sep = "─".repeat(col_width);
-    println!("  {}{}{}", sep.dimmed(), gap, sep.dimmed());
+    // Top separator (static)
+    let sep_str = format!(
+        "  {}{}{}",
+        "─".repeat(col_width).dimmed(),
+        gap,
+        "─".repeat(col_width).dimmed()
+    );
+    let sep1_pb = mp.add(ProgressBar::new_spinner());
+    sep1_pb.set_style(line_style.clone());
+    sep1_pb.finish_with_message(sep_str.clone());
+
+    // Rule lines (static)
     for i in 0..max_rule_lines {
-        let left = if i < common_display.len() {
-            &common_display[i]
-        } else {
-            ""
-        };
+        let left = if i < common_display.len() { &common_display[i] } else { "" };
         let left_vis = left.chars().count();
         let left_pad = col_width.saturating_sub(left_vis);
-        let right: String = if i == 0 {
-            "⠋ fetching from graph…".green().to_string()
-        } else {
-            String::new()
-        };
-        println!(
+        let right = if i < user_display.len() { &user_display[i] } else { "" };
+        let msg = format!(
             "  {}{}{}{}",
             left.dimmed(),
             " ".repeat(left_pad),
             gap,
-            right
+            right.dimmed()
         );
+        let pb = mp.add(ProgressBar::new_spinner());
+        pb.set_style(line_style.clone());
+        pb.finish_with_message(msg);
     }
-    println!("  {}{}{}", sep.dimmed(), gap, sep.dimmed());
-    for path in &rel_paths {
-        let short = shorten_path(path, max_name);
-        let left = render_cell(WAITING, &short, 0, col_width);
-        let right = render_cell(WAITING, &short, 0, col_width);
-        println!("  {}{}{}", left, gap, right);
-    }
-    io::stdout().flush().ok();
 
-    // --- Render thread ---
+    // Bottom separator (static)
+    let sep2_pb = mp.add(ProgressBar::new_spinner());
+    sep2_pb.set_style(line_style.clone());
+    sep2_pb.finish_with_message(sep_str);
+
+    // File row lines (dynamic — update as checks complete)
+    let file_pbs: Vec<ProgressBar> = (0..n)
+        .map(|i| {
+            let short = shorten_path(&rel_paths[i], max_name);
+            let left = render_cell(WAITING, &short, 0, col_width);
+            let right = render_cell(WAITING, &short, 0, col_width);
+            let pb = mp.add(ProgressBar::new_spinner());
+            pb.set_style(line_style.clone());
+            pb.set_message(format!("  {}{}{}", left, gap, right));
+            pb.enable_steady_tick(Duration::from_millis(80));
+            pb
+        })
+        .collect();
+
+    // --- Render thread: updates header and file rows ---
     let r_common = Arc::clone(&common_state);
     let r_user = Arc::clone(&user_state);
-    let r_done = Arc::clone(&all_done);
-    let r_paths = rel_paths.clone();
     let r_cd = Arc::clone(&common_done);
     let r_ud = Arc::clone(&user_done);
-    let r_uf = Arc::clone(&user_fetching);
-    let r_ur_display = Arc::clone(&user_rules_display);
-    let r_common_display = common_display.clone();
+    let r_done = Arc::clone(&all_done);
+    let r_paths = rel_paths.clone();
+    let r_file_pbs = file_pbs.clone();
+    let r_hdr_pb = hdr_pb.clone();
 
     let render_handle = thread::spawn(move || {
         let mut tick: usize = 0;
@@ -1132,65 +1170,20 @@ fn run_side_by_side_checks(
             thread::sleep(Duration::from_millis(80));
             tick += 1;
 
-            print!("\x1b[{}A\r", total_lines);
-
             let cd = r_cd.load(Ordering::Relaxed);
             let ud = r_ud.load(Ordering::Relaxed);
-            let fetching = r_uf.load(Ordering::Relaxed);
 
             let left_hdr = format!("Common Rules ({}/{})", cd, n);
             let left_vis = left_hdr.len();
             let left_pad = col_width.saturating_sub(left_vis);
-            let right_hdr = if fetching {
-                "User Inferred Rules (fetching…)".to_string()
-            } else {
-                format!("User Inferred Rules ({}/{})", ud, n)
-            };
-            print!(
-                "\x1b[K  {}{}{}{}\n",
+            let right_hdr = format!("User Inferred Rules ({}/{})", ud, n);
+            r_hdr_pb.set_message(format!(
+                "  {}{}{}{}",
                 left_hdr.yellow().bold(),
                 " ".repeat(left_pad),
                 gap,
                 right_hdr.green().bold()
-            );
-
-            let sep = "─".repeat(col_width);
-            print!("\x1b[K  {}{}{}\n", sep.dimmed(), gap, sep.dimmed());
-
-            let ur_guard = r_ur_display.lock().unwrap_or_else(|e| e.into_inner());
-            for i in 0..max_rule_lines {
-                let left = if i < r_common_display.len() {
-                    r_common_display[i].as_str()
-                } else {
-                    ""
-                };
-                let left_vis = left.chars().count();
-                let left_pad = col_width.saturating_sub(left_vis);
-
-                let right_colored: String = if i < ur_guard.len() {
-                    ur_guard[i].dimmed().to_string()
-                } else if ur_guard.is_empty() && fetching && i == 0 {
-                    use colored::Colorize;
-                    const SPINNERS: &[&str] =
-                        &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-                    format!("{} fetching from graph…", SPINNERS[tick % SPINNERS.len()])
-                        .green()
-                        .to_string()
-                } else {
-                    String::new()
-                };
-
-                print!(
-                    "\x1b[K  {}{}{}{}\n",
-                    left.dimmed(),
-                    " ".repeat(left_pad),
-                    gap,
-                    right_colored
-                );
-            }
-            drop(ur_guard);
-
-            print!("\x1b[K  {}{}{}\n", sep.dimmed(), gap, sep.dimmed());
+            ));
 
             for i in 0..n {
                 let cs = r_common[i].load(Ordering::Relaxed);
@@ -1198,10 +1191,8 @@ fn run_side_by_side_checks(
                 let short = shorten_path(&r_paths[i], max_name);
                 let left = render_cell(cs, &short, tick, col_width);
                 let right = render_cell(us, &short, tick, col_width);
-                print!("\x1b[K  {}{}{}\n", left, gap, right);
+                r_file_pbs[i].set_message(format!("  {}{}{}", left, gap, right));
             }
-
-            io::stdout().flush().ok();
 
             if r_done.load(Ordering::Relaxed) {
                 break;
@@ -1209,7 +1200,7 @@ fn run_side_by_side_checks(
         }
     });
 
-    // --- Common rules workers ---
+    // --- Spawn check threads (common + user in parallel) ---
     let common_handles: Vec<_> = (0..n)
         .map(|i| {
             let file = files[i].clone();
@@ -1228,53 +1219,6 @@ fn run_side_by_side_checks(
         })
         .collect();
 
-    // --- Fetch user rules then start user workers ---
-    let mut had_graph = true;
-    let user_rules: Vec<String> = match user_id.map(fetch_rules) {
-        Some(FetchRulesResult::Rules(text)) => {
-            text.lines()
-                .map(|l| l.trim().trim_start_matches('-').trim().to_string())
-                .filter(|l| !l.is_empty())
-                .collect()
-        }
-        Some(FetchRulesResult::NoGraph) => {
-            had_graph = false;
-            DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
-        }
-        Some(FetchRulesResult::Error(_)) | None => {
-            DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
-        }
-    };
-
-    let display: Vec<String> = user_rules
-        .iter()
-        .map(|r| {
-            let s = format!("• {}", r);
-            if s.chars().count() > col_width {
-                let t: String = s.chars().take(col_width - 1).collect();
-                format!("{}…", t)
-            } else {
-                s
-            }
-        })
-        .collect();
-    user_fetching.store(false, Ordering::Relaxed);
-    let user_rules_str: String = user_rules.iter().map(|r| format!("- {r}\n")).collect();
-
-    // Reveal user rules one by one in a background thread
-    let reveal_display = Arc::clone(&user_rules_display);
-    let reveal_handle = thread::spawn(move || {
-        let mut rng = rand::thread_rng();
-        for rule in display {
-            let delay = rng.gen_range(80..350);
-            thread::sleep(Duration::from_millis(delay));
-            if let Ok(mut guard) = reveal_display.lock() {
-                guard.push(rule);
-            }
-        }
-    });
-
-    // Start user workers immediately
     let user_handles: Vec<_> = (0..n)
         .map(|i| {
             let file = files[i].clone();
@@ -1293,7 +1237,7 @@ fn run_side_by_side_checks(
         })
         .collect();
 
-    // Wait for all — handle thread panics gracefully
+    // --- Wait for all check threads ---
     let common_results: Vec<_> = common_handles
         .into_iter()
         .enumerate()
@@ -1310,20 +1254,17 @@ fn run_side_by_side_checks(
                 .unwrap_or_else(|_| (rel_paths[i].clone(), false))
         })
         .collect();
-    reveal_handle.join().ok();
 
-    // Stop render thread
+    // --- Stop render thread and finalize ---
     all_done.store(true, Ordering::Relaxed);
     render_handle.join().ok();
 
-    // --- Final render ---
     let cp = common_results.iter().filter(|(_, p)| *p).count();
     let cf = n - cp;
     let up = user_results.iter().filter(|(_, p)| *p).count();
     let uf = n - up;
 
-    print!("\x1b[{}A\r", total_lines);
-
+    // Final header with pass/fail summary
     let left_hdr = format!(
         "Common Rules  {} passed, {} failed",
         cp.to_string().green().bold(),
@@ -1336,50 +1277,20 @@ fn run_side_by_side_checks(
     );
     let left_hdr_plain = format!("Common Rules  {} passed, {} failed", cp, cf);
     let left_pad = col_width.saturating_sub(left_hdr_plain.len());
-    print!(
-        "\x1b[K  {}{}{}{}\n",
+    hdr_pb.finish_with_message(format!(
+        "  {}{}{}{}",
         left_hdr, " ".repeat(left_pad), gap, right_hdr
-    );
+    ));
 
-    let sep = "─".repeat(col_width);
-    print!("\x1b[K  {}{}{}\n", sep.dimmed(), gap, sep.dimmed());
-
-    let ur_guard = user_rules_display.lock().unwrap_or_else(|e| e.into_inner());
-    for i in 0..max_rule_lines {
-        let left = if i < common_display.len() {
-            common_display[i].as_str()
-        } else {
-            ""
-        };
-        let left_vis = left.chars().count();
-        let left_pad = col_width.saturating_sub(left_vis);
-        let right = if i < ur_guard.len() { ur_guard[i].as_str() } else { "" };
-        print!(
-            "\x1b[K  {}{}{}{}\n",
-            left.dimmed(),
-            " ".repeat(left_pad),
-            gap,
-            right.dimmed()
-        );
-    }
-    drop(ur_guard);
-
-    print!("\x1b[K  {}{}{}\n", sep.dimmed(), gap, sep.dimmed());
-
+    // Final file rows with pass/fail state
     for i in 0..n {
         let cs = common_state[i].load(Ordering::Relaxed);
         let us = user_state[i].load(Ordering::Relaxed);
         let short = shorten_path(&rel_paths[i], max_name);
         let left = render_cell(cs, &short, 0, col_width);
         let right = render_cell(us, &short, 0, col_width);
-        print!("\x1b[K  {}{}{}\n", left, gap, right);
+        file_pbs[i].finish_with_message(format!("  {}{}{}", left, gap, right));
     }
-
-    io::stdout().flush().ok();
-
-    // Show cursor
-    print!("\x1b[?25h");
-    io::stdout().flush().ok();
 
     had_graph
 }
