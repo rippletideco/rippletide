@@ -1006,14 +1006,87 @@ fn render_cell(state: u8, name: &str, tick: usize, width: usize) -> String {
     format!("{}{}", colored_str, " ".repeat(pad))
 }
 
+fn render_table_frame(
+    term: &console::Term,
+    n: usize,
+    col_width: usize,
+    gap: &str,
+    max_name: usize,
+    max_rule_lines: usize,
+    sep: &str,
+    cd: usize,
+    ud: usize,
+    tick: usize,
+    common_st: &[std::sync::atomic::AtomicU8],
+    user_st: &[std::sync::atomic::AtomicU8],
+    paths: &[String],
+    common_disp: &[String],
+    user_disp: &[String],
+    is_final: bool,
+) {
+    use colored::Colorize;
+    use std::sync::atomic::{AtomicU8, Ordering};
+
+    let left_hdr: String;
+    let right_hdr: String;
+    let left_hdr_plain: String;
+
+    if is_final {
+        let cp = common_st.iter().filter(|a: &&AtomicU8| a.load(Ordering::Relaxed) == 2).count();
+        let cf = n - cp;
+        let up = user_st.iter().filter(|a: &&AtomicU8| a.load(Ordering::Relaxed) == 2).count();
+        let uf = n - up;
+        left_hdr = format!(
+            "Common Rules  {} passed, {} failed",
+            cp.to_string().green().bold(),
+            cf.to_string().red().bold()
+        );
+        right_hdr = format!(
+            "User Inferred Rules  {} passed, {} failed",
+            up.to_string().green().bold(),
+            uf.to_string().red().bold()
+        );
+        left_hdr_plain = format!("Common Rules  {} passed, {} failed", cp, cf);
+    } else {
+        left_hdr = format!("{}", format!("Common Rules ({}/{})", cd, n).yellow().bold());
+        right_hdr = format!("{}", format!("User Inferred Rules ({}/{})", ud, n).green().bold());
+        left_hdr_plain = format!("Common Rules ({}/{})", cd, n);
+    }
+
+    let left_pad = col_width.saturating_sub(left_hdr_plain.len());
+    let _ = term.write_line(&format!(
+        "  {}{}{}{}", left_hdr, " ".repeat(left_pad), gap, right_hdr
+    ));
+    let _ = term.write_line(&format!("  {}{}{}", sep.dimmed(), gap, sep.dimmed()));
+
+    for i in 0..max_rule_lines {
+        let left = if i < common_disp.len() { common_disp[i].as_str() } else { "" };
+        let left_vis = left.chars().count();
+        let lp = col_width.saturating_sub(left_vis);
+        let right = if i < user_disp.len() { user_disp[i].as_str() } else { "" };
+        let _ = term.write_line(&format!(
+            "  {}{}{}{}", left.dimmed(), " ".repeat(lp), gap, right.dimmed()
+        ));
+    }
+
+    let _ = term.write_line(&format!("  {}{}{}", sep.dimmed(), gap, sep.dimmed()));
+
+    for i in 0..n {
+        let cs = common_st[i].load(Ordering::Relaxed);
+        let us = user_st[i].load(Ordering::Relaxed);
+        let short = shorten_path(&paths[i], max_name);
+        let left = render_cell(cs, &short, tick, col_width);
+        let right = render_cell(us, &short, tick, col_width);
+        let _ = term.write_line(&format!("  {}{}{}", left, gap, right));
+    }
+}
+
 fn run_side_by_side_checks(
     cwd: &std::path::Path,
     files: &[std::path::PathBuf],
     common_rules_str: &str,
     user_id: Option<&str>,
 ) -> bool {
-    use colored::Colorize;
-    use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
     use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
     use std::sync::Arc;
 
@@ -1095,104 +1168,49 @@ fn run_side_by_side_checks(
     let user_done = Arc::new(AtomicUsize::new(0));
     let all_done = Arc::new(AtomicBool::new(false));
 
-    // --- Build live table with MultiProgress ---
-    let mp = MultiProgress::new();
-    let line_style = ProgressStyle::default_spinner()
-        .template("{msg}")
-        .expect("invalid line template");
+    let sep = "─".repeat(col_width);
+    let total_lines = 2 + max_rule_lines + 1 + n; // hdr + sep + rules + sep + files
 
-    // Header line (dynamic — shows progress counts)
-    let hdr_pb = mp.add(ProgressBar::new_spinner());
-    hdr_pb.set_style(line_style.clone());
-    hdr_pb.enable_steady_tick(Duration::from_millis(80));
+    // --- Initial render ---
+    let term = console::Term::stdout();
+    term.hide_cursor().ok();
 
-    // Top separator (static)
-    let sep_str = format!(
-        "  {}{}{}",
-        "─".repeat(col_width).dimmed(),
-        gap,
-        "─".repeat(col_width).dimmed()
+    render_table_frame(
+        &term, n, col_width, gap, max_name, max_rule_lines, &sep,
+        0, 0, 0,
+        &common_state, &user_state, &rel_paths,
+        &common_display, &user_display, false,
     );
-    let sep1_pb = mp.add(ProgressBar::new_spinner());
-    sep1_pb.set_style(line_style.clone());
-    sep1_pb.finish_with_message(sep_str.clone());
 
-    // Rule lines (static)
-    for i in 0..max_rule_lines {
-        let left = if i < common_display.len() { &common_display[i] } else { "" };
-        let left_vis = left.chars().count();
-        let left_pad = col_width.saturating_sub(left_vis);
-        let right = if i < user_display.len() { &user_display[i] } else { "" };
-        let msg = format!(
-            "  {}{}{}{}",
-            left.dimmed(),
-            " ".repeat(left_pad),
-            gap,
-            right.dimmed()
-        );
-        let pb = mp.add(ProgressBar::new_spinner());
-        pb.set_style(line_style.clone());
-        pb.finish_with_message(msg);
-    }
-
-    // Bottom separator (static)
-    let sep2_pb = mp.add(ProgressBar::new_spinner());
-    sep2_pb.set_style(line_style.clone());
-    sep2_pb.finish_with_message(sep_str);
-
-    // File row lines (dynamic — update as checks complete)
-    let file_pbs: Vec<ProgressBar> = (0..n)
-        .map(|i| {
-            let short = shorten_path(&rel_paths[i], max_name);
-            let left = render_cell(WAITING, &short, 0, col_width);
-            let right = render_cell(WAITING, &short, 0, col_width);
-            let pb = mp.add(ProgressBar::new_spinner());
-            pb.set_style(line_style.clone());
-            pb.set_message(format!("  {}{}{}", left, gap, right));
-            pb.enable_steady_tick(Duration::from_millis(80));
-            pb
-        })
-        .collect();
-
-    // --- Render thread: updates header and file rows ---
+    // --- Render thread ---
     let r_common = Arc::clone(&common_state);
     let r_user = Arc::clone(&user_state);
     let r_cd = Arc::clone(&common_done);
     let r_ud = Arc::clone(&user_done);
     let r_done = Arc::clone(&all_done);
     let r_paths = rel_paths.clone();
-    let r_file_pbs = file_pbs.clone();
-    let r_hdr_pb = hdr_pb.clone();
+    let r_common_disp = common_display.clone();
+    let r_user_disp = user_display.clone();
+    let r_sep = sep.clone();
 
     let render_handle = thread::spawn(move || {
+        let term = console::Term::stdout();
         let mut tick: usize = 0;
         loop {
             thread::sleep(Duration::from_millis(80));
             tick += 1;
 
+            term.clear_last_lines(total_lines).ok();
+
             let cd = r_cd.load(Ordering::Relaxed);
             let ud = r_ud.load(Ordering::Relaxed);
 
-            let left_hdr = format!("Common Rules ({}/{})", cd, n);
-            let left_vis = left_hdr.len();
-            let left_pad = col_width.saturating_sub(left_vis);
-            let right_hdr = format!("User Inferred Rules ({}/{})", ud, n);
-            r_hdr_pb.set_message(format!(
-                "  {}{}{}{}",
-                left_hdr.yellow().bold(),
-                " ".repeat(left_pad),
-                gap,
-                right_hdr.green().bold()
-            ));
-
-            for i in 0..n {
-                let cs = r_common[i].load(Ordering::Relaxed);
-                let us = r_user[i].load(Ordering::Relaxed);
-                let short = shorten_path(&r_paths[i], max_name);
-                let left = render_cell(cs, &short, tick, col_width);
-                let right = render_cell(us, &short, tick, col_width);
-                r_file_pbs[i].set_message(format!("  {}{}{}", left, gap, right));
-            }
+            render_table_frame(
+                &term, n, col_width, gap, max_name, max_rule_lines, &r_sep,
+                cd, ud, tick,
+                &r_common, &r_user, &r_paths,
+                &r_common_disp, &r_user_disp, false,
+            );
 
             if r_done.load(Ordering::Relaxed) {
                 break;
@@ -1238,59 +1256,22 @@ fn run_side_by_side_checks(
         .collect();
 
     // --- Wait for all check threads ---
-    let common_results: Vec<_> = common_handles
-        .into_iter()
-        .enumerate()
-        .map(|(i, h)| {
-            h.join()
-                .unwrap_or_else(|_| (rel_paths[i].clone(), false))
-        })
-        .collect();
-    let user_results: Vec<_> = user_handles
-        .into_iter()
-        .enumerate()
-        .map(|(i, h)| {
-            h.join()
-                .unwrap_or_else(|_| (rel_paths[i].clone(), false))
-        })
-        .collect();
+    for h in common_handles { h.join().ok(); }
+    for h in user_handles { h.join().ok(); }
 
-    // --- Stop render thread and finalize ---
+    // --- Stop render thread and draw final frame ---
     all_done.store(true, Ordering::Relaxed);
     render_handle.join().ok();
 
-    let cp = common_results.iter().filter(|(_, p)| *p).count();
-    let cf = n - cp;
-    let up = user_results.iter().filter(|(_, p)| *p).count();
-    let uf = n - up;
-
-    // Final header with pass/fail summary
-    let left_hdr = format!(
-        "Common Rules  {} passed, {} failed",
-        cp.to_string().green().bold(),
-        cf.to_string().red().bold()
+    term.clear_last_lines(total_lines).ok();
+    render_table_frame(
+        &term, n, col_width, gap, max_name, max_rule_lines, &sep,
+        common_done.load(Ordering::Relaxed),
+        user_done.load(Ordering::Relaxed),
+        0, &common_state, &user_state, &rel_paths,
+        &common_display, &user_display, true,
     );
-    let right_hdr = format!(
-        "User Inferred Rules  {} passed, {} failed",
-        up.to_string().green().bold(),
-        uf.to_string().red().bold()
-    );
-    let left_hdr_plain = format!("Common Rules  {} passed, {} failed", cp, cf);
-    let left_pad = col_width.saturating_sub(left_hdr_plain.len());
-    hdr_pb.finish_with_message(format!(
-        "  {}{}{}{}",
-        left_hdr, " ".repeat(left_pad), gap, right_hdr
-    ));
-
-    // Final file rows with pass/fail state
-    for i in 0..n {
-        let cs = common_state[i].load(Ordering::Relaxed);
-        let us = user_state[i].load(Ordering::Relaxed);
-        let short = shorten_path(&rel_paths[i], max_name);
-        let left = render_cell(cs, &short, 0, col_width);
-        let right = render_cell(us, &short, 0, col_width);
-        file_pbs[i].finish_with_message(format!("  {}{}{}", left, gap, right));
-    }
+    term.show_cursor().ok();
 
     had_graph
 }
@@ -1312,6 +1293,12 @@ fn run_configure_phase() {
 }
 
 fn main() -> io::Result<()> {
+    // Enable ANSI color/cursor support on Windows terminals (including VSCode)
+    #[cfg(windows)]
+    {
+        let _ = colored::control::set_virtual_terminal(true);
+    }
+
     let cli = Cli::parse();
 
     if matches!(cli.command, Some(Commands::Logout)) {
