@@ -454,10 +454,12 @@ Final revised plan:
 !`bash "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/plan-command.sh" "$ARGUMENTS"`
 "#;
 
-const PLAN_COMMAND_SCRIPT: &str = r#"#!/bin/bash
+fn plan_command_script() -> String {
+    format!(
+        r#"#!/bin/bash
 set -euo pipefail
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+PROJECT_DIR="${{CLAUDE_PROJECT_DIR:-$(pwd)}}"
 if [[ "$#" -gt 0 ]]; then
   REQUEST="$*"
 else
@@ -467,13 +469,23 @@ fi
 unset CLAUDECODE
 unset CLAUDE_PROJECT_DIR
 
-if [[ -z "${REQUEST//[[:space:]]/}" ]]; then
+if [[ -z "${{REQUEST//[[:space:]]/}}" ]]; then
   exit 0
 fi
 
+if [[ -n "${{RIPPLETIDE_PLAN_CLI_BIN:-}}" ]]; then
+  PLAN_CMD=("$RIPPLETIDE_PLAN_CLI_BIN")
+else
+  PACKAGE_VERSION="${{RIPPLETIDE_PLAN_CLI_VERSION:-{}}}"
+  PLAN_CMD=(npx -y "rippletide-mcp@${{PACKAGE_VERSION}}")
+fi
+
 cd "$PROJECT_DIR"
-printf '%s' "$REQUEST" | cargo run --quiet -- plan --raw --stdin
-"#;
+printf '%s' "$REQUEST" | "${{PLAN_CMD[@]}}" plan --raw --stdin
+"#,
+        env!("CARGO_PKG_VERSION")
+    )
+}
 
 fn ensure_claude_hooks() -> io::Result<bool> {
     let cwd = std::env::current_dir()?;
@@ -544,13 +556,14 @@ fn ensure_claude_commands() -> io::Result<bool> {
         changed = true;
     }
 
+    let plan_command_script = plan_command_script();
     let needs_script = if script_path.exists() {
-        fs::read_to_string(&script_path)? != PLAN_COMMAND_SCRIPT
+        fs::read_to_string(&script_path)? != plan_command_script
     } else {
         true
     };
     if needs_script {
-        fs::write(&script_path, PLAN_COMMAND_SCRIPT)?;
+        fs::write(&script_path, plan_command_script)?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -1784,13 +1797,17 @@ mod tests {
     #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
+    use std::process::Command;
     use std::sync::{Mutex, OnceLock};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
     fn env_lock() -> std::sync::MutexGuard<'static, ()> {
-        ENV_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+        ENV_LOCK
+            .get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner())
     }
 
     fn temp_dir(prefix: &str) -> PathBuf {
@@ -1823,7 +1840,7 @@ mod tests {
 
         std::env::set_var("RIPPLETIDE_CLAUDE_BIN", &stub);
         std::env::set_var("CLAUDECODE", "1");
-        std::env::set_var("CLAUDE_PROJECT_DIR", "/tmp/outer-claude-project");
+        std::env::set_var("CLAUDE_PROJECT_DIR", &dir);
 
         let result = call_planner_claude(&dir, "hello").unwrap();
         assert_eq!(result, "ok");
@@ -1842,6 +1859,64 @@ mod tests {
         }
 
         let _ = fs::remove_file(stub);
+        let _ = fs::remove_dir(dir);
+    }
+
+    #[test]
+    fn plan_command_script_uses_packaged_cli_path() {
+        let _guard = env_lock();
+        let dir = temp_dir("rippletide-plan-script");
+        let cli_stub = dir.join("plan-cli-stub.sh");
+        let command_script = dir.join("plan-command.sh");
+
+        fs::write(
+            &cli_stub,
+            "#!/bin/bash\nset -euo pipefail\nif [[ -n \"${CLAUDECODE:-}\" ]]; then\n  echo nested >&2\n  exit 41\nfi\nif [[ \"$1\" != \"plan\" || \"$2\" != \"--raw\" || \"$3\" != \"--stdin\" ]]; then\n  echo \"bad args: $*\" >&2\n  exit 42\nfi\nREQUEST=\"$(cat)\"\nprintf 'stub plan for: %s\\n' \"$REQUEST\"\n",
+        )
+        .unwrap();
+        fs::write(&command_script, plan_command_script()).unwrap();
+        #[cfg(unix)]
+        {
+            fs::set_permissions(&cli_stub, fs::Permissions::from_mode(0o755)).unwrap();
+            fs::set_permissions(&command_script, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+
+        let old_bin = std::env::var_os("RIPPLETIDE_PLAN_CLI_BIN");
+        let old_code = std::env::var_os("CLAUDECODE");
+        let old_project = std::env::var_os("CLAUDE_PROJECT_DIR");
+
+        std::env::set_var("RIPPLETIDE_PLAN_CLI_BIN", &cli_stub);
+        std::env::set_var("CLAUDECODE", "1");
+        std::env::set_var("CLAUDE_PROJECT_DIR", &dir);
+
+        let output = Command::new("bash")
+            .arg(&command_script)
+            .arg("hello world")
+            .current_dir(&dir)
+            .output()
+            .unwrap();
+
+        assert!(output.status.success());
+        assert_eq!(
+            String::from_utf8_lossy(&output.stdout).trim(),
+            "stub plan for: hello world"
+        );
+
+        match old_bin {
+            Some(value) => std::env::set_var("RIPPLETIDE_PLAN_CLI_BIN", value),
+            None => std::env::remove_var("RIPPLETIDE_PLAN_CLI_BIN"),
+        }
+        match old_code {
+            Some(value) => std::env::set_var("CLAUDECODE", value),
+            None => std::env::remove_var("CLAUDECODE"),
+        }
+        match old_project {
+            Some(value) => std::env::set_var("CLAUDE_PROJECT_DIR", value),
+            None => std::env::remove_var("CLAUDE_PROJECT_DIR"),
+        }
+
+        let _ = fs::remove_file(cli_stub);
+        let _ = fs::remove_file(command_script);
         let _ = fs::remove_dir(dir);
     }
 }
