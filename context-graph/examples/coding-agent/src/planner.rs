@@ -514,4 +514,14 @@ mod tests {
         assert!(!review.pass);
         assert_eq!(review.violations.len(), 1);
     }
+
+    #[test]
+    fn extracts_draft_json_from_prefixed_text() {
+        let draft = parse_draft_plan(
+            "**Applying rules:** Stay in scope\n\n{\"plan_markdown\":\"1. Inspect\\n2. Implement\\n3. Validate\"}",
+        )
+        .unwrap();
+
+        assert_eq!(draft.plan_markdown, "1. Inspect\n2. Implement\n3. Validate");
+    }
 }

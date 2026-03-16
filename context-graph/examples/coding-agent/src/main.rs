@@ -1107,6 +1107,63 @@ fn call_claude(path: &std::path::Path, prompt: &str) -> Result<String, String> {
     Ok(result)
 }
 
+fn call_planner_claude(path: &std::path::Path, prompt: &str) -> Result<String, String> {
+    use std::process::Command;
+
+    let claude_bin =
+        std::env::var("RIPPLETIDE_CLAUDE_BIN").unwrap_or_else(|_| "claude".to_string());
+    let mut cmd = Command::new(claude_bin);
+    cmd.args([
+        "-p",
+        prompt,
+        "--output-format",
+        "text",
+        "--model",
+        "opus",
+        "--tools",
+        "",
+    ])
+    .current_dir(path);
+
+    for (key, value) in std::env::vars() {
+        if !key.starts_with("CLAUDE") {
+            cmd.env(&key, &value);
+        }
+    }
+    cmd.env("GIT_TERMINAL_PROMPT", "0");
+    cmd.env(
+        "GIT_SSH_COMMAND",
+        "ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes",
+    );
+
+    let output = cmd
+        .output()
+        .map_err(|e| format!("failed to run claude CLI: {e}"))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+
+    if !output.status.success() {
+        let message = if stderr.is_empty() {
+            format!("claude CLI exited with status {}", output.status)
+        } else {
+            stderr
+        };
+        return Err(message);
+    }
+
+    if stdout.is_empty() {
+        let message = if stderr.is_empty() {
+            "empty response from claude CLI".to_string()
+        } else {
+            stderr
+        };
+        return Err(message);
+    }
+
+    Ok(stdout)
+}
+
 fn collect_source_files(cwd: &std::path::Path) -> Vec<std::path::PathBuf> {
     use walkdir::WalkDir;
 
@@ -1474,7 +1531,7 @@ struct LiveClaude;
 
 impl planner::ClaudeExecutor for LiveClaude {
     fn run(&self, cwd: &std::path::Path, prompt: &str) -> Result<String, String> {
-        call_claude(cwd, prompt)
+        call_planner_claude(cwd, prompt)
     }
 }
 
