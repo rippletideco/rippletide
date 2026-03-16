@@ -12,7 +12,7 @@ Each coding agent has its own local memory — but none of them talk to each oth
 When you connect with `--read-only`, the agent can **read** from the graph but cannot **write** to it:
 
 ```bash
-npx rippletide-mcp@latest connect --agent-id <agent_id> --read-only
+npx rippletide-code@latest connect --agent-id <agent_id> --read-only
 ```
 
 This is what makes team-wide governance possible:
@@ -47,7 +47,7 @@ The Context Graph acts as shared engineering memory. The workflow:
     Each engineer runs the connect command in read-only mode in their project:
 
     ```bash
-    npx rippletide-mcp@latest connect --agent-id <shared_agent_id> --read-only
+    npx rippletide-code@latest connect --agent-id <shared_agent_id> --read-only
     ```
 
     Their coding agent now has access to the full set of team standards.
@@ -70,14 +70,14 @@ The Context Graph acts as shared engineering memory. The workflow:
 
 ```bash
 # 1. Team lead creates the shared graph (read-write)
-npx rippletide-mcp@latest connect --agent-id team-standards-agent
+npx rippletide-code@latest connect --agent-id team-standards-agent
 
 # 2. Team lead defines conventions via their coding agent
 #    e.g. "From now on, use camelCase for all variables"
 #    The agent stores this in the Context Graph automatically
 
 # 3. Every engineer connects in read-only
-npx rippletide-mcp@latest connect --agent-id team-standards-agent --read-only
+npx rippletide-code@latest connect --agent-id team-standards-agent --read-only
 
 # 4. Every agent session now enforces the same conventions
 ```
@@ -87,7 +87,7 @@ npx rippletide-mcp@latest connect --agent-id team-standards-agent --read-only
 You're not limited to a single shared team graph. You can connect to any colleague's Context Graph if they share their agent ID:
 
 ```bash
-npx rippletide-mcp@latest connect --agent-id <colleague_agent_id> --read-only
+npx rippletide-code@latest connect --agent-id <colleague_agent_id> --read-only
 ```
 
 This is useful for pair programming scenarios or when ramping up on a codebase that one person knows well.
