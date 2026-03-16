@@ -9,6 +9,7 @@ use directories::ProjectDirs;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
+mod planner;
 mod rules;
 mod scan;
 mod ui;
@@ -27,6 +28,15 @@ enum Commands {
         /// Reserved for backward compatibility
         #[arg(long)]
         read_only: bool,
+    },
+    /// Generate and revise a plan locally against Rippletide rules
+    Plan {
+        /// Planning request to send to Claude
+        #[arg(required = true)]
+        query: Vec<String>,
+        /// Maximum review attempts before returning the latest draft
+        #[arg(long, default_value_t = 3)]
+        max_iterations: usize,
     },
     /// Log out and remove stored credentials
     Logout,
@@ -123,6 +133,16 @@ fn save_config(config: &Config) -> io::Result<()> {
     fs::write(&path, json)
 }
 
+fn apply_environment_override(config: &mut Config) {
+    if let Ok(env_val) = std::env::var("RIPPLETIDE_ENV") {
+        match env_val.to_lowercase().as_str() {
+            "local" => config.environment = Environment::Local,
+            "production" | "prod" => config.environment = Environment::Production,
+            _ => {}
+        }
+    }
+}
+
 // --- Email auth ---
 
 #[derive(Deserialize)]
@@ -157,7 +177,12 @@ enum SignUpError {
     Other(String),
 }
 
-fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<SignUpResponse, SignUpError> {
+fn sign_up(
+    api_url: &str,
+    name: &str,
+    email: &str,
+    password: &str,
+) -> Result<SignUpResponse, SignUpError> {
     let url = format!("{}{}", api_url, SIGN_UP_PATH);
     let resp = ureq::post(&url)
         .send_json(serde_json::json!({
@@ -168,10 +193,15 @@ fn sign_up(api_url: &str, name: &str, email: &str, password: &str) -> Result<Sig
         .map_err(|e| {
             if let ureq::Error::Status(_code, response) = e {
                 if let Ok(body) = response.into_json::<serde_json::Value>() {
-                    if body.get("code").and_then(|c| c.as_str()) == Some("USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+                    if body.get("code").and_then(|c| c.as_str())
+                        == Some("USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL")
+                    {
                         return SignUpError::UserAlreadyExists;
                     }
-                    let msg = body.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error");
+                    let msg = body
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("Unknown error");
                     return SignUpError::Other(msg.to_string());
                 }
                 SignUpError::Other("Server error".to_string())
@@ -494,7 +524,10 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
     let email = ui::styled_prompt("")?;
     if email.is_empty() {
         ui::print_error("Email cannot be empty");
-        return Ok(LoginResult { success: false, dashboard_url: None });
+        return Ok(LoginResult {
+            success: false,
+            dashboard_url: None,
+        });
     }
 
     let name = name_from_email(&email);
@@ -514,21 +547,30 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
             ui::print_success("Workspace created");
             thread::sleep(Duration::from_millis(150));
             ui::print_success("MCP endpoint reserved");
-            Ok(LoginResult { success: true, dashboard_url: Some(dashboard_url) })
+            Ok(LoginResult {
+                success: true,
+                dashboard_url: Some(dashboard_url),
+            })
         }
         Err(SignUpError::UserAlreadyExists) => {
             println!();
             ui::print_info("Account already exists — signing in with OTP");
             if let Err(e) = send_otp(&auth_url, &email) {
                 ui::print_error(&e);
-                return Ok(LoginResult { success: false, dashboard_url: None });
+                return Ok(LoginResult {
+                    success: false,
+                    dashboard_url: None,
+                });
             }
             ui::print_success("Verification code sent to your email");
             println!();
             let otp = ui::styled_prompt("Enter OTP code: ")?;
             if otp.is_empty() {
                 ui::print_error("OTP code cannot be empty");
-                return Ok(LoginResult { success: false, dashboard_url: None });
+                return Ok(LoginResult {
+                    success: false,
+                    dashboard_url: None,
+                });
             }
             match sign_in_with_otp(&auth_url, &email, &otp) {
                 Ok(resp) => {
@@ -544,17 +586,26 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
                     ui::print_success("Signed in successfully");
                     thread::sleep(Duration::from_millis(150));
                     ui::print_success("MCP endpoint reserved");
-                    Ok(LoginResult { success: true, dashboard_url: Some(dashboard_url) })
+                    Ok(LoginResult {
+                        success: true,
+                        dashboard_url: Some(dashboard_url),
+                    })
                 }
                 Err(e) => {
                     ui::print_error(&e);
-                    Ok(LoginResult { success: false, dashboard_url: None })
+                    Ok(LoginResult {
+                        success: false,
+                        dashboard_url: None,
+                    })
                 }
             }
         }
         Err(SignUpError::Other(e)) => {
             ui::print_error(&e);
-            Ok(LoginResult { success: false, dashboard_url: None })
+            Ok(LoginResult {
+                success: false,
+                dashboard_url: None,
+            })
         }
     }
 }
@@ -590,7 +641,11 @@ fn claude_project_dir() -> Option<PathBuf> {
     let cwd = std::env::current_dir().ok()?;
     let project_name = cwd.to_str()?.replace('/', "-");
     let dir = base.join(&project_name);
-    if dir.exists() { Some(dir) } else { None }
+    if dir.exists() {
+        Some(dir)
+    } else {
+        None
+    }
 }
 
 fn list_claude_projects() -> io::Result<Vec<(String, PathBuf)>> {
@@ -812,10 +867,20 @@ enum FetchRulesResult {
     Error(String),
 }
 
-fn fetch_rules(user_id: &str) -> FetchRulesResult {
-    let url = format!("{}{}", UPLOAD_URL.trim_end_matches("/upload"), QUERY_RULES_PATH);
+fn query_rules_url() -> String {
+    std::env::var("RIPPLETIDE_QUERY_RULES_URL").unwrap_or_else(|_| {
+        format!(
+            "{}{}",
+            UPLOAD_URL.trim_end_matches("/upload"),
+            QUERY_RULES_PATH
+        )
+    })
+}
+
+fn fetch_rules(user_id: &str, query: &str) -> FetchRulesResult {
+    let url = query_rules_url();
     let payload = serde_json::json!({
-        "query": "Return all coding rules",
+        "query": query,
         "beam_width": 2,
         "beam_max_depth": 8,
     });
@@ -837,7 +902,11 @@ fn fetch_rules(user_id: &str) -> FetchRulesResult {
         }
         return FetchRulesResult::Error(err.to_string());
     }
-    match body.get("answer").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+    match body
+        .get("answer")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+    {
         Some(s) => FetchRulesResult::Rules(s.to_string()),
         None => FetchRulesResult::NoGraph,
     }
@@ -847,11 +916,21 @@ fn call_claude(path: &std::path::Path, prompt: &str) -> Result<String, String> {
     use std::io::BufRead;
     use std::process::{Command, Stdio};
 
-    let mut cmd = Command::new("claude");
-    cmd.args(["-p", prompt, "--output-format", "stream-json", "--verbose", "--model", "opus"])
-        .current_dir(path)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+    let claude_bin =
+        std::env::var("RIPPLETIDE_CLAUDE_BIN").unwrap_or_else(|_| "claude".to_string());
+    let mut cmd = Command::new(claude_bin);
+    cmd.args([
+        "-p",
+        prompt,
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--model",
+        "opus",
+    ])
+    .current_dir(path)
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped());
 
     for (key, value) in std::env::vars() {
         if !key.starts_with("CLAUDE") {
@@ -859,9 +938,14 @@ fn call_claude(path: &std::path::Path, prompt: &str) -> Result<String, String> {
         }
     }
     cmd.env("GIT_TERMINAL_PROMPT", "0");
-    cmd.env("GIT_SSH_COMMAND", "ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes");
+    cmd.env(
+        "GIT_SSH_COMMAND",
+        "ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes",
+    );
 
-    let mut child = cmd.spawn().map_err(|e| format!("failed to run claude CLI: {e}"))?;
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("failed to run claude CLI: {e}"))?;
 
     let stdout = child.stdout.take().ok_or("no stdout")?;
     let stderr = child.stderr.take().ok_or("no stderr")?;
@@ -1107,7 +1191,12 @@ fn run_side_by_side_checks(
 
     let rel_paths: Vec<String> = files
         .iter()
-        .map(|f| f.strip_prefix(cwd).unwrap_or(f).to_string_lossy().to_string())
+        .map(|f| {
+            f.strip_prefix(cwd)
+                .unwrap_or(f)
+                .to_string_lossy()
+                .to_string()
+        })
         .collect();
 
     let common_display: Vec<String> = COMMON_RULES
@@ -1126,21 +1215,21 @@ fn run_side_by_side_checks(
     // --- Fetch user rules first (with spinner) ---
     let sp = ui::start_spinner("Fetching user rules from graph…");
     let mut had_graph = true;
-    let user_rules: Vec<String> = match user_id.map(fetch_rules) {
-        Some(FetchRulesResult::Rules(text)) => {
-            text.lines()
+    let user_rules: Vec<String> =
+        match user_id.map(|uid| fetch_rules(uid, "Return all coding rules")) {
+            Some(FetchRulesResult::Rules(text)) => text
+                .lines()
                 .map(|l| l.trim().trim_start_matches('-').trim().to_string())
                 .filter(|l| !l.is_empty())
-                .collect()
-        }
-        Some(FetchRulesResult::NoGraph) => {
-            had_graph = false;
-            DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
-        }
-        Some(FetchRulesResult::Error(_)) | None => {
-            DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
-        }
-    };
+                .collect(),
+            Some(FetchRulesResult::NoGraph) => {
+                had_graph = false;
+                DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
+            }
+            Some(FetchRulesResult::Error(_)) | None => {
+                DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
+            }
+        };
     ui::finish_spinner(&sp, "User rules loaded");
 
     let user_display: Vec<String> = user_rules
@@ -1162,8 +1251,7 @@ fn run_side_by_side_checks(
     // --- Shared state ---
     let common_state: Arc<Vec<AtomicU8>> =
         Arc::new((0..n).map(|_| AtomicU8::new(WAITING)).collect());
-    let user_state: Arc<Vec<AtomicU8>> =
-        Arc::new((0..n).map(|_| AtomicU8::new(WAITING)).collect());
+    let user_state: Arc<Vec<AtomicU8>> = Arc::new((0..n).map(|_| AtomicU8::new(WAITING)).collect());
     let common_done = Arc::new(AtomicUsize::new(0));
     let user_done = Arc::new(AtomicUsize::new(0));
     let all_done = Arc::new(AtomicBool::new(false));
@@ -1276,6 +1364,43 @@ fn run_side_by_side_checks(
     had_graph
 }
 
+struct LiveClaude;
+
+impl planner::ClaudeExecutor for LiveClaude {
+    fn run(&self, cwd: &std::path::Path, prompt: &str) -> Result<String, String> {
+        call_claude(cwd, prompt)
+    }
+}
+
+struct LiveRulesProvider {
+    user_id: Option<String>,
+}
+
+impl planner::RulesProvider for LiveRulesProvider {
+    fn fetch_rules(&self, query: &str) -> planner::RulesFetchResult {
+        let Some(user_id) = self.user_id.as_deref() else {
+            return planner::RulesFetchResult::NoRules;
+        };
+
+        match fetch_rules(user_id, query) {
+            FetchRulesResult::Rules(text) => {
+                let rules: Vec<String> = text
+                    .lines()
+                    .map(|line| line.trim().trim_start_matches('-').trim().to_string())
+                    .filter(|line| !line.is_empty())
+                    .collect();
+                if rules.is_empty() {
+                    planner::RulesFetchResult::NoRules
+                } else {
+                    planner::RulesFetchResult::Rules(rules)
+                }
+            }
+            FetchRulesResult::NoGraph => planner::RulesFetchResult::NoRules,
+            FetchRulesResult::Error(err) => planner::RulesFetchResult::Error(err),
+        }
+    }
+}
+
 fn run_configure_phase() {
     let result = configure_all();
 
@@ -1292,6 +1417,64 @@ fn run_configure_phase() {
     }
 }
 
+fn run_plan_command(
+    cwd: &std::path::Path,
+    config: &Config,
+    query_parts: &[String],
+    max_iterations: usize,
+) -> io::Result<()> {
+    let query = query_parts.join(" ").trim().to_string();
+    if query.is_empty() {
+        ui::print_error("Plan query cannot be empty");
+        return Ok(());
+    }
+
+    ui::print_header("Rippletide Plan Review");
+
+    let claude = LiveClaude;
+    let rules_provider = LiveRulesProvider {
+        user_id: config.user_id.clone(),
+    };
+
+    let outcome = planner::run_plan_loop(cwd, &query, max_iterations, &claude, &rules_provider)
+        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+
+    if outcome.used_fallback_rules {
+        ui::print_info("Using fallback plan rules");
+    } else {
+        ui::print_success(&format!(
+            "Loaded {} rules from Rippletide",
+            outcome.rules.len()
+        ));
+    }
+
+    for summary in &outcome.iteration_summaries {
+        if summary.passed {
+            ui::print_success(&format!("Review attempt {} passed", summary.attempt));
+        } else {
+            ui::print_progress(&format!(
+                "Review attempt {} found {} violation(s)",
+                summary.attempt, summary.violation_count
+            ));
+        }
+    }
+
+    if outcome.satisfied {
+        ui::print_success("Returning revised final plan");
+    } else {
+        ui::print_info(&format!(
+            "Returning latest draft after {}",
+            outcome.stopped_reason.replace('_', " ")
+        ));
+    }
+
+    println!();
+    println!("{}", outcome.final_plan);
+    println!();
+
+    Ok(())
+}
+
 fn main() -> io::Result<()> {
     // Enable ANSI color/cursor support on Windows terminals (including VSCode)
     #[cfg(windows)]
@@ -1301,27 +1484,29 @@ fn main() -> io::Result<()> {
 
     let cli = Cli::parse();
 
-    if matches!(cli.command, Some(Commands::Logout)) {
+    if matches!(&cli.command, Some(Commands::Logout)) {
         return logout();
+    }
+
+    let mut config = load_config();
+    apply_environment_override(&mut config);
+
+    let cwd = std::env::current_dir()?;
+
+    if let Some(Commands::Plan {
+        query,
+        max_iterations,
+    }) = &cli.command
+    {
+        return run_plan_command(&cwd, &config, query, *max_iterations);
     }
 
     let _read_only = match &cli.command {
         Some(Commands::Connect { read_only }) => *read_only,
         None => false,
-        _ => unreachable!(),
+        Some(Commands::Plan { .. }) => false,
+        Some(Commands::Logout) => unreachable!(),
     };
-
-    let mut config = load_config();
-
-    if let Ok(env_val) = std::env::var("RIPPLETIDE_ENV") {
-        match env_val.to_lowercase().as_str() {
-            "local" => config.environment = Environment::Local,
-            "production" | "prod" => config.environment = Environment::Production,
-            _ => {}
-        }
-    }
-
-    let cwd = std::env::current_dir()?;
 
     // Phase 1 — Header
     ui::print_header("Rippletide MCP");
