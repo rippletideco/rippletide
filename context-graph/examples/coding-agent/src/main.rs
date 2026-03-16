@@ -442,7 +442,6 @@ const CLAUDE_LOCAL_SETTINGS: &str = r#"{
 const PLAN_COMMAND_MARKDOWN: &str = r#"---
 description: Generate a repo-aware implementation plan revised against Rippletide rules
 argument-hint: "<request>"
-disable-model-invocation: true
 allowed-tools:
   - Bash
 ---
@@ -452,7 +451,7 @@ Request:
 $ARGUMENTS
 
 Final revised plan:
-!`bash "$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh" "$ARGUMENTS"`
+!`bash "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/plan-command.sh" "$ARGUMENTS"`
 "#;
 
 const PLAN_COMMAND_SCRIPT: &str = r#"#!/bin/bash
