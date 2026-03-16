@@ -8,6 +8,9 @@ else
   REQUEST="$(cat)"
 fi
 
+unset CLAUDECODE
+unset CLAUDE_PROJECT_DIR
+
 if [[ -z "${REQUEST//[[:space:]]/}" ]]; then
   exit 0
 fi

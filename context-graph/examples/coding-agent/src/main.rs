@@ -464,6 +464,9 @@ else
   REQUEST="$(cat)"
 fi
 
+unset CLAUDECODE
+unset CLAUDE_PROJECT_DIR
+
 if [[ -z "${REQUEST//[[:space:]]/}" ]]; then
   exit 0
 fi
@@ -1038,11 +1041,7 @@ fn call_claude(path: &std::path::Path, prompt: &str) -> Result<String, String> {
     .stdout(Stdio::piped())
     .stderr(Stdio::piped());
 
-    for (key, value) in std::env::vars() {
-        if !key.starts_with("CLAUDE") {
-            cmd.env(&key, &value);
-        }
-    }
+    scrub_claude_runtime_env(&mut cmd);
     cmd.env("GIT_TERMINAL_PROMPT", "0");
     cmd.env(
         "GIT_SSH_COMMAND",
@@ -1125,11 +1124,7 @@ fn call_planner_claude(path: &std::path::Path, prompt: &str) -> Result<String, S
     ])
     .current_dir(path);
 
-    for (key, value) in std::env::vars() {
-        if !key.starts_with("CLAUDE") {
-            cmd.env(&key, &value);
-        }
-    }
+    scrub_claude_runtime_env(&mut cmd);
     cmd.env("GIT_TERMINAL_PROMPT", "0");
     cmd.env(
         "GIT_SSH_COMMAND",
@@ -1162,6 +1157,14 @@ fn call_planner_claude(path: &std::path::Path, prompt: &str) -> Result<String, S
     }
 
     Ok(stdout)
+}
+
+fn scrub_claude_runtime_env(cmd: &mut std::process::Command) {
+    for (key, _) in std::env::vars() {
+        if key.starts_with("CLAUDE") {
+            cmd.env_remove(key);
+        }
+    }
 }
 
 fn collect_source_files(cwd: &std::path::Path) -> Vec<std::path::PathBuf> {
@@ -1772,4 +1775,73 @@ fn main() -> io::Result<()> {
 
     println!();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
+    use std::path::PathBuf;
+    use std::sync::{Mutex, OnceLock};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+    fn env_lock() -> std::sync::MutexGuard<'static, ()> {
+        ENV_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+    }
+
+    fn temp_dir(prefix: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("{prefix}-{}-{nanos}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn planner_claude_invocation_removes_nested_session_env() {
+        let _guard = env_lock();
+        let dir = temp_dir("rippletide-plan-env");
+        let stub = dir.join("claude-stub.sh");
+
+        fs::write(
+            &stub,
+            "#!/bin/bash\nif [[ -n \"${CLAUDECODE:-}\" ]]; then\n  echo nested >&2\n  exit 42\nfi\nprintf 'ok\\n'\n",
+        )
+        .unwrap();
+        #[cfg(unix)]
+        fs::set_permissions(&stub, fs::Permissions::from_mode(0o755)).unwrap();
+
+        let old_bin = std::env::var_os("RIPPLETIDE_CLAUDE_BIN");
+        let old_code = std::env::var_os("CLAUDECODE");
+        let old_project = std::env::var_os("CLAUDE_PROJECT_DIR");
+
+        std::env::set_var("RIPPLETIDE_CLAUDE_BIN", &stub);
+        std::env::set_var("CLAUDECODE", "1");
+        std::env::set_var("CLAUDE_PROJECT_DIR", "/tmp/outer-claude-project");
+
+        let result = call_planner_claude(&dir, "hello").unwrap();
+        assert_eq!(result, "ok");
+
+        match old_bin {
+            Some(value) => std::env::set_var("RIPPLETIDE_CLAUDE_BIN", value),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_BIN"),
+        }
+        match old_code {
+            Some(value) => std::env::set_var("CLAUDECODE", value),
+            None => std::env::remove_var("CLAUDECODE"),
+        }
+        match old_project {
+            Some(value) => std::env::set_var("CLAUDE_PROJECT_DIR", value),
+            None => std::env::remove_var("CLAUDE_PROJECT_DIR"),
+        }
+
+        let _ = fs::remove_file(stub);
+        let _ = fs::remove_dir(dir);
+    }
 }
