@@ -433,7 +433,7 @@ const CLAUDE_SETTINGS: &str = r#"{
 const CLAUDE_LOCAL_SETTINGS: &str = r#"{
   "permissions": {
     "allow": [
-      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh\":*)"
+      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh\" *)"
     ]
   }
 }
@@ -442,8 +442,9 @@ const CLAUDE_LOCAL_SETTINGS: &str = r#"{
 const PLAN_COMMAND_MARKDOWN: &str = r#"---
 description: Generate a repo-aware implementation plan revised against Rippletide rules
 argument-hint: "<request>"
+disable-model-invocation: true
 allowed-tools:
-  - Bash(bash "$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh":*)
+  - Bash
 ---
 Return exactly the final revised plan below and nothing else.
 
@@ -451,18 +452,18 @@ Request:
 $ARGUMENTS
 
 Final revised plan:
-```text
-!`bash "$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh" <<'__RIPPLETIDE_PLAN_REQUEST__'
-$ARGUMENTS
-__RIPPLETIDE_PLAN_REQUEST__`
-```
+!`bash "$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh" "$ARGUMENTS"`
 "#;
 
 const PLAN_COMMAND_SCRIPT: &str = r#"#!/bin/bash
 set -euo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-REQUEST="$(cat)"
+if [[ "$#" -gt 0 ]]; then
+  REQUEST="$*"
+else
+  REQUEST="$(cat)"
+fi
 
 if [[ -z "${REQUEST//[[:space:]]/}" ]]; then
   exit 0

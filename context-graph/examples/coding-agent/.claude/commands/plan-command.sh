@@ -2,7 +2,11 @@
 set -euo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-REQUEST="$(cat)"
+if [[ "$#" -gt 0 ]]; then
+  REQUEST="$*"
+else
+  REQUEST="$(cat)"
+fi
 
 if [[ -z "${REQUEST//[[:space:]]/}" ]]; then
   exit 0
