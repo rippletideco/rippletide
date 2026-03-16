@@ -15,4 +15,5 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 rand = "0.8"
 colored = "2"
 indicatif = "0.17"
+console = "0.15"
 walkdir = "2"
