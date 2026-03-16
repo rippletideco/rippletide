@@ -35,8 +35,8 @@ enum Commands {
 const LOCAL_API_URL: &str = "http://localhost:3000";
 const LOCAL_AUTH_URL: &str = "http://localhost:3000";
 
-const PROD_API_URL: &str = "https://dashboard-rippletide.up.railway.app/coding-agent";
-const PROD_AUTH_URL: &str = "https://dashboard-rippletide.up.railway.app";
+const PROD_API_URL: &str = "https://app.rippletide.com/code";
+const PROD_AUTH_URL: &str = "https://app.rippletide.com/code";
 
 const SIGN_UP_PATH: &str = "/api/auth/sign-up/email";
 const SEND_OTP_PATH: &str = "/api/auth/email-otp/send-verification-otp";
@@ -505,7 +505,7 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
             config.user_id = Some(resp.user.id);
             config.email = Some(resp.user.email);
             let dashboard_url = format!(
-                "https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
+                "https://app.rippletide.com/code?token={}",
                 resp.token
             );
             config.session_token = Some(resp.token);
@@ -535,7 +535,7 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
                     config.user_id = Some(resp.user.id);
                     config.email = Some(resp.user.email);
                     let dashboard_url = format!(
-                        "https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
+                        "https://app.rippletide.com/code?token={}",
                         resp.token
                     );
                     config.session_token = Some(resp.token);
@@ -1389,7 +1389,7 @@ fn main() -> io::Result<()> {
     let final_url = dashboard_url.or_else(|| {
         config.session_token.as_ref().map(|token| {
             format!(
-                "https://dashboard-rippletide.up.railway.app/coding-agent/?token={}",
+                "https://app.rippletide.com/code?token={}",
                 token
             )
         })
