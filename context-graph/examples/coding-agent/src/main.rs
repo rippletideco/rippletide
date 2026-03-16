@@ -1,5 +1,6 @@
 use std::fs;
 use std::io;
+use std::io::Read;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
@@ -32,16 +33,22 @@ enum Commands {
     /// Generate and revise a plan locally against Rippletide rules
     Plan {
         /// Planning request to send to Claude
-        #[arg(required = true)]
         query: Vec<String>,
         /// Maximum review attempts before returning the latest draft
         #[arg(long, default_value_t = 3)]
         max_iterations: usize,
+        /// Read the planning request from stdin
+        #[arg(long)]
+        stdin: bool,
+        /// Print only the final revised plan
+        #[arg(long)]
+        raw: bool,
     },
     /// Log out and remove stored credentials
     Logout,
 }
 
+#[allow(dead_code)]
 const LOCAL_API_URL: &str = "http://localhost:3000";
 const LOCAL_AUTH_URL: &str = "http://localhost:3000";
 
@@ -86,6 +93,7 @@ struct Config {
 }
 
 impl Config {
+    #[allow(dead_code)]
     fn api_url(&self) -> &str {
         if let Some(ref custom) = self.api_url {
             return custom.as_str();
@@ -422,10 +430,53 @@ const CLAUDE_SETTINGS: &str = r#"{
 }
 "#;
 
+const CLAUDE_LOCAL_SETTINGS: &str = r#"{
+  "permissions": {
+    "allow": [
+      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh\":*)"
+    ]
+  }
+}
+"#;
+
+const PLAN_COMMAND_MARKDOWN: &str = r#"---
+description: Generate a repo-aware implementation plan revised against Rippletide rules
+argument-hint: "<request>"
+allowed-tools:
+  - Bash(bash "$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh":*)
+---
+Return exactly the final revised plan below and nothing else.
+
+Request:
+$ARGUMENTS
+
+Final revised plan:
+```text
+!`bash "$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh" <<'__RIPPLETIDE_PLAN_REQUEST__'
+$ARGUMENTS
+__RIPPLETIDE_PLAN_REQUEST__`
+```
+"#;
+
+const PLAN_COMMAND_SCRIPT: &str = r#"#!/bin/bash
+set -euo pipefail
+
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+REQUEST="$(cat)"
+
+if [[ -z "${REQUEST//[[:space:]]/}" ]]; then
+  exit 0
+fi
+
+cd "$PROJECT_DIR"
+printf '%s' "$REQUEST" | cargo run --quiet -- plan --raw --stdin
+"#;
+
 fn ensure_claude_hooks() -> io::Result<bool> {
     let cwd = std::env::current_dir()?;
     let hooks_dir = cwd.join(".claude").join("hooks");
     let settings_path = cwd.join(".claude").join("settings.json");
+    let local_settings_path = cwd.join(".claude").join("settings.local.json");
     let script_path = hooks_dir.join("fetch-rules.sh");
 
     fs::create_dir_all(&hooks_dir)?;
@@ -457,12 +508,61 @@ fn ensure_claude_hooks() -> io::Result<bool> {
         changed = true;
     }
 
+    let needs_local_settings = if local_settings_path.exists() {
+        fs::read_to_string(&local_settings_path)? != CLAUDE_LOCAL_SETTINGS
+    } else {
+        true
+    };
+    if needs_local_settings {
+        fs::write(&local_settings_path, CLAUDE_LOCAL_SETTINGS)?;
+        changed = true;
+    }
+
+    Ok(changed)
+}
+
+fn ensure_claude_commands() -> io::Result<bool> {
+    let cwd = std::env::current_dir()?;
+    let commands_dir = cwd.join(".claude").join("commands");
+    let command_path = commands_dir.join("plan.md");
+    let script_path = commands_dir.join("plan-command.sh");
+
+    fs::create_dir_all(&commands_dir)?;
+
+    let mut changed = false;
+
+    let needs_command = if command_path.exists() {
+        fs::read_to_string(&command_path)? != PLAN_COMMAND_MARKDOWN
+    } else {
+        true
+    };
+    if needs_command {
+        fs::write(&command_path, PLAN_COMMAND_MARKDOWN)?;
+        changed = true;
+    }
+
+    let needs_script = if script_path.exists() {
+        fs::read_to_string(&script_path)? != PLAN_COMMAND_SCRIPT
+    } else {
+        true
+    };
+    if needs_script {
+        fs::write(&script_path, PLAN_COMMAND_SCRIPT)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&script_path, fs::Permissions::from_mode(0o755))?;
+        }
+        changed = true;
+    }
+
     Ok(changed)
 }
 
 struct ConfigureResult {
     agents_error: Option<String>,
     hooks_error: Option<String>,
+    commands_error: Option<String>,
 }
 
 fn configure_all() -> ConfigureResult {
@@ -476,9 +576,15 @@ fn configure_all() -> ConfigureResult {
         Err(e) => Some(format!("{e}")),
     };
 
+    let commands_error = match ensure_claude_commands() {
+        Ok(_) => None,
+        Err(e) => Some(format!("{e}")),
+    };
+
     ConfigureResult {
         agents_error,
         hooks_error,
+        commands_error,
     }
 }
 
@@ -1415,6 +1521,13 @@ fn run_configure_phase() {
         Some(e) => ui::print_error(&format!(".claude/hooks error: {e}")),
         None => ui::print_success(".claude/hooks configured"),
     }
+
+    thread::sleep(Duration::from_millis(150));
+
+    match result.commands_error {
+        Some(e) => ui::print_error(&format!(".claude/commands error: {e}")),
+        None => ui::print_success(".claude/commands configured"),
+    }
 }
 
 fn run_plan_command(
@@ -1422,14 +1535,24 @@ fn run_plan_command(
     config: &Config,
     query_parts: &[String],
     max_iterations: usize,
+    use_stdin: bool,
+    raw: bool,
 ) -> io::Result<()> {
-    let query = query_parts.join(" ").trim().to_string();
+    let query = if use_stdin {
+        let mut input = String::new();
+        io::stdin().read_to_string(&mut input)?;
+        input.trim().to_string()
+    } else {
+        query_parts.join(" ").trim().to_string()
+    };
     if query.is_empty() {
         ui::print_error("Plan query cannot be empty");
         return Ok(());
     }
 
-    ui::print_header("Rippletide Plan Review");
+    if !raw {
+        ui::print_header("Rippletide Plan Review");
+    }
 
     let claude = LiveClaude;
     let rules_provider = LiveRulesProvider {
@@ -1439,38 +1562,42 @@ fn run_plan_command(
     let outcome = planner::run_plan_loop(cwd, &query, max_iterations, &claude, &rules_provider)
         .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
 
-    if outcome.used_fallback_rules {
-        ui::print_info("Using fallback plan rules");
+    if raw {
+        println!("{}", outcome.final_plan);
     } else {
-        ui::print_success(&format!(
-            "Loaded {} rules from Rippletide",
-            outcome.rules.len()
-        ));
-    }
-
-    for summary in &outcome.iteration_summaries {
-        if summary.passed {
-            ui::print_success(&format!("Review attempt {} passed", summary.attempt));
+        if outcome.used_fallback_rules {
+            ui::print_info("Using fallback plan rules");
         } else {
-            ui::print_progress(&format!(
-                "Review attempt {} found {} violation(s)",
-                summary.attempt, summary.violation_count
+            ui::print_success(&format!(
+                "Loaded {} rules from Rippletide",
+                outcome.rules.len()
             ));
         }
-    }
 
-    if outcome.satisfied {
-        ui::print_success("Returning revised final plan");
-    } else {
-        ui::print_info(&format!(
-            "Returning latest draft after {}",
-            outcome.stopped_reason.replace('_', " ")
-        ));
-    }
+        for summary in &outcome.iteration_summaries {
+            if summary.passed {
+                ui::print_success(&format!("Review attempt {} passed", summary.attempt));
+            } else {
+                ui::print_progress(&format!(
+                    "Review attempt {} found {} violation(s)",
+                    summary.attempt, summary.violation_count
+                ));
+            }
+        }
 
-    println!();
-    println!("{}", outcome.final_plan);
-    println!();
+        if outcome.satisfied {
+            ui::print_success("Returning revised final plan");
+        } else {
+            ui::print_info(&format!(
+                "Returning latest draft after {}",
+                outcome.stopped_reason.replace('_', " ")
+            ));
+        }
+
+        println!();
+        println!("{}", outcome.final_plan);
+        println!();
+    }
 
     Ok(())
 }
@@ -1496,9 +1623,11 @@ fn main() -> io::Result<()> {
     if let Some(Commands::Plan {
         query,
         max_iterations,
+        stdin,
+        raw,
     }) = &cli.command
     {
-        return run_plan_command(&cwd, &config, query, *max_iterations);
+        return run_plan_command(&cwd, &config, query, *max_iterations, *stdin, *raw);
     }
 
     let _read_only = match &cli.command {
