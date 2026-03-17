@@ -11,11 +11,10 @@ The CLI tool `rippletide-code` handles all the wiring. One command connects your
 npx rippletide-code@latest connect
 ```
 
-This does three things:
+This does two things:
 
-1. Creates `.mcp.json` — configures the MCP connection for Claude Code and Cursor
-2. Creates `.codex/config.toml` — configures the MCP connection for Codex
-3. Creates `CLAUDE.md` / `AGENTS.md` — injects system prompt instructions so the agent knows how to use the graph tools
+1. Creates `.codex/config.toml` — configures the MCP connection for Codex
+2. Creates `CLAUDE.md` / `AGENTS.md` — injects system prompt instructions so the agent knows how to use the graph tools
 
 ### What gets generated
 
@@ -23,22 +22,8 @@ After running `connect`, your project root will contain:
 
 ```
 your-project/
-├── .mcp.json              # MCP server config (Claude Code, Cursor)
 ├── .codex/config.toml     # MCP server config (Codex)
 ├── CLAUDE.md              # Agent instructions (auto-generated)
 └── AGENTS.md              # Agent instructions (auto-generated)
-```
-
-The `.mcp.json` points to the Rippletide MCP endpoint with your agent ID:
-
-```json
-{
-  "mcpServers": {
-    "rippletide-kg": {
-      "type": "http",
-      "url": "https://mcp.rippletide.com/mcp?agentId=<agent_id>"
-    }
-  }
-}
 ```
 
