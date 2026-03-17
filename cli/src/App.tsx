@@ -239,7 +239,7 @@ export const App: React.FC<AppProps> = ({
             passed: 0,
             failed: 0,
             duration: 'Failed',
-            evaluationUrl: dashboardUrl || 'https://eval.rippletide.com',
+            evaluationUrl: dashboardUrl || 'https://app.rippletide.com/eval',
             error: errorMessage,
           });
           setStep('complete');
@@ -293,7 +293,7 @@ export const App: React.FC<AppProps> = ({
             passed: 0,
             failed: 0,
             duration: 'Failed',
-            evaluationUrl: dashboardUrl || 'https://eval.rippletide.com',
+            evaluationUrl: dashboardUrl || 'https://app.rippletide.com/eval',
             error: errorMessage,
           });
           setStep('complete');
@@ -339,7 +339,7 @@ export const App: React.FC<AppProps> = ({
             passed: 0,
             failed: 0,
             duration: 'Failed',
-            evaluationUrl: dashboardUrl || 'https://eval.rippletide.com',
+            evaluationUrl: dashboardUrl || 'https://app.rippletide.com/eval',
             error: errorMessage,
           });
           setStep('complete');
@@ -543,7 +543,7 @@ export const App: React.FC<AppProps> = ({
             passed,
             failed,
             duration: durationStr,
-            evaluationUrl: `${dashboardUrl || 'https://eval.rippletide.com'}/eval/${agentId}`,
+            evaluationUrl: `${dashboardUrl || 'https://app.rippletide.com/eval'}/eval/${agentId}`,
             agentId,
           };
           
@@ -566,7 +566,7 @@ export const App: React.FC<AppProps> = ({
             passed: 0,
             failed: 0,
             duration: 'Failed',
-            evaluationUrl: dashboardUrl || 'https://eval.rippletide.com',
+            evaluationUrl: dashboardUrl || 'https://app.rippletide.com/eval',
             error: errorMessage,
           });
           setStep('complete');

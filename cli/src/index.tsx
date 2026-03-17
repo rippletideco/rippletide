@@ -33,7 +33,7 @@ const parseArgs = async () => {
   
   const options: any = {
     backendUrl: 'https://agent-evalserver-production.up.railway.app',
-    dashboardUrl: 'https://eval.rippletide.com',
+    dashboardUrl: 'https://app.rippletide.com/eval',
     debug: false,
     nonInteractive: false
   };
@@ -115,7 +115,7 @@ Options:
   -a, --agent <url>           Agent endpoint URL (e.g., localhost:8000)
   -k, --knowledge <source>    Knowledge source: files, pinecone, postgresql, or pdf (default: files)
   -b, --backend-url <url>     Backend API URL (default: https://agent-evalserver-production.up.railway.app)
-  -d, --dashboard-url <url>   Dashboard URL (default: https://eval.rippletide.com)
+  -d, --dashboard-url <url>   Dashboard URL (default: https://app.rippletide.com/eval)
   
   Pinecone options:
   -pu, --pinecone-url <url>   Pinecone database URL
