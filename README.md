@@ -1,11 +1,11 @@
-<img width="2000" alt="Rippletide" src="./Rippletide_github.jpeg" />
+<img width="2000" alt="Rippletide" src="./assets/Rippletide_github.jpeg" />
 
 <p align="center">
-  <strong>Rippletide is an authority layer for AI agents — evaluate responses, persist context, and run deterministic decisions with full traceability.</strong>
+  <strong>Rippletide adds an authority layer that validates, constrains, or blocks agent actions at runtime before they impact real systems or customers.</strong>
 </p>
 
 <p align="center">
-  <a href="https://trust.rippletide.com">Web Platform</a>
+  <a href="https://app.rippletide.com">Web Platform</a>
   ·
   <a href="https://github.com/rippletideco/rippletide">GitHub</a>
   ·
@@ -32,30 +32,33 @@
 **Core Modules:**
 | # | Module | What it does |
 |---|--------|-------------|
-| 1 | [Agent Evaluation CLI](#agent-evaluation-cli) | CLI tool to test and validate AI agent responses |
-| 2 | [Context Graph](#context-graph) | Persistent memory and rules for AI agents |
-| | &nbsp;&nbsp;↳ [Coding Agents](#use-case--coding-agents) | Shared conventions for Claude Code |
-| | &nbsp;&nbsp;↳ [MCP](#mcp) | Persistent isolated memory for any agent `Enterprise` |
-| 3 | [Decision Runtime](#decision-runtime) | Deterministic agents, <1% hallucination `Enterprise` |
+| 1 | [Agent Evaluation CLI](#agent-evaluation-cli) | Validate before you ship |
+| 2 | [Context Graph](#context-graph) | Bring the right context for a more predictable agent |
+| | &nbsp;&nbsp;↳ [Coding Agents](#use-case--coding-agents) | A persistent memory layer for Claude |
+| | &nbsp;&nbsp;↳ [MCP](#mcp) | Give your agents persistent memory across sessions `Enterprise` |
+| 3 | [Decision Runtime](#decision-runtime) | Build deterministic agents with less than 1% hallucination rate `Enterprise` |
 
 ---
 
 ## What is Rippletide?
 
-Rippletide is an authority layer that sits between your AI agents and your users. It validates, constrains, and traces agent actions at runtime — replacing fragile prompt-based guardrails with an engine-level decision system.
+Rippletide adds an authority layer that validates, constrains, or blocks agent actions at runtime before they impact real systems or customers.
 
 | | Without Rippletide | With Rippletide |
 |---|---|---|
-| Hallucinations | Variable | <1% |
-| Memory | Lost between sessions | Persistent context graph |
-| Guardrails | Prompt-based | Runtime enforcement |
-| Explainability | Black box | Fully traceable |
+| **Hallucinations** | Variable, hard to control | Less than 1% by design |
+| **Memory** | Lost between conversations | Persistent context graph |
+| **Guardrails** | Prompt-based, easy to bypass | Engine-level, 100% compliance |
+| **Explainability** | Black box | Every decision is traceable |
+| **Evaluation** | Manual spot checks | Automated, CI-ready testing |
 
 ---
 
 ## Agent Evaluation CLI
 
-A CLI tool for testing and validating AI agent responses directly from your terminal. Point it at any agent endpoint, provide your Q&A pairs, and get instant pass/fail results with justifications — no custom scripts needed.
+Eval is the entry point to Rippletide. Before adding memory or decision runtime, start by testing what your agent already does. Plug your agent into our CLI and Rippletide auto-generates test questions to evaluate its responses. Rippletide spots hallucinations by fact-checking each output and suggests improvements when sources are missing.
+
+**When to use it:** Before every deployment, in CI pipelines, and during development to catch regressions.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/rippletideco/rippletide/main/assets/demo.gif" alt="Agent Evaluation Demo" width="800">
@@ -169,7 +172,9 @@ rippletide eval -t customer_service
 
 ## Context Graph
 
-Persistent, shared memory for AI agents. Store your rules and knowledge once — every agent session reads from the same source of truth.
+A persistent context graph that stores facts, decisions, preferences, and entity relationships across conversations. Your agents remember what matters without re-prompting.
+
+**When to use it:** When your agents need to recall past interactions, share context across sessions, or maintain structured knowledge about users, products, or projects.
 
 ### Use Case — Coding Agents
 
@@ -189,7 +194,9 @@ Your agents forget everything between sessions. The MCP layer fixes that — rul
 
 ## Decision Runtime
 
-Build AI agents that never hallucinate. The Decision Runtime replaces probabilistic LLM reasoning with a deterministic engine — agents that follow your business logic exactly, every time, with full traceability.
+Structure your agent's knowledge as a hypergraph of Q&A pairs, tags, actions, and state transitions. Decisions are handled by a deterministic reasoning engine, not probabilistic generation. The result: agents that hallucinate less than 1% of the time, with full explainability on every answer.
+
+**When to use it:** When you need guaranteed accuracy, every decision must be traceable, and guardrails must be enforced at the engine level — not just in prompts.
 
 > **Enterprise only** — [Contact us](https://rippletide.com) to learn how we can bring this to your team.
 
@@ -197,7 +204,7 @@ Build AI agents that never hallucinate. The Decision Runtime replaces probabilis
 
 ## Trust Platform
 
-The [Trust Platform](https://trust.rippletide.com) brings everything together. Build agents without writing code, connect your knowledge sources, set guardrails that the LLM cannot override, and see exactly how your agent reasons through every decision — all in one place.
+The [Trust Platform](https://app.rippletide.com) brings everything together. Build agents without writing code, connect your knowledge sources, set guardrails that the LLM cannot override, and see exactly how your agent reasons through every decision — all in one place.
 
 - **Visual Agent Builder** — configure agents without code
 - **Knowledge Connectors** — import from Amazon Bedrock, PDFs, or manual Q&A
