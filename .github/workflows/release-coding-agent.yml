@@ -18,22 +18,22 @@ jobs:
         include:
           - target: aarch64-apple-darwin
             os: macos-latest
-            npm-pkg: rippletide-mcp-darwin-arm64
+            npm-pkg: rippletide-code-darwin-arm64
           - target: x86_64-apple-darwin
             os: macos-latest
-            npm-pkg: rippletide-mcp-darwin-x64
+            npm-pkg: rippletide-code-darwin-x64
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            npm-pkg: rippletide-mcp-linux-x64
+            npm-pkg: rippletide-code-linux-x64
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            npm-pkg: rippletide-mcp-win32-x64
+            npm-pkg: rippletide-code-win32-x64
           - target: aarch64-pc-windows-msvc
             os: windows-latest
-            npm-pkg: rippletide-mcp-win32-arm64
+            npm-pkg: rippletide-code-win32-arm64
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            npm-pkg: rippletide-mcp-linux-arm64
+            npm-pkg: rippletide-code-linux-arm64
 
     runs-on: ${{ matrix.os }}
 
@@ -61,13 +61,13 @@ jobs:
         if: runner.os != 'Windows'
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          cp target/${{ matrix.target }}/release/rippletide-cli npm/${{ matrix.npm-pkg }}/rippletide-mcp
+          cp target/${{ matrix.target }}/release/rippletide-cli npm/${{ matrix.npm-pkg }}/rippletide-code
 
       - name: Copy binary to npm package (Windows)
         if: runner.os == 'Windows'
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          copy target\${{ matrix.target }}\release\rippletide-cli.exe npm\${{ matrix.npm-pkg }}\rippletide-mcp.exe
+          copy target\${{ matrix.target }}\release\rippletide-cli.exe npm\${{ matrix.npm-pkg }}\rippletide-code.exe
         shell: cmd
 
       - name: Upload artifact
@@ -95,17 +95,17 @@ jobs:
       - name: Copy artifacts into npm packages
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64 rippletide-mcp-linux-arm64; do
+          for pkg in rippletide-code-darwin-arm64 rippletide-code-darwin-x64 rippletide-code-linux-x64 rippletide-code-linux-arm64; do
             cp -r $GITHUB_WORKSPACE/artifacts/$pkg/* npm/$pkg/
-            chmod +x npm/$pkg/rippletide-mcp
+            chmod +x npm/$pkg/rippletide-code
           done
-          cp -r $GITHUB_WORKSPACE/artifacts/rippletide-mcp-win32-x64/* npm/rippletide-mcp-win32-x64/
-          cp -r $GITHUB_WORKSPACE/artifacts/rippletide-mcp-win32-arm64/* npm/rippletide-mcp-win32-arm64/
+          cp -r $GITHUB_WORKSPACE/artifacts/rippletide-code-win32-x64/* npm/rippletide-code-win32-x64/
+          cp -r $GITHUB_WORKSPACE/artifacts/rippletide-code-win32-arm64/* npm/rippletide-code-win32-arm64/
 
       - name: Publish platform packages
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          for pkg in rippletide-mcp-darwin-arm64 rippletide-mcp-darwin-x64 rippletide-mcp-linux-x64 rippletide-mcp-linux-arm64 rippletide-mcp-win32-x64 rippletide-mcp-win32-arm64; do
+          for pkg in rippletide-code-darwin-arm64 rippletide-code-darwin-x64 rippletide-code-linux-x64 rippletide-code-linux-arm64 rippletide-code-win32-x64 rippletide-code-win32-arm64; do
             npm publish npm/$pkg/ --access public
           done
         env:
@@ -113,6 +113,6 @@ jobs:
 
       - name: Publish main package
         working-directory: ${{ env.WORKING_DIR }}
-        run: npm publish npm/rippletide-mcp/ --access public
+        run: npm publish npm/rippletide-code/ --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
