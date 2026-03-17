@@ -1,19 +1,19 @@
 ---
 title: Overview
-description: Give your coding agents persistent memory for consistent conventions across sessions
+description: Give Claude Code persistent memory for consistent conventions across sessions
 ---
 
 ## The problem
 
-Coding agents (Claude Code, Codex, Cursor) each have their own way to persist context — `CLAUDE.md`, `.cursorrules`, local memory files. But these mechanisms have two limits:
+Claude Code persists context via `CLAUDE.md` files. But this mechanism has two limits:
 
-1. **They don't scale in size.** Local files like `CLAUDE.md` are injected into the system prompt, which means they eat into the context window. The more rules you add, the less room the agent has to work. The Context Graph stores knowledge externally and the agent queries only what it needs via `recall` and `get_context`.
+1. **It doesn't scale in size.** `CLAUDE.md` is injected into the system prompt, which means it eats into the context window. The more rules you add, the less room the agent has to work. The Context Graph stores knowledge externally and the agent queries only what it needs via `recall` and `get_context`.
 
-2. **They're siloed per engineer.** When one engineer defines coding rules in their agent, the rest of the team never sees them. Scale that to 10 engineers running parallel agents, and you get 10 diverging sets of conventions. Each agent "remembers," but none of them share.
+2. **It's siloed per engineer.** When one engineer defines coding rules in their agent, the rest of the team never sees them. Scale that to 10 engineers running parallel agents, and you get 10 diverging sets of conventions. Each agent "remembers," but none of them share.
 
 ## How the Context Graph fixes this
 
-The [Context Graph](/docs/mcp/overview) gives your coding agents persistent, structured memory. Instead of re-explaining your conventions every session, you store them once in the graph. Every agent session reads from the same source of truth.
+The Context Graph gives Claude Code persistent, structured memory. Instead of re-explaining your conventions every session, you store them once in the graph. Every agent session reads from the same source of truth.
 
 The graph stores your engineering standards as entities and relations:
 
@@ -22,19 +22,11 @@ The graph stores your engineering standards as entities and relations:
 - **Design system rules** — approved components, spacing tokens, color usage
 - **Error handling policies** — how to handle API failures, logging standards, retry strategies
 
-When a coding agent starts a session, it pulls this context automatically via MCP tools like `recall` and `get_context`. No copy-pasting. No "remember to add this to the system prompt."
+When Claude Code starts a session, it pulls this context automatically via Claude Code hooks. No copy-pasting. No "remember to add this to the system prompt."
 
-## Supported coding agents
+## Integration
 
-The `connect` command generates configs for:
-
-| Agent | Config file | Format |
-|-------|------------|--------|
-| **Claude Code** | `.mcp.json` | JSON — `mcpServers` object |
-| **Cursor** | `.mcp.json` | JSON — same file, same format |
-| **Codex** | `.codex/config.toml` | TOML — `[mcp_servers]` table |
-
-All three read from the same Context Graph endpoint. The conventions are defined once and consumed everywhere.
+Rippletide integrates with Claude Code through [hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) — shell commands that run automatically at key points during the agent session. The `connect` command sets up these hooks so the Context Graph is queried seamlessly, without any manual intervention.
 
 ## Demo
 
