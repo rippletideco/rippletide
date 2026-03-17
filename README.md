@@ -167,8 +167,8 @@ rippletide eval -a localhost:8000 \
 ### Build from Source
 
 ```bash
-git clone https://github.com/rippletideco/starter.git
-cd starter/cli
+git clone https://github.com/rippletideco/rippletide.git
+cd rippletide/agent-evaluation
 npm install
 npm run build
 ```
@@ -182,24 +182,25 @@ npm run eval
 ### Project Structure
 
 ```
-cli/
-├── bin/
-│   └── rippletide          # Entry point
-├── src/
-│   ├── api/                # API client
-│   ├── components/         # UI components
-│   │   ├── Header.tsx
-│   │   ├── ProgressBar.tsx
-│   │   ├── SelectMenu.tsx
-│   │   ├── Spinner.tsx
-│   │   ├── Summary.tsx
-│   │   └── TextInput.tsx
-│   ├── errors/            # Error handling
-│   ├── utils/             # Utilities
-│   └── App.tsx            # Main app
-├── templates/             # Pre-built configs
-├── dist/                  # Compiled output
-└── package.json
+rippletide/
+├── agent-evaluation/       # CLI evaluation tool
+│   ├── bin/
+│   │   └── rippletide     # Entry point
+│   ├── src/
+│   │   ├── api/           # API client
+│   │   ├── components/    # UI components
+│   │   ├── errors/        # Error handling
+│   │   └── utils/         # Utilities
+│   ├── templates/         # Pre-built configs
+│   └── package.json
+├── context-graph/          # MCP server (Rust)
+│   ├── src/
+│   ├── npm/               # Multi-platform packages
+│   └── Cargo.toml
+├── decision-runtime/       # Runtime layer
+│   ├── playground-proxy/  # Proxy server
+│   └── rippletide_client/ # Python SDK
+└── docs/                   # Documentation site
 ```
 
 ---
