@@ -1,7 +1,7 @@
 {
-  "name": "rippletide-mcp-darwin-arm64",
+  "name": "rippletide-code-darwin-arm64",
   "version": "0.4.2",
-  "description": "Rippletide MCP binary for macOS Apple Silicon",
+  "description": "Rippletide Code binary for macOS Apple Silicon",
   "os": ["darwin"],
   "cpu": ["arm64"],
   "license": "MIT",

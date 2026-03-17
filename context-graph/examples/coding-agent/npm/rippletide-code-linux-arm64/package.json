@@ -1,7 +1,7 @@
 {
-  "name": "rippletide-mcp-linux-arm64",
+  "name": "rippletide-code-linux-arm64",
   "version": "0.4.2",
-  "description": "Rippletide MCP binary for Linux ARM64",
+  "description": "Rippletide Code binary for Linux ARM64",
   "os": ["linux"],
   "cpu": ["arm64"],
   "license": "MIT",

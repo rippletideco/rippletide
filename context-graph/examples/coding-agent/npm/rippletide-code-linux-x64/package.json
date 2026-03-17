@@ -1,8 +1,8 @@
 {
-  "name": "rippletide-mcp-win32-x64",
+  "name": "rippletide-code-linux-x64",
   "version": "0.4.2",
-  "description": "Rippletide MCP binary for Windows x64",
-  "os": ["win32"],
+  "description": "Rippletide Code binary for Linux x64",
+  "os": ["linux"],
   "cpu": ["x64"],
   "license": "MIT",
   "repository": {

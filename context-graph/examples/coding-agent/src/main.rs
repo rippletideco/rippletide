@@ -16,7 +16,7 @@ mod scan;
 mod ui;
 
 #[derive(Parser)]
-#[command(name = "rippletide", about = "Rippletide MCP")]
+#[command(name = "rippletide", about = "Rippletide Code")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -477,7 +477,7 @@ if [[ -n "${{RIPPLETIDE_PLAN_CLI_BIN:-}}" ]]; then
   PLAN_CMD=("$RIPPLETIDE_PLAN_CLI_BIN")
 else
   PACKAGE_VERSION="${{RIPPLETIDE_PLAN_CLI_VERSION:-{}}}"
-  PLAN_CMD=(npx -y "rippletide-mcp@${{PACKAGE_VERSION}}")
+  PLAN_CMD=(npx -y "rippletide-code@${{PACKAGE_VERSION}}")
 fi
 
 cd "$PROJECT_DIR"
@@ -1711,7 +1711,7 @@ fn main() -> io::Result<()> {
     };
 
     // Phase 1 — Header
-    ui::print_header("Rippletide MCP");
+    ui::print_header("Rippletide Code");
 
     let is_logged_in = config.session_token.is_some();
 

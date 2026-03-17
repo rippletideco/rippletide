@@ -4,12 +4,12 @@ const { execFileSync } = require("child_process");
 const path = require("path");
 
 const PLATFORMS = {
-  "darwin-arm64": "rippletide-mcp-darwin-arm64",
-  "darwin-x64": "rippletide-mcp-darwin-x64",
-  "linux-x64": "rippletide-mcp-linux-x64",
-  "win32-x64": "rippletide-mcp-win32-x64",
-  "win32-arm64": "rippletide-mcp-win32-arm64",
-  "linux-arm64": "rippletide-mcp-linux-arm64",
+  "darwin-arm64": "rippletide-code-darwin-arm64",
+  "darwin-x64": "rippletide-code-darwin-x64",
+  "linux-x64": "rippletide-code-linux-x64",
+  "win32-x64": "rippletide-code-win32-x64",
+  "win32-arm64": "rippletide-code-win32-arm64",
+  "linux-arm64": "rippletide-code-linux-arm64",
 };
 
 const platformKey = `${process.platform}-${process.arch}`;
@@ -24,7 +24,7 @@ if (!pkg) {
 
 let binPath;
 try {
-  const binName = process.platform === "win32" ? "rippletide-mcp.exe" : "rippletide-mcp";
+  const binName = process.platform === "win32" ? "rippletide-code.exe" : "rippletide-code";
   binPath = path.join(require.resolve(`${pkg}/package.json`), "..", binName);
 } catch {
   console.error(

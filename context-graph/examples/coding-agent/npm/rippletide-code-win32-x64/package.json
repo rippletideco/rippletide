@@ -1,8 +1,8 @@
 {
-  "name": "rippletide-mcp-darwin-x64",
+  "name": "rippletide-code-win32-x64",
   "version": "0.4.2",
-  "description": "Rippletide MCP binary for macOS Intel",
-  "os": ["darwin"],
+  "description": "Rippletide Code binary for Windows x64",
+  "os": ["win32"],
   "cpu": ["x64"],
   "license": "MIT",
   "repository": {

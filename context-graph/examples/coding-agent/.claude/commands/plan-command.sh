@@ -19,7 +19,7 @@ if [[ -n "${RIPPLETIDE_PLAN_CLI_BIN:-}" ]]; then
   PLAN_CMD=("$RIPPLETIDE_PLAN_CLI_BIN")
 else
   PACKAGE_VERSION="${RIPPLETIDE_PLAN_CLI_VERSION:-0.4.1}"
-  PLAN_CMD=(npx -y "rippletide-mcp@${PACKAGE_VERSION}")
+  PLAN_CMD=(npx -y "rippletide-code@${PACKAGE_VERSION}")
 fi
 
 cd "$PROJECT_DIR"
