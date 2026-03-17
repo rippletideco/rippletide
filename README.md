@@ -197,13 +197,12 @@ Build AI agents that never hallucinate. The Decision Runtime replaces probabilis
 
 ## Trust Platform
 
-All three modules are accessible through the [Trust Platform](https://trust.rippletide.com) — a unified web dashboard:
+The [Trust Platform](https://trust.rippletide.com) brings everything together. Build agents without writing code, connect your knowledge sources, set guardrails that the LLM cannot override, and see exactly how your agent reasons through every decision — all in one place.
 
-- **Visual Agent Builder** — build and configure agents without code
+- **Visual Agent Builder** — configure agents without code
 - **Knowledge Connectors** — import from Amazon Bedrock, PDFs, or manual Q&A
-- **Knowledge Visualization** — interactive graph view of your agent's knowledge
-- **Guardrail Configuration** — set engine-level rules that the LLM cannot override
-- **MCP Integration** — expose agents directly to Claude
+- **Knowledge Visualization** — see your agent's full knowledge graph
+- **Guardrail Configuration** — rules enforced at runtime, not in the prompt
 
 ---
 
