@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  WORKING_DIR: context-graph/examples/coding-agent
+  WORKING_DIR: context-graph
 
 jobs:
   build:

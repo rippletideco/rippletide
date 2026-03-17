@@ -24,7 +24,7 @@ export interface Template {
   isRemote?: boolean;
 }
 
-const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/rippletideco/starter/refs/heads/main/cli/templates';
+const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/rippletideco/rippletide/refs/heads/main/agent-evaluation/templates';
 
 const REMOTE_TEMPLATES = [
   'banking_analyst',
