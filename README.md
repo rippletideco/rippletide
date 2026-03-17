@@ -1,4 +1,4 @@
-<img width="2000" height="491" alt="Rippletide" src="./assets/banner.png" />
+<img width="2000" alt="Rippletide" src="./Rippletide_github.jpeg" />
 
 <p align="center">
   <strong>Rippletide is an authority layer for AI agents — evaluate responses, persist context, and run deterministic decisions with full traceability.</strong>
@@ -32,9 +32,11 @@
 **Core Modules:**
 | # | Module | What it does |
 |---|--------|-------------|
-| 1 | [Agent Evaluation](#agent-evaluation) | Test and validate AI agent responses |
-| 2 | [Context Graph](#context-graph) | Persistent memory and rules for coding agents |
-| 3 | [Decision Runtime](#decision-runtime) | Deterministic agents with <1% hallucination |
+| 1 | [Agent Evaluation CLI](#agent-evaluation-cli) | CLI tool to test and validate AI agent responses |
+| 2 | [Context Graph](#context-graph) | Persistent memory and rules for AI agents |
+| | &nbsp;&nbsp;↳ [Coding Agents](#use-case--coding-agents) | Shared conventions for Claude Code |
+| | &nbsp;&nbsp;↳ [MCP](#mcp) | Persistent isolated memory for any agent `Enterprise` |
+| 3 | [Decision Runtime](#decision-runtime) | Deterministic agents, <1% hallucination `Enterprise` |
 
 ---
 
@@ -46,14 +48,16 @@ Rippletide is an authority layer that sits between your AI agents and your users
 |---|---|---|
 | Hallucinations | Variable | <1% |
 | Memory | Lost between sessions | Persistent context graph |
-| Guardrails | Prompt-based | Engine-level enforcement |
+| Guardrails | Prompt-based | Runtime enforcement |
 | Explainability | Black box | Fully traceable |
 
 ---
 
-## Agent Evaluation
+## Agent Evaluation CLI
 
-Test and validate AI agent responses before and after deployment. The evaluation CLI sends your Q&A pairs to any agent endpoint, fact-checks responses against expected answers, and reports pass/fail with justifications.
+A CLI tool for testing and validating AI agent responses directly from your terminal. Point it at any agent endpoint, provide your Q&A pairs, and get instant pass/fail results with justifications — no custom scripts needed.
+
+> **Note:** Evaluation is also available via the [API](https://docs.rippletide.com/api-reference/introduction) and the [Trust Platform](https://trust.rippletide.com). This module covers the CLI only.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/rippletideco/rippletide/main/assets/demo.gif" alt="Agent Evaluation Demo" width="800">
@@ -167,112 +171,29 @@ rippletide eval -t customer_service
 
 ## Context Graph
 
-A Rust-based MCP (Model Context Protocol) server that gives coding agents — Claude Code, Cursor, Codex — a persistent, shared source of truth for your codebase rules and conventions.
+Persistent, shared memory for AI agents. Store your rules and knowledge once — every agent session reads from the same source of truth.
 
-### Demo
+### Use Case — Coding Agents
 
-<p align="center">
-  <img src="./coding-agents-demo.gif" alt="Context Graph Demo" width="800">
-</p>
+Every engineer on your team has their own `CLAUDE.md`. They're all different, all outdated, and Claude ignores half of them anyway. When someone defines a good convention, it stays on their machine.
 
-### The Problem
+The Context Graph gives Claude Code a shared, external memory. Your team defines the rules once — naming conventions, architecture decisions, error handling policies — and every Claude session pulls from the same source automatically. No copy-pasting. No drift between engineers. No more "why did Claude do it differently this time?"
 
-Local rule files like `CLAUDE.md` and `.cursorrules` don't scale:
-- Siloed per engineer, never shared
-- Go stale and are rarely updated
-- Lost between sessions
-- No enforcement — agents can ignore them
+→ [Coding Agents docs](https://docs.rippletide.com/docs/coding-agents/overview)
 
-The Context Graph solves this by storing your rules externally and injecting them automatically into every agent session.
+### MCP
 
-### Getting Started
+Your agents forget everything between sessions. The MCP layer fixes that — rules, context, and conventions stored once and available to every agent, every time.
 
-```bash
-npx rippletide-code@latest connect
-```
-
-This command:
-1. Authenticates with your Rippletide account
-2. Generates `.mcp.json` for Claude Code and Cursor
-3. Generates `.codex/config.toml` for Codex
-4. Creates `CLAUDE.md` / `AGENTS.md` with hook-first planning instructions
-
-From that point on, every coding agent session automatically receives your team's rules before generating any code or plan.
-
-### Supported Clients
-
-| Client | Config file generated |
-|--------|-----------------------|
-| Claude Code | `.mcp.json` |
-| Cursor | `.mcp.json` |
-| Claude Desktop | MCP settings |
-| VS Code | `.mcp.json` |
-| Codex | `.codex/config.toml` |
-
-→ [Context Graph docs](https://docs.rippletide.com/docs/mcp/overview) · [Coding Agents docs](https://docs.rippletide.com/docs/coding-agents/overview)
+> **Enterprise only** — [Contact us](https://rippletide.com) to learn more.
 
 ---
 
 ## Decision Runtime
 
-Build deterministic agents with a hypergraph reasoning engine. The LLM handles language only — input understanding and output generation. All decisions are made by the engine using a structured knowledge graph of Q&A pairs, tags, actions, and state predicates.
+Build AI agents that never hallucinate. The Decision Runtime replaces probabilistic LLM reasoning with a deterministic engine — agents that follow your business logic exactly, every time, with full traceability.
 
-The result: agents that follow your business logic exactly, with <1% hallucination rate and full traceability.
-
-### Playground Proxy
-
-A lightweight Node.js proxy server for the Rippletide MCP playground. Deployable to Vercel or Heroku.
-
-```bash
-cd decision-runtime/playground-proxy
-npm install
-npm start
-```
-
-Configure via environment variables:
-
-```bash
-cp .env.example .env
-# Set RIPPLETIDE_API_KEY and other vars
-```
-
-### Python SDK
-
-A Python client for the Rippletide evaluation and knowledge APIs.
-
-**Installation:**
-```bash
-pip install -r decision-runtime/rippletide_client/requirements.txt
-```
-
-**Basic usage:**
-```python
-from rippletide_sdk import RippletideClient
-
-client = RippletideClient(api_key="your-api-key")
-
-# Create an agent
-agent = client.create_agent(name="My Eval Agent")
-agent_id = agent['id']
-
-# Extract Q&A pairs from a PDF
-result = client.extract_questions_from_pdf(
-    agent_id=agent_id,
-    pdf_path="path/to/document.pdf"
-)
-
-# Evaluate a response
-report = client.evaluate(
-    agent_id=agent_id,
-    question="What is this document about?",
-    expected_answer="Optional expected answer"
-)
-
-print(f"Label: {report['label']}")
-print(f"Justification: {report['justification']}")
-```
-
-→ [Decision Runtime docs](https://docs.rippletide.com/docs/hypergraph_overview)
+> **Enterprise only** — [Contact us](https://rippletide.com) to learn how we can bring this to your team.
 
 ---
 
@@ -284,7 +205,7 @@ All three modules are accessible through the [Trust Platform](https://trust.ripp
 - **Knowledge Connectors** — import from Amazon Bedrock, PDFs, or manual Q&A
 - **Knowledge Visualization** — interactive graph view of your agent's knowledge
 - **Guardrail Configuration** — set engine-level rules that the LLM cannot override
-- **MCP Integration** — expose agents directly to Cursor, Claude, and VS Code
+- **MCP Integration** — expose agents directly to Claude
 
 ---
 
