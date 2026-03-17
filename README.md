@@ -172,7 +172,7 @@ A Rust-based MCP (Model Context Protocol) server that gives coding agents — Cl
 ### Demo
 
 <p align="center">
-  <video autoplay muted loop playsinline controls width="800" src="./docs/img/coding-agents-demo.mp4"></video>
+  <img src="./coding-agents-demo.gif" alt="Context Graph Demo" width="800">
 </p>
 
 ### The Problem
