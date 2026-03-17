@@ -10,6 +10,18 @@
           }
         ]
       }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/validate-diff.sh\"",
+            "timeout": 120,
+            "statusMessage": "Checking files against coding rules..."
+          }
+        ]
+      }
     ]
   }
 }
