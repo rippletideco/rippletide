@@ -57,8 +57,6 @@ Rippletide is an authority layer that sits between your AI agents and your users
 
 A CLI tool for testing and validating AI agent responses directly from your terminal. Point it at any agent endpoint, provide your Q&A pairs, and get instant pass/fail results with justifications — no custom scripts needed.
 
-> **Note:** Evaluation is also available via the [API](https://docs.rippletide.com/api-reference/introduction) and the [Trust Platform](https://trust.rippletide.com). This module covers the CLI only.
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/rippletideco/rippletide/main/assets/demo.gif" alt="Agent Evaluation Demo" width="800">
 </p>
