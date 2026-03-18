@@ -371,6 +371,9 @@ fi
 # Read user_id from Rippletide config (macOS or Linux)
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
 if [[ ! -f "$CONFIG_FILE" ]]; then
+  CONFIG_FILE="$HOME/.config/rippletide/config.json"
+fi
+if [[ ! -f "$CONFIG_FILE" ]]; then
   CONFIG_FILE="$HOME/.config/Rippletide/Rippletide/config.json"
 fi
 if [[ ! -f "$CONFIG_FILE" ]]; then
@@ -1012,6 +1015,18 @@ fn fetch_rules(user_id: &str, query: &str) -> FetchRulesResult {
         .send_string(&payload.to_string())
     {
         Ok(r) => r,
+        Err(ureq::Error::Status(_, r)) => {
+            let body: serde_json::Value = match r.into_json() {
+                Ok(b) => b,
+                Err(_) => return FetchRulesResult::Error("api error".to_string()),
+            };
+            if let Some(err) = body.get("error").and_then(|v| v.as_str()) {
+                if err.contains("No graph") {
+                    return FetchRulesResult::NoGraph;
+                }
+            }
+            return FetchRulesResult::Error("api error".to_string());
+        }
         Err(e) => return FetchRulesResult::Error(format!("{e}")),
     };
     let body: serde_json::Value = match resp.into_json() {
