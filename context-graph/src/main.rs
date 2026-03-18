@@ -1318,9 +1318,12 @@ fn check_file(cwd: &std::path::Path, abs_path: &str, rules: &str) -> FileCheckRe
     }
 }
 
-fn upload_violations(violations: &[Violation], session_token: &str, auth_url: &str) {
+fn upload_violations(violations: &[Violation], session_token: &str, user_id: Option<&str>, auth_url: &str) {
     let url = format!("{}/api/violations?token={}", auth_url, session_token);
-    let payload = serde_json::json!({ "violations": violations });
+    let mut payload = serde_json::json!({ "violations": violations });
+    if let Some(uid) = user_id {
+        payload["user_id"] = serde_json::Value::String(uid.to_string());
+    }
     let result = ureq::post(&url)
         .set("Content-Type", "application/json")
         .send_string(&payload.to_string());
@@ -1648,7 +1651,7 @@ fn run_side_by_side_checks(
     // Upload violations after final render so errors don't get overwritten
     if !all_violations.is_empty() {
         if let Some(token) = session_token {
-            upload_violations(&all_violations, token, auth_url);
+            upload_violations(&all_violations, token, user_id, auth_url);
         }
     }
 
