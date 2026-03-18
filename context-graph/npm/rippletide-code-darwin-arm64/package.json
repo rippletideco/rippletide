@@ -1,9 +1,13 @@
 {
   "name": "rippletide-code-darwin-arm64",
-  "version": "0.4.2",
+  "version": "0.5.1",
   "description": "Rippletide Code binary for macOS Apple Silicon",
-  "os": ["darwin"],
-  "cpu": ["arm64"],
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
