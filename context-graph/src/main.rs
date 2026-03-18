@@ -1319,12 +1319,13 @@ fn check_file(cwd: &std::path::Path, abs_path: &str, rules: &str) -> FileCheckRe
 }
 
 fn upload_violations(violations: &[Violation], session_token: &str, user_id: Option<&str>, auth_url: &str) {
-    let url = format!("{}/api/violations?token={}", auth_url, session_token);
+    let url = format!("{}/api/violations", auth_url);
     let mut payload = serde_json::json!({ "violations": violations });
     if let Some(uid) = user_id {
         payload["user_id"] = serde_json::Value::String(uid.to_string());
     }
     let result = ureq::post(&url)
+        .query("token", session_token)
         .set("Content-Type", "application/json")
         .send_string(&payload.to_string());
     if let Err(e) = result {
