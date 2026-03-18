@@ -1192,10 +1192,15 @@ fn call_planner_claude(path: &std::path::Path, prompt: &str) -> Result<String, S
 }
 
 fn scrub_claude_runtime_env(cmd: &mut std::process::Command) {
-    for (key, _) in std::env::vars() {
-        if key.starts_with("CLAUDE") {
-            cmd.env_remove(key);
-        }
+    // Remove runtime env vars that conflict with parent session (session IDs, project dirs),
+    // but keep auth/config vars needed to authenticate the child process.
+    const REMOVE: &[&str] = &[
+        "CLAUDE_SESSION_ID",
+        "CLAUDE_PROJECT_DIR",
+        "CLAUDE_CONVERSATION_ID",
+    ];
+    for key in REMOVE {
+        cmd.env_remove(key);
     }
 }
 
