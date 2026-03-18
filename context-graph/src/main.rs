@@ -371,6 +371,9 @@ fi
 # Read user_id from Rippletide config (macOS or Linux)
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
 if [[ ! -f "$CONFIG_FILE" ]]; then
+  CONFIG_FILE="$HOME/.config/rippletide/config.json"
+fi
+if [[ ! -f "$CONFIG_FILE" ]]; then
   CONFIG_FILE="$HOME/.config/Rippletide/Rippletide/config.json"
 fi
 if [[ ! -f "$CONFIG_FILE" ]]; then
