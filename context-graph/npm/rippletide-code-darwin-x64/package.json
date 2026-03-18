@@ -1,6 +1,6 @@
 {
   "name": "rippletide-code-darwin-x64",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Rippletide Code binary for macOS Intel",
   "os": [
     "darwin"
