@@ -1064,6 +1064,8 @@ fn call_claude(path: &std::path::Path, prompt: &str) -> Result<String, String> {
         "--verbose",
         "--model",
         "opus",
+        "--setting-sources",
+        "user",
     ])
     .current_dir(path)
     .stdout(Stdio::piped())
@@ -1149,6 +1151,8 @@ fn call_planner_claude(path: &std::path::Path, prompt: &str) -> Result<String, S
         "opus",
         "--tools",
         "",
+        "--setting-sources",
+        "user",
     ])
     .current_dir(path);
 
