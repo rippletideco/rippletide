@@ -1319,13 +1319,15 @@ fn check_file(cwd: &std::path::Path, abs_path: &str, rules: &str) -> FileCheckRe
 }
 
 fn upload_violations(violations: &[Violation], session_token: &str, user_id: Option<&str>, auth_url: &str) {
-    let url = format!("{}/api/violations", auth_url);
+    // The stored session_token is already URL-encoded (from the Set-Cookie header),
+    // so interpolate it directly into the query string rather than using .query()
+    // which would double-encode it.
+    let url = format!("{}/api/violations?token={}", auth_url, session_token);
     let mut payload = serde_json::json!({ "violations": violations });
     if let Some(uid) = user_id {
         payload["user_id"] = serde_json::Value::String(uid.to_string());
     }
     let result = ureq::post(&url)
-        .query("token", session_token)
         .set("Content-Type", "application/json")
         .send_string(&payload.to_string());
     if let Err(e) = result {
@@ -1649,11 +1651,9 @@ fn run_side_by_side_checks(
     );
     term.show_cursor().ok();
 
-    // Upload violations after final render so errors don't get overwritten
-    if !all_violations.is_empty() {
-        if let Some(token) = session_token {
-            upload_violations(&all_violations, token, user_id, auth_url);
-        }
+    // Always upload violations (even empty) to replace stale data on the dashboard
+    if let Some(token) = session_token {
+        upload_violations(&all_violations, token, user_id, auth_url);
     }
 
     had_graph

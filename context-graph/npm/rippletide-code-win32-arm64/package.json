@@ -1,6 +1,6 @@
 {
   "name": "rippletide-code-win32-arm64",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Rippletide Code binary for Windows ARM64",
   "os": [
     "win32"
