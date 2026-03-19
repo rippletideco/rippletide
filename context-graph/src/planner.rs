@@ -41,23 +41,31 @@ pub struct IterationSummary {
     pub violation_count: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ReviewOutcome {
+    pub pass: bool,
+    pub rules: Vec<String>,
+    pub used_fallback_rules: bool,
+    pub violations: Vec<PlanViolation>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct DraftPlan {
     plan_markdown: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct PlanReview {
     pass: bool,
     #[serde(default)]
     violations: Vec<PlanViolation>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-struct PlanViolation {
-    rule: String,
-    issue: String,
-    fix: String,
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlanViolation {
+    pub rule: String,
+    pub issue: String,
+    pub fix: String,
 }
 
 pub fn run_plan_loop(
@@ -151,6 +159,24 @@ pub fn run_plan_loop(
         used_fallback_rules,
         stopped_reason: "max_iterations_reached".to_string(),
         iteration_summaries: summaries,
+    })
+}
+
+pub fn review_plan_candidate(
+    cwd: &Path,
+    query: &str,
+    plan: &str,
+    claude: &dyn ClaudeExecutor,
+    rules_provider: &dyn RulesProvider,
+) -> Result<ReviewOutcome, String> {
+    let (rules, used_fallback_rules) = resolve_rules(query, rules_provider);
+    let review = review_plan(cwd, query, plan, &rules, claude)?;
+
+    Ok(ReviewOutcome {
+        pass: review.pass,
+        rules,
+        used_fallback_rules,
+        violations: review.violations,
     })
 }
 
@@ -523,5 +549,51 @@ mod tests {
         .unwrap();
 
         assert_eq!(draft.plan_markdown, "1. Inspect\n2. Implement\n3. Validate");
+    }
+
+    #[test]
+    fn reviews_existing_plan_and_returns_structured_result() {
+        let claude = StubClaude::new(vec![Ok(
+            "{\"pass\":false,\"violations\":[{\"rule\":\"Validate locally\",\"issue\":\"Missing cargo test step\",\"fix\":\"Add cargo test to the final validation step\"}]}"
+                .to_string(),
+        )]);
+        let rules = StubRulesProvider::new(StubRules::Rules(vec![
+            "Stay in scope".to_string(),
+            "Validate locally".to_string(),
+        ]));
+
+        let result = review_plan_candidate(
+            &cwd(),
+            "add visible planning traces",
+            "1. Update the prompt\n2. Ship it",
+            &claude,
+            &rules,
+        )
+        .unwrap();
+
+        assert!(!result.pass);
+        assert_eq!(result.rules.len(), 2);
+        assert!(!result.used_fallback_rules);
+        assert_eq!(result.violations.len(), 1);
+        assert_eq!(result.violations[0].rule, "Validate locally");
+    }
+
+    #[test]
+    fn review_uses_fallback_rules_when_backend_returns_none() {
+        let claude = StubClaude::new(vec![Ok("{\"pass\":true,\"violations\":[]}".to_string())]);
+        let rules = StubRulesProvider::new(StubRules::NoRules);
+
+        let result = review_plan_candidate(
+            &cwd(),
+            "add visible planning traces",
+            "1. Inspect\n2. Implement\n3. Validate locally",
+            &claude,
+            &rules,
+        )
+        .unwrap();
+
+        assert!(result.pass);
+        assert!(result.used_fallback_rules);
+        assert_eq!(result.rules.len(), DEFAULT_PLAN_RULES.len());
     }
 }

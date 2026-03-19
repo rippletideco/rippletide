@@ -8,11 +8,19 @@ else
   REQUEST="$(cat)"
 fi
 
+PLAN="$(cat)"
+
 unset CLAUDECODE
 unset CLAUDE_PROJECT_DIR
 
 if [[ -z "${REQUEST//[[:space:]]/}" ]]; then
-  exit 0
+  echo "Plan review request cannot be empty" >&2
+  exit 1
+fi
+
+if [[ -z "${PLAN//[[:space:]]/}" ]]; then
+  echo "Candidate plan cannot be empty" >&2
+  exit 1
 fi
 
 if [[ -n "${RIPPLETIDE_PLAN_CLI_BIN:-}" ]]; then
@@ -23,4 +31,4 @@ else
 fi
 
 cd "$PROJECT_DIR"
-printf '%s' "$REQUEST" | "${PLAN_CMD[@]}" plan --raw --stdin
+printf '%s' "$PLAN" | "${PLAN_CMD[@]}" review-plan "$REQUEST" --stdin --json
