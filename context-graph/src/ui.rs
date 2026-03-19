@@ -74,3 +74,31 @@ pub fn finish_spinner(pb: &ProgressBar, msg: &str) {
     pb.finish_and_clear();
     print_progress(msg);
 }
+
+#[derive(Clone, Debug)]
+pub enum FixAction {
+    Fix,
+    Skip,
+    All,
+    None,
+}
+
+pub fn prompt_fix_action(file: &str, changes: &[String]) -> io::Result<FixAction> {
+    println!();
+    println!("  {} {}", "→".cyan(), file.white().bold());
+    if !changes.is_empty() {
+        for change in changes {
+            println!("    {}", format!("→ {}", change).dimmed());
+        }
+    }
+    print!("  {} ", "[F]ix / [S]kip / [A]ll / [N]one:".yellow());
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    match input.trim().to_lowercase().as_str() {
+        "f" | "fix" => Ok(FixAction::Fix),
+        "a" | "all" => Ok(FixAction::All),
+        "n" | "none" => Ok(FixAction::None),
+        _ => Ok(FixAction::Skip),
+    }
+}
