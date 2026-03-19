@@ -44,6 +44,17 @@ enum Commands {
         #[arg(long)]
         raw: bool,
     },
+    /// Review an existing plan against Rippletide rules
+    ReviewPlan {
+        /// Original planning request
+        query: Vec<String>,
+        /// Read the candidate plan from stdin
+        #[arg(long)]
+        stdin: bool,
+        /// Print machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
     /// Log out and remove stored credentials
     Logout,
 }
@@ -567,25 +578,44 @@ const CLAUDE_SETTINGS: &str = r#"{
 const CLAUDE_LOCAL_SETTINGS: &str = r#"{
   "permissions": {
     "allow": [
-      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh\" *)"
+      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh\" *)",
+      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/review-plan-command.sh\" *)",
+      "Bash(bash \"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/review-plan-command.sh\" *)"
     ]
   }
 }
 "#;
 
 const PLAN_COMMAND_MARKDOWN: &str = r#"---
-description: Generate a repo-aware implementation plan revised against Rippletide rules
+description: Draft a repo-aware implementation plan and visibly review it against Rippletide rules
 argument-hint: "<request>"
 allowed-tools:
   - Bash
 ---
-Return exactly the final revised plan below and nothing else.
+Use the hook-injected [Coding Rules from Rippletide] when present.
+If no hook rules are present, start with:
+`Applying rules: none returned by hook`
 
-Request:
+You must make the review loop visible in the conversation.
+
+User request:
 $ARGUMENTS
 
-Final revised plan:
-!`bash "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/plan-command.sh" "$ARGUMENTS"`
+Follow this workflow exactly:
+1. Start with `Applying rules: ...`
+2. Write `Drafting initial plan.`
+3. Produce `Draft 1` as a numbered plan that stays strictly within scope and uses the current repository context.
+4. Review that exact draft by using Bash with this shape:
+   `bash "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/review-plan-command.sh" "$ARGUMENTS" <<'__RIPPLETIDE_PLAN__'`
+   `<draft markdown>`
+   `__RIPPLETIDE_PLAN__`
+5. After each review tool call:
+   - If it passes, write `Review N passed.`
+   - If it fails, write `Review N found X violation(s): ...`
+6. If a review fails and N < 3, write `Draft N+1` and revise only the listed violations. Do not widen scope.
+7. Stop after a pass or after 3 total reviews.
+8. End with `Final plan` and only the final numbered plan.
+9. Never print raw review JSON directly to the user. Summarize it in one short sentence.
 "#;
 
 fn plan_command_script() -> String {
@@ -616,6 +646,47 @@ fi
 
 cd "$PROJECT_DIR"
 printf '%s' "$REQUEST" | "${{PLAN_CMD[@]}}" plan --raw --stdin
+"#,
+        env!("CARGO_PKG_VERSION")
+    )
+}
+
+fn review_plan_command_script() -> String {
+    format!(
+        r#"#!/bin/bash
+set -euo pipefail
+
+PROJECT_DIR="${{CLAUDE_PROJECT_DIR:-$(pwd)}}"
+if [[ "$#" -gt 0 ]]; then
+  REQUEST="$*"
+else
+  REQUEST="$(cat)"
+fi
+
+PLAN="$(cat)"
+
+unset CLAUDECODE
+unset CLAUDE_PROJECT_DIR
+
+if [[ -z "${{REQUEST//[[:space:]]/}}" ]]; then
+  echo "Plan review request cannot be empty" >&2
+  exit 1
+fi
+
+if [[ -z "${{PLAN//[[:space:]]/}}" ]]; then
+  echo "Candidate plan cannot be empty" >&2
+  exit 1
+fi
+
+if [[ -n "${{RIPPLETIDE_PLAN_CLI_BIN:-}}" ]]; then
+  PLAN_CMD=("$RIPPLETIDE_PLAN_CLI_BIN")
+else
+  PACKAGE_VERSION="${{RIPPLETIDE_PLAN_CLI_VERSION:-{}}}"
+  PLAN_CMD=(npx -y "rippletide-code@${{PACKAGE_VERSION}}")
+fi
+
+cd "$PROJECT_DIR"
+printf '%s' "$PLAN" | "${{PLAN_CMD[@]}}" review-plan "$REQUEST" --stdin --json
 "#,
         env!("CARGO_PKG_VERSION")
     )
@@ -682,6 +753,7 @@ fn ensure_claude_commands() -> io::Result<bool> {
     let commands_dir = cwd.join(".claude").join("commands");
     let command_path = commands_dir.join("plan.md");
     let script_path = commands_dir.join("plan-command.sh");
+    let review_script_path = commands_dir.join("review-plan-command.sh");
 
     fs::create_dir_all(&commands_dir)?;
 
@@ -713,7 +785,58 @@ fn ensure_claude_commands() -> io::Result<bool> {
         changed = true;
     }
 
+    let review_plan_script = review_plan_command_script();
+    let needs_review_script = if review_script_path.exists() {
+        fs::read_to_string(&review_script_path)? != review_plan_script
+    } else {
+        true
+    };
+    if needs_review_script {
+        fs::write(&review_script_path, review_plan_script)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&review_script_path, fs::Permissions::from_mode(0o755))?;
+        }
+        changed = true;
+    }
+
+    if sync_global_plan_command()? {
+        changed = true;
+    }
+
     Ok(changed)
+}
+
+fn claude_commands_home_dir() -> Option<PathBuf> {
+    std::env::var_os("RIPPLETIDE_CLAUDE_HOME")
+        .or_else(|| std::env::var_os("HOME"))
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+        .map(|home| home.join(".claude").join("commands"))
+}
+
+fn is_rippletide_managed_plan_command(contents: &str) -> bool {
+    contents.contains("Rippletide") && contents.contains("plan-command.sh")
+}
+
+fn sync_global_plan_command() -> io::Result<bool> {
+    let Some(commands_dir) = claude_commands_home_dir() else {
+        return Ok(false);
+    };
+    let plan_path = commands_dir.join("plan.md");
+    if !plan_path.exists() {
+        return Ok(false);
+    }
+
+    let existing = fs::read_to_string(&plan_path)?;
+    if !is_rippletide_managed_plan_command(&existing) || existing == PLAN_COMMAND_MARKDOWN {
+        return Ok(false);
+    }
+
+    fs::create_dir_all(&commands_dir)?;
+    fs::write(&plan_path, PLAN_COMMAND_MARKDOWN)?;
+    Ok(true)
 }
 
 struct ConfigureResult {
@@ -1333,6 +1456,7 @@ fn scrub_claude_runtime_env(cmd: &mut std::process::Command) {
     // Remove runtime env vars that conflict with parent session (session IDs, project dirs),
     // but keep auth/config vars needed to authenticate the child process.
     const REMOVE: &[&str] = &[
+        "CLAUDECODE",
         "CLAUDE_SESSION_ID",
         "CLAUDE_PROJECT_DIR",
         "CLAUDE_CONVERSATION_ID",
@@ -1970,6 +2094,70 @@ fn run_plan_command(
     Ok(())
 }
 
+fn run_review_plan_command(
+    cwd: &std::path::Path,
+    config: &Config,
+    query_parts: &[String],
+    use_stdin: bool,
+    json: bool,
+) -> io::Result<()> {
+    let query = query_parts.join(" ").trim().to_string();
+    if query.is_empty() {
+        ui::print_error("Review query cannot be empty");
+        return Ok(());
+    }
+    if !use_stdin {
+        ui::print_error("Review plan requires --stdin with the candidate plan");
+        return Ok(());
+    }
+
+    let mut input = String::new();
+    io::stdin().read_to_string(&mut input)?;
+    let plan = input.trim().to_string();
+    if plan.is_empty() {
+        ui::print_error("Candidate plan cannot be empty");
+        return Ok(());
+    }
+
+    let claude = LiveClaude;
+    let rules_provider = LiveRulesProvider {
+        user_id: config.user_id.clone(),
+    };
+
+    let review = planner::review_plan_candidate(cwd, &query, &plan, &claude, &rules_provider)
+        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+
+    if json {
+        let payload = serde_json::to_string(&review)
+            .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+        println!("{payload}");
+    } else {
+        ui::print_header("Rippletide Plan Review Check");
+        if review.used_fallback_rules {
+            ui::print_info("Using fallback plan rules");
+        } else {
+            ui::print_success(&format!("Loaded {} rules from Rippletide", review.rules.len()));
+        }
+
+        if review.pass {
+            ui::print_success("Review passed");
+        } else {
+            ui::print_progress(&format!(
+                "Review found {} violation(s)",
+                review.violations.len()
+            ));
+            for violation in &review.violations {
+                ui::print_sub(&format!(
+                    "{}: {} -> {}",
+                    violation.rule, violation.issue, violation.fix
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
+
 fn main() -> io::Result<()> {
     // Enable ANSI color/cursor support on Windows terminals (including VSCode)
     #[cfg(windows)]
@@ -1998,10 +2186,15 @@ fn main() -> io::Result<()> {
         return run_plan_command(&cwd, &config, query, *max_iterations, *stdin, *raw);
     }
 
+    if let Some(Commands::ReviewPlan { query, stdin, json }) = &cli.command {
+        return run_review_plan_command(&cwd, &config, query, *stdin, *json);
+    }
+
     let _read_only = match &cli.command {
         Some(Commands::Connect { read_only }) => *read_only,
         None => false,
         Some(Commands::Plan { .. }) => false,
+        Some(Commands::ReviewPlan { .. }) => false,
         Some(Commands::Logout) => unreachable!(),
     };
 
@@ -2145,7 +2338,7 @@ mod tests {
     #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
-    use std::process::Command;
+    use std::process::{Command, Stdio};
     use std::sync::{Mutex, OnceLock};
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -2266,5 +2459,142 @@ mod tests {
         let _ = fs::remove_file(cli_stub);
         let _ = fs::remove_file(command_script);
         let _ = fs::remove_dir(dir);
+    }
+
+    #[test]
+    fn review_plan_command_script_uses_packaged_cli_path() {
+        let _guard = env_lock();
+        let dir = temp_dir("rippletide-review-script");
+        let cli_stub = dir.join("plan-cli-stub.sh");
+        let command_script = dir.join("review-plan-command.sh");
+
+        fs::write(
+            &cli_stub,
+            "#!/bin/bash\nset -euo pipefail\nif [[ -n \"${CLAUDECODE:-}\" ]]; then\n  echo nested >&2\n  exit 41\nfi\nif [[ \"$1\" != \"review-plan\" || \"$3\" != \"--stdin\" || \"$4\" != \"--json\" ]]; then\n  echo \"bad args: $*\" >&2\n  exit 42\nfi\nprintf 'stub review for query: %s\\n' \"$2\"\nprintf 'stdin plan: %s\\n' \"$(cat)\"\n",
+        )
+        .unwrap();
+        fs::write(&command_script, review_plan_command_script()).unwrap();
+        #[cfg(unix)]
+        {
+            fs::set_permissions(&cli_stub, fs::Permissions::from_mode(0o755)).unwrap();
+            fs::set_permissions(&command_script, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+
+        let old_bin = std::env::var_os("RIPPLETIDE_PLAN_CLI_BIN");
+        let old_code = std::env::var_os("CLAUDECODE");
+        let old_project = std::env::var_os("CLAUDE_PROJECT_DIR");
+
+        std::env::set_var("RIPPLETIDE_PLAN_CLI_BIN", &cli_stub);
+        std::env::set_var("CLAUDECODE", "1");
+        std::env::set_var("CLAUDE_PROJECT_DIR", &dir);
+
+        let output = Command::new("bash")
+            .arg(&command_script)
+            .arg("hello world")
+            .current_dir(&dir)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .and_then(|mut child| {
+                use std::io::Write;
+                child
+                    .stdin
+                    .as_mut()
+                    .unwrap()
+                    .write_all(b"1. Draft\n2. Validate\n")?;
+                child.wait_with_output()
+            })
+            .unwrap();
+
+        assert!(output.status.success());
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(stdout.contains("stub review for query: hello world"));
+        assert!(stdout.contains("stdin plan: 1. Draft"));
+
+        match old_bin {
+            Some(value) => std::env::set_var("RIPPLETIDE_PLAN_CLI_BIN", value),
+            None => std::env::remove_var("RIPPLETIDE_PLAN_CLI_BIN"),
+        }
+        match old_code {
+            Some(value) => std::env::set_var("CLAUDECODE", value),
+            None => std::env::remove_var("CLAUDECODE"),
+        }
+        match old_project {
+            Some(value) => std::env::set_var("CLAUDE_PROJECT_DIR", value),
+            None => std::env::remove_var("CLAUDE_PROJECT_DIR"),
+        }
+
+        let _ = fs::remove_file(cli_stub);
+        let _ = fs::remove_file(command_script);
+        let _ = fs::remove_dir(dir);
+    }
+
+    #[test]
+    fn plan_command_markdown_describes_visible_review_flow() {
+        assert!(PLAN_COMMAND_MARKDOWN.contains("Drafting initial plan."));
+        assert!(PLAN_COMMAND_MARKDOWN.contains("review-plan-command.sh"));
+        assert!(PLAN_COMMAND_MARKDOWN.contains("${CLAUDE_PROJECT_DIR:-$PWD}"));
+        assert!(!PLAN_COMMAND_MARKDOWN.contains("Final revised plan:\n!`bash"));
+    }
+
+    #[test]
+    fn sync_global_plan_command_updates_rippletide_managed_file() {
+        let _guard = env_lock();
+        let home = temp_dir("rippletide-global-plan");
+        let commands_dir = home.join(".claude").join("commands");
+        let plan_path = commands_dir.join("plan.md");
+        fs::create_dir_all(&commands_dir).unwrap();
+        fs::write(
+            &plan_path,
+            r#"---
+description: Generate a repo-aware implementation plan revised against Rippletide rules
+---
+Return exactly the final revised plan below and nothing else.
+
+Final revised plan:
+!`bash "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/plan-command.sh" "$ARGUMENTS"`
+"#,
+        )
+        .unwrap();
+
+        let old_home = std::env::var_os("RIPPLETIDE_CLAUDE_HOME");
+        std::env::set_var("RIPPLETIDE_CLAUDE_HOME", &home);
+
+        let changed = sync_global_plan_command().unwrap();
+        let updated = fs::read_to_string(&plan_path).unwrap();
+
+        assert!(changed);
+        assert_eq!(updated, PLAN_COMMAND_MARKDOWN);
+
+        match old_home {
+            Some(value) => std::env::set_var("RIPPLETIDE_CLAUDE_HOME", value),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_HOME"),
+        }
+        let _ = fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn sync_global_plan_command_leaves_custom_file_untouched() {
+        let _guard = env_lock();
+        let home = temp_dir("rippletide-global-plan-custom");
+        let commands_dir = home.join(".claude").join("commands");
+        let plan_path = commands_dir.join("plan.md");
+        fs::create_dir_all(&commands_dir).unwrap();
+        fs::write(&plan_path, "custom /plan command\n").unwrap();
+
+        let old_home = std::env::var_os("RIPPLETIDE_CLAUDE_HOME");
+        std::env::set_var("RIPPLETIDE_CLAUDE_HOME", &home);
+
+        let changed = sync_global_plan_command().unwrap();
+        let updated = fs::read_to_string(&plan_path).unwrap();
+
+        assert!(!changed);
+        assert_eq!(updated, "custom /plan command\n");
+
+        match old_home {
+            Some(value) => std::env::set_var("RIPPLETIDE_CLAUDE_HOME", value),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_HOME"),
+        }
+        let _ = fs::remove_dir_all(home);
     }
 }

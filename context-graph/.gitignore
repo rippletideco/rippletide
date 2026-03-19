@@ -1,3 +1,4 @@
 /target
 node_modules/
 /npm/*/rippletide-code
+/.local-dev/
