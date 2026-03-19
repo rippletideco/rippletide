@@ -801,8 +801,8 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
             config.user_id = Some(resp.user.id);
             config.email = Some(resp.user.email);
             let dashboard_url = format!(
-                "https://app.rippletide.com/code?token={}",
-                resp.token
+                "https://app.rippletide.com/code?token={}&user_id={}",
+                resp.token, config.user_id.as_deref().unwrap_or("")
             );
             config.session_token = Some(resp.token);
             save_config(config)?;
@@ -840,8 +840,8 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
                     config.user_id = Some(resp.user.id);
                     config.email = Some(resp.user.email);
                     let dashboard_url = format!(
-                        "https://app.rippletide.com/code?token={}",
-                        resp.token
+                        "https://app.rippletide.com/code?token={}&user_id={}",
+                        resp.token, config.user_id.as_deref().unwrap_or("")
                     );
                     config.session_token = Some(resp.token);
                     save_config(config)?;
@@ -2118,10 +2118,15 @@ fn main() -> io::Result<()> {
     // Show dashboard URL — always, from stored token or fresh login
     let final_url = dashboard_url.or_else(|| {
         config.session_token.as_ref().map(|token| {
-            format!(
+            let mut url = format!(
                 "https://app.rippletide.com/code?token={}",
                 token
-            )
+            );
+            if let Some(ref uid) = config.user_id {
+                url.push_str("&user_id=");
+                url.push_str(uid);
+            }
+            url
         })
     });
     if let Some(url) = final_url {
