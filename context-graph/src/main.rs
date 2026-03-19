@@ -1263,6 +1263,12 @@ fn query_rules_url() -> String {
     })
 }
 
+fn fix_url() -> String {
+    std::env::var("RIPPLETIDE_FIX_URL").unwrap_or_else(|_| {
+        format!("{}/fix", UPLOAD_URL.trim_end_matches("/upload"))
+    })
+}
+
 fn fetch_rules(user_id: &str, query: &str) -> FetchRulesResult {
     let url = query_rules_url();
     let payload = serde_json::json!({
@@ -1768,6 +1774,7 @@ fn render_table_frame(
     }
 }
 
+/// Returns (had_graph, failed_files) where failed_files is a vec of (rel_path, violations).
 fn run_side_by_side_checks(
     cwd: &std::path::Path,
     files: &[std::path::PathBuf],
@@ -1777,7 +1784,7 @@ fn run_side_by_side_checks(
     session_token: Option<&str>,
     user_id: Option<&str>,
     auth_url: &str,
-) -> bool {
+) -> (bool, Vec<(String, Vec<Violation>)>) {
     use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
     use std::sync::Arc;
 
@@ -1789,7 +1796,7 @@ fn run_side_by_side_checks(
     let n = files.len();
     if n == 0 {
         ui::print_sub("No source files found");
-        return had_graph;
+        return (had_graph, Vec::new());
     }
 
     let col_width: usize = 48;
@@ -1936,8 +1943,13 @@ fn run_side_by_side_checks(
             all_violations.extend(result.violations);
         }
     }
+
+    let mut failed_files: Vec<(String, Vec<Violation>)> = Vec::new();
     for h in user_handles {
-        if let Ok((_, result)) = h.join() {
+        if let Ok((rel, result)) = h.join() {
+            if !result.pass {
+                failed_files.push((rel, result.violations.clone()));
+            }
             all_violations.extend(result.violations);
         }
     }
@@ -1954,12 +1966,29 @@ fn run_side_by_side_checks(
         0, &common_state, &user_state, &rel_paths,
         &common_display, &user_display, true,
     );
+
+    // --- Step 1: Print violation details per failed file ---
+    if !failed_files.is_empty() {
+        println!();
+        ui::print_header("Violation Details");
+        for (rel, violations) in &failed_files {
+            ui::print_error(&format!("✗ {}", rel));
+            for v in violations {
+                ui::print_error(&format!("  • {}", v.rule_text));
+                if !v.explanation.is_empty() {
+                    ui::print_sub(&format!("    {}", v.explanation));
+                }
+            }
+            println!();
+        }
+    }
+
     // Always upload violations (even empty) to replace stale data on the dashboard
     if let Some(token) = session_token {
         upload_violations(&all_violations, token, user_id, auth_url);
     }
 
-    had_graph
+    (had_graph, failed_files)
 }
 
 struct LiveClaude;
@@ -2286,13 +2315,13 @@ fn main() -> io::Result<()> {
     }
 
     // Phase 6c — Side-by-side rule checks (first 5 files)
-    {
+    let failed_files = {
         let mut files = collect_source_files(&cwd);
         files.truncate(5);
         ui::print_header("Checking files against coding rules");
         let common_str: String = COMMON_RULES.iter().map(|r| format!("- {r}\n")).collect();
         let auth_url = config.auth_url().to_string();
-        run_side_by_side_checks(
+        let (_had_graph, failed) = run_side_by_side_checks(
             &cwd,
             &files,
             &common_str,
@@ -2302,6 +2331,102 @@ fn main() -> io::Result<()> {
             config.user_id.as_deref(),
             &auth_url,
         );
+        failed
+    };
+    println!();
+
+    // Phase 6d — Offer to fix failed files via POST /fix
+    if !failed_files.is_empty() {
+        if let Some(ref user_id) = config.user_id {
+            let fix_endpoint = fix_url();
+            let mut bulk_action: Option<ui::FixAction> = None;
+            ui::print_header("Fixing rule violations");
+
+            for (rel, _violations) in &failed_files {
+                let abs_path = cwd.join(rel);
+
+                // If user chose None for all remaining, skip
+                if matches!(bulk_action, Some(ui::FixAction::None)) {
+                    ui::print_sub(&format!("  Skipped {}", rel));
+                    continue;
+                }
+
+                let sp = ui::start_spinner(&format!("Fetching fix for {}", rel));
+                match std::fs::read_to_string(&abs_path) {
+                    Ok(code) => {
+                        let payload = serde_json::json!({
+                            "code": code,
+                            "context": rel,
+                        });
+                        match ureq::post(&fix_endpoint)
+                            .set("Content-Type", "application/json")
+                            .set("X-User-Id", user_id)
+                            .send_string(&payload.to_string())
+                        {
+                            Ok(resp) => {
+                                if let Ok(body) = resp.into_json::<serde_json::Value>() {
+                                    if let Some(fixed) = body.get("fixed_code").and_then(|v| v.as_str()) {
+                                        let changes: Vec<String> = body.get("changes_applied")
+                                            .and_then(|v| v.as_array())
+                                            .map(|arr| arr.iter().filter_map(|c| {
+                                                c.get("change_description").and_then(|d| d.as_str()).map(|s| s.to_string())
+                                            }).collect())
+                                            .unwrap_or_default();
+                                        ui::finish_spinner(&sp, &format!("Fix ready for {}", rel));
+
+                                        let action = match &bulk_action {
+                                            Some(a) => a.clone(),
+                                            None => ui::prompt_fix_action(rel, &changes)
+                                                .unwrap_or(ui::FixAction::Skip),
+                                        };
+                                        match action {
+                                            ui::FixAction::Fix => {
+                                                if let Err(e) = std::fs::write(&abs_path, fixed) {
+                                                    ui::print_error(&format!("Could not write fix for {}: {}", rel, e));
+                                                } else {
+                                                    ui::print_success(&format!("Fixed {}", rel));
+                                                    for change in &changes {
+                                                        ui::print_sub(&format!("  → {}", change));
+                                                    }
+                                                }
+                                            }
+                                            ui::FixAction::All => {
+                                                bulk_action = Some(ui::FixAction::All);
+                                                if let Err(e) = std::fs::write(&abs_path, fixed) {
+                                                    ui::print_error(&format!("Could not write fix for {}: {}", rel, e));
+                                                } else {
+                                                    ui::print_success(&format!("Fixed {}", rel));
+                                                    for change in &changes {
+                                                        ui::print_sub(&format!("  → {}", change));
+                                                    }
+                                                }
+                                            }
+                                            ui::FixAction::None => {
+                                                bulk_action = Some(ui::FixAction::None);
+                                                ui::print_sub(&format!("  Skipped {}", rel));
+                                            }
+                                            ui::FixAction::Skip => {
+                                                ui::print_sub(&format!("  Skipped {}", rel));
+                                            }
+                                        }
+                                    } else {
+                                        ui::finish_spinner(&sp, &format!("No fix returned for {}", rel));
+                                    }
+                                } else {
+                                    ui::finish_spinner(&sp, &format!("Could not parse fix response for {}", rel));
+                                }
+                            }
+                            Err(e) => {
+                                ui::finish_spinner(&sp, &format!("Fix request failed for {}: {}", rel, e));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        ui::finish_spinner(&sp, &format!("Could not read {}: {}", rel, e));
+                    }
+                }
+            }
+        }
     }
     println!();
 
