@@ -1517,7 +1517,12 @@ fn upload_violations(violations: &[Violation], session_token: &str, user_id: Opt
     // The stored session_token is already URL-encoded (from the Set-Cookie header),
     // so interpolate it directly into the query string rather than using .query()
     // which would double-encode it.
-    let url = format!("{}/api/violations?token={}", auth_url, session_token);
+    // Include user_id in the query string as a fallback for when the session token
+    // is expired — the dashboard GET endpoint also uses this to resolve the user.
+    let mut url = format!("{}/api/violations?token={}", auth_url, session_token);
+    if let Some(uid) = user_id {
+        url.push_str(&format!("&user_id={}", uid));
+    }
     let mut payload = serde_json::json!({ "violations": violations });
     if let Some(uid) = user_id {
         payload["user_id"] = serde_json::Value::String(uid.to_string());
@@ -1719,7 +1724,6 @@ fn run_side_by_side_checks(
 
     // --- Initial render ---
     let term = console::Term::stdout();
-    term.hide_cursor().ok();
 
     render_table_frame(
         &term, n, col_width, gap, max_name, max_rule_lines, &sep,
@@ -1826,8 +1830,6 @@ fn run_side_by_side_checks(
         0, &common_state, &user_state, &rel_paths,
         &common_display, &user_display, true,
     );
-    term.show_cursor().ok();
-
     // Always upload violations (even empty) to replace stale data on the dashboard
     if let Some(token) = session_token {
         upload_violations(&all_violations, token, user_id, auth_url);
