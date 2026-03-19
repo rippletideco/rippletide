@@ -1643,8 +1643,10 @@ fn run_side_by_side_checks(
     cwd: &std::path::Path,
     files: &[std::path::PathBuf],
     common_rules_str: &str,
-    user_id: Option<&str>,
+    user_rules: &[String],
+    had_graph: bool,
     session_token: Option<&str>,
+    user_id: Option<&str>,
     auth_url: &str,
 ) -> bool {
     use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
@@ -1658,7 +1660,7 @@ fn run_side_by_side_checks(
     let n = files.len();
     if n == 0 {
         ui::print_sub("No source files found");
-        return true;
+        return had_graph;
     }
 
     let col_width: usize = 48;
@@ -1687,26 +1689,6 @@ fn run_side_by_side_checks(
             }
         })
         .collect();
-
-    // --- Fetch user rules first (with spinner) ---
-    let sp = ui::start_spinner("Fetching user rules from graph…");
-    let mut had_graph = true;
-    let user_rules: Vec<String> =
-        match user_id.map(|uid| fetch_rules(uid, "Return all coding rules")) {
-            Some(FetchRulesResult::Rules(text)) => text
-                .lines()
-                .map(|l| l.trim().trim_start_matches('-').trim().to_string())
-                .filter(|l| !l.is_empty())
-                .collect(),
-            Some(FetchRulesResult::NoGraph) => {
-                had_graph = false;
-                DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
-            }
-            Some(FetchRulesResult::Error(_)) | None => {
-                DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
-            }
-        };
-    ui::finish_spinner(&sp, "User rules loaded");
 
     let user_display: Vec<String> = user_rules
         .iter()
@@ -2051,25 +2033,27 @@ fn main() -> io::Result<()> {
     run_conventions_phase();
     println!();
 
-    // Phase 6 — Side-by-side rule checks (first 5 files)
-    let had_graph = {
-        let mut files = collect_source_files(&cwd);
-        files.truncate(5);
-        ui::print_header("Checking files against coding rules");
-        let common_str: String = COMMON_RULES.iter().map(|r| format!("- {r}\n")).collect();
-        let auth_url = config.auth_url().to_string();
-        run_side_by_side_checks(
-            &cwd,
-            &files,
-            &common_str,
-            config.user_id.as_deref(),
-            config.session_token.as_deref(),
-            &auth_url,
-        )
-    };
-    println!();
+    // Phase 6a — Fetch user rules from graph (probe for graph existence)
+    let sp = ui::start_spinner("Fetching user rules from graph…");
+    let mut had_graph = true;
+    let user_rules: Vec<String> =
+        match config.user_id.as_deref().map(|uid| fetch_rules(uid, "Return all coding rules")) {
+            Some(FetchRulesResult::Rules(text)) => text
+                .lines()
+                .map(|l| l.trim().trim_start_matches('-').trim().to_string())
+                .filter(|l| !l.is_empty())
+                .collect(),
+            Some(FetchRulesResult::NoGraph) => {
+                had_graph = false;
+                DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
+            }
+            Some(FetchRulesResult::Error(_)) | None => {
+                DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
+            }
+        };
+    ui::finish_spinner(&sp, "User rules loaded");
 
-    // Upload sessions if no graph or first login
+    // Phase 6b — Upload sessions to build graph if none exists, then re-fetch real rules
     if !had_graph || !is_logged_in {
         if let Some(ref uid) = config.user_id {
             println!();
@@ -2080,11 +2064,49 @@ fn main() -> io::Result<()> {
         }
     }
 
+    let user_rules = if !had_graph {
+        // Graph was just built from uploaded sessions — fetch real rules
+        let sp = ui::start_spinner("Loading rules from new graph…");
+        let rules = match config.user_id.as_deref().map(|uid| fetch_rules(uid, "Return all coding rules")) {
+            Some(FetchRulesResult::Rules(text)) => {
+                had_graph = true;
+                text.lines()
+                    .map(|l| l.trim().trim_start_matches('-').trim().to_string())
+                    .filter(|l| !l.is_empty())
+                    .collect()
+            }
+            _ => user_rules, // keep defaults if re-fetch fails
+        };
+        ui::finish_spinner(&sp, "Rules loaded from graph");
+        rules
+    } else {
+        user_rules
+    };
+
     {
         let sp = ui::start_spinner("Building Rippletide Context Graph");
         thread::sleep(Duration::from_millis(800));
         ui::finish_spinner(&sp, "Building Rippletide Context Graph");
         ui::print_success("Context Graph built.");
+    }
+
+    // Phase 6c — Side-by-side rule checks (first 5 files)
+    {
+        let mut files = collect_source_files(&cwd);
+        files.truncate(5);
+        ui::print_header("Checking files against coding rules");
+        let common_str: String = COMMON_RULES.iter().map(|r| format!("- {r}\n")).collect();
+        let auth_url = config.auth_url().to_string();
+        run_side_by_side_checks(
+            &cwd,
+            &files,
+            &common_str,
+            &user_rules,
+            had_graph,
+            config.session_token.as_deref(),
+            config.user_id.as_deref(),
+            &auth_url,
+        );
     }
     println!();
 
