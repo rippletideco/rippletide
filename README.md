@@ -1,4 +1,4 @@
-<img width="2000" alt="Rippletide" src="./assets/Rippletide_github.jpeg" />
+![Rippletide](./assets/Rippletide_github.jpeg)
 
 <p align="center">
   <strong>Rippletide adds an authority layer that validates, constrains, or blocks agent actions at runtime before they impact real systems or customers.</strong>
@@ -22,6 +22,11 @@
   <a href="https://discord.gg/zUPTRH5eFv"><img src="https://img.shields.io/badge/Discord-Join_us-7289DA?style=flat-square&logo=discord" alt="Discord" /></a>
 </p>
 
+
+<br />
+
+This repository is your starting point for Rippletide — Eval, Context Graph MCP, and Coding Agents.
+
 ---
 
 ## Table of Contents
@@ -30,13 +35,16 @@
 - [Trust Platform](#trust-platform)
 
 **Core Modules:**
-| # | Module | What it does |
-|---|--------|-------------|
-| 1 | [Agent Evaluation CLI](#agent-evaluation-cli) | Validate before you ship |
-| 2 | [Context Graph](#context-graph) | Bring the right context for a more predictable agent |
-| | &nbsp;&nbsp;↳ [Coding Agents](#use-case--coding-agents) | A persistent memory layer for Claude |
-| | &nbsp;&nbsp;↳ [MCP](#mcp) | Give your agents persistent memory across sessions `Enterprise` |
-| 3 | [Decision Runtime](#decision-runtime) | Build deterministic agents with less than 1% hallucination rate `Enterprise` |
+
+
+| #   | Module                                          | What it does                                       |
+| --- | ----------------------------------------------- | -------------------------------------------------- |
+| 1   | [Agent Evaluation - CLI](#agent-evaluation-cli) | Validate before you ship                           |
+| 2   | [Context Graph - MCP](#context-graph---mcp)     | Give your agents persistent memory across sessions |
+| 3   | [Coding Agents](#coding-agents)                 | A persistent memory layer for Claude               |
+
+
+<sub>**Decision Runtime** — Enterprise Only. Build deterministic agents with less than 1% hallucination rate. [Contact us](https://rippletide.com) to learn more.</sub>
 
 ---
 
@@ -44,13 +52,15 @@
 
 Rippletide adds an authority layer that validates, constrains, or blocks agent actions at runtime before they impact real systems or customers.
 
-| | Without Rippletide | With Rippletide |
-|---|---|---|
-| **Hallucinations** | Variable, hard to control | Less than 1% by design |
-| **Memory** | Lost between conversations | Persistent context graph |
-| **Guardrails** | Prompt-based, easy to bypass | Engine-level, 100% compliance |
-| **Explainability** | Black box | Every decision is traceable |
-| **Evaluation** | Manual spot checks | Automated, CI-ready testing |
+
+|                    | Without Rippletide           | With Rippletide               |
+| ------------------ | ---------------------------- | ----------------------------- |
+| **Hallucinations** | Variable, hard to control    | Less than 1% by design        |
+| **Memory**         | Lost between conversations   | Persistent context graph      |
+| **Guardrails**     | Prompt-based, easy to bypass | Engine-level, 100% compliance |
+| **Explainability** | Black box                    | Every decision is traceable   |
+| **Evaluation**     | Manual spot checks           | Automated, CI-ready testing   |
+
 
 ---
 
@@ -63,6 +73,8 @@ Eval is the entry point to Rippletide. Before adding memory or decision runtime,
 <p align="center">
   <img src="https://raw.githubusercontent.com/rippletideco/rippletide/main/assets/demo.gif" alt="Agent Evaluation Demo" width="800">
 </p>
+
+
 
 ### Installation
 
@@ -87,10 +99,12 @@ rippletide
 ```
 
 You'll be prompted for:
+
 1. **Agent endpoint** — Your API URL (e.g. `http://localhost:8000`)
 2. **Knowledge source** — Choose between files, Pinecone, or PostgreSQL
 
 The CLI will then:
+
 - Load your test questions
 - Send them to your agent
 - Show real-time progress
@@ -102,23 +116,28 @@ The CLI will then:
 rippletide eval [options]
 ```
 
-| Option | Description | Example |
-|--------|-------------|---------|
-| `-t, --template <name>` | Use a pre-configured template | `rippletide eval -t banking_analyst` |
-| `-a, --agent <url>` | Agent endpoint URL | `rippletide eval -a localhost:8000` |
-| `-k, --knowledge <source>` | Knowledge source: files, pinecone, or postgresql | `rippletide eval -k pinecone` |
-| `--debug` | Show detailed error information | `rippletide eval --debug` |
-| `-h, --help` | Show help message | `rippletide --help` |
+
+| Option                     | Description                                      | Example                              |
+| -------------------------- | ------------------------------------------------ | ------------------------------------ |
+| `-t, --template <name>`    | Use a pre-configured template                    | `rippletide eval -t banking_analyst` |
+| `-a, --agent <url>`        | Agent endpoint URL                               | `rippletide eval -a localhost:8000`  |
+| `-k, --knowledge <source>` | Knowledge source: files, pinecone, or postgresql | `rippletide eval -k pinecone`        |
+| `--debug`                  | Show detailed error information                  | `rippletide eval --debug`            |
+| `-h, --help`               | Show help message                                | `rippletide --help`                  |
+
 
 ### Data Source Options
 
 **Local Files (default):**
+
 ```bash
 rippletide eval -a localhost:8000
 ```
+
 Reads Q&A pairs from `qanda.json` in the current directory.
 
 **Pinecone:**
+
 ```bash
 rippletide eval -a localhost:8000 -k pinecone \
   -pu https://db.pinecone.io \
@@ -126,6 +145,7 @@ rippletide eval -a localhost:8000 -k pinecone \
 ```
 
 **PostgreSQL:**
+
 ```bash
 rippletide eval -a localhost:8000 -k postgresql \
   -pg "postgresql://user:pass@localhost:5432/db"
@@ -142,25 +162,29 @@ rippletide eval -a localhost:8000 \
   -rf "data.response"
 ```
 
-| Option | Description |
-|--------|-------------|
-| `-H, --headers` | Custom headers (comma-separated) |
-| `-B, --body` | Request body template (use `{question}` placeholder) |
-| `-rf, --response-field` | Path to response in JSON (dot notation) |
+
+| Option                  | Description                                          |
+| ----------------------- | ---------------------------------------------------- |
+| `-H, --headers`         | Custom headers (comma-separated)                     |
+| `-B, --body`            | Request body template (use `{question}` placeholder) |
+| `-rf, --response-field` | Path to response in JSON (dot notation)              |
+
 
 ### Templates
 
 Pre-built configurations for common agent use cases:
 
-| Template | Description |
-|----------|-------------|
-| `banking_analyst` | Financial Q&A agent |
-| `customer_service` | Support agent testing |
-| `blog_to_linkedin` | Content repurposing agent |
-| `luxe_concierge` | Luxury services agent |
-| `local_dev` | Local development agent |
+
+| Template            | Description                 |
+| ------------------- | --------------------------- |
+| `banking_analyst`   | Financial Q&A agent         |
+| `customer_service`  | Support agent testing       |
+| `blog_to_linkedin`  | Content repurposing agent   |
+| `luxe_concierge`    | Luxury services agent       |
+| `local_dev`         | Local development agent     |
 | `openai_compatible` | OpenAI-compatible endpoints |
-| `project_manager` | Project management agent |
+| `project_manager`   | Project management agent    |
+
 
 ```bash
 rippletide eval -t customer_service
@@ -170,35 +194,57 @@ rippletide eval -t customer_service
 
 ---
 
-## Context Graph
+## Context Graph - MCP
 
-A persistent context graph that stores facts, decisions, preferences, and entity relationships across conversations. Your agents remember what matters without re-prompting.
+A persistent memory layer for your AI agents. Connect any MCP-compatible client (Cursor, Claude Desktop, Claude Code) and your agent can remember facts, decisions, and context across sessions.
 
-**When to use it:** When your agents need to recall past interactions, share context across sessions, or maintain structured knowledge about users, products, or projects.
+### Quick Start
 
-### Use Case — Coding Agents
+Add this to your MCP client config:
 
-Every engineer on your team has their own `CLAUDE.md`. They're all different, all outdated, and Claude ignores half of them anyway. When someone defines a good convention, it stays on their machine.
+```json
+{
+  "mcpServers": {
+    "rippletide": {
+      "type": "url",
+      "url": "https://mcp.rippletide.com/mcp?agentId=your-agent-id"
+    }
+  }
+}
+```
 
-The Context Graph gives Claude Code a shared, external memory. Your team defines the rules once — naming conventions, architecture decisions, error handling policies — and every Claude session pulls from the same source automatically. No copy-pasting. No drift between engineers. No more "why did Claude do it differently this time?"
+Get your `agentId` from the [Rippletide platform](https://app.rippletide.com).
 
-→ [Coding Agents docs](https://docs.rippletide.com/docs/coding-agents/overview)
+| Client | Config location |
+|--------|----------------|
+| Cursor | `~/.cursor/mcp.json` |
+| Claude Desktop | MCP settings in the app |
+| Claude Code | `.mcp.json` at project root |
 
-### MCP
-
-Your agents forget everything between sessions. The MCP layer fixes that — rules, context, and conventions stored once and available to every agent, every time.
-
-> **Enterprise only** — [Contact us](https://rippletide.com) to learn more.
+→ [MCP docs](https://docs.rippletide.com/docs/mcp/overview)
 
 ---
 
-## Decision Runtime
+## Coding Agents
 
-Structure your agent's knowledge as a hypergraph of Q&A pairs, tags, actions, and state transitions. Decisions are handled by a deterministic reasoning engine, not probabilistic generation. The result: agents that hallucinate less than 1% of the time, with full explainability on every answer.
+Give Claude Code a shared, persistent memory. Store your team's conventions once — naming rules, architecture decisions, error handling policies — and every Claude session pulls from the same source automatically.
 
-**When to use it:** When you need guaranteed accuracy, every decision must be traceable, and guardrails must be enforced at the engine level — not just in prompts.
+### Quick Start
 
-> **Enterprise only** — [Contact us](https://rippletide.com) to learn how we can bring this to your team.
+```bash
+npx rippletide-code@latest connect
+```
+
+This sets up Claude Code hooks and generates the agent instruction files. After running:
+
+```
+your-project/
+├── .claude/settings.json  # Claude Code hooks
+└── CLAUDE.md              # Agent instructions
+```
+
+
+→ [Coding Agents docs](https://docs.rippletide.com/docs/coding-agents/overview)
 
 ---
 
@@ -224,9 +270,6 @@ rippletide/
 ├── context-graph/          # Rust MCP server for coding agents
 │   ├── src/                # Rust source
 │   └── npm/                # Multi-platform binary packages
-├── decision-runtime/       # Runtime layer
-│   ├── playground-proxy/   # Node.js proxy server
-│   └── rippletide_client/  # Python SDK
 └── docs/                   # Documentation site (Mintlify)
 ```
 
@@ -247,10 +290,6 @@ npm run eval         # run development version
 cd rippletide/context-graph
 cargo build --release
 
-# Playground Proxy
-cd rippletide/decision-runtime/playground-proxy
-npm install
-npm start
 ```
 
 ---
