@@ -579,7 +579,8 @@ const CLAUDE_LOCAL_SETTINGS: &str = r#"{
   "permissions": {
     "allow": [
       "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh\" *)",
-      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/review-plan-command.sh\" *)"
+      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/review-plan-command.sh\" *)",
+      "Bash(bash \"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/review-plan-command.sh\" *)"
     ]
   }
 }
@@ -605,7 +606,7 @@ Follow this workflow exactly:
 2. Write `Drafting initial plan.`
 3. Produce `Draft 1` as a numbered plan that stays strictly within scope and uses the current repository context.
 4. Review that exact draft by using Bash with this shape:
-   `bash "$CLAUDE_PROJECT_DIR/.claude/commands/review-plan-command.sh" "$ARGUMENTS" <<'__RIPPLETIDE_PLAN__'`
+   `bash "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/review-plan-command.sh" "$ARGUMENTS" <<'__RIPPLETIDE_PLAN__'`
    `<draft markdown>`
    `__RIPPLETIDE_PLAN__`
 5. After each review tool call:
@@ -800,7 +801,42 @@ fn ensure_claude_commands() -> io::Result<bool> {
         changed = true;
     }
 
+    if sync_global_plan_command()? {
+        changed = true;
+    }
+
     Ok(changed)
+}
+
+fn claude_commands_home_dir() -> Option<PathBuf> {
+    std::env::var_os("RIPPLETIDE_CLAUDE_HOME")
+        .or_else(|| std::env::var_os("HOME"))
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+        .map(|home| home.join(".claude").join("commands"))
+}
+
+fn is_rippletide_managed_plan_command(contents: &str) -> bool {
+    contents.contains("Rippletide") && contents.contains("plan-command.sh")
+}
+
+fn sync_global_plan_command() -> io::Result<bool> {
+    let Some(commands_dir) = claude_commands_home_dir() else {
+        return Ok(false);
+    };
+    let plan_path = commands_dir.join("plan.md");
+    if !plan_path.exists() {
+        return Ok(false);
+    }
+
+    let existing = fs::read_to_string(&plan_path)?;
+    if !is_rippletide_managed_plan_command(&existing) || existing == PLAN_COMMAND_MARKDOWN {
+        return Ok(false);
+    }
+
+    fs::create_dir_all(&commands_dir)?;
+    fs::write(&plan_path, PLAN_COMMAND_MARKDOWN)?;
+    Ok(true)
 }
 
 struct ConfigureResult {
@@ -2497,6 +2533,68 @@ mod tests {
     fn plan_command_markdown_describes_visible_review_flow() {
         assert!(PLAN_COMMAND_MARKDOWN.contains("Drafting initial plan."));
         assert!(PLAN_COMMAND_MARKDOWN.contains("review-plan-command.sh"));
+        assert!(PLAN_COMMAND_MARKDOWN.contains("${CLAUDE_PROJECT_DIR:-$PWD}"));
         assert!(!PLAN_COMMAND_MARKDOWN.contains("Final revised plan:\n!`bash"));
+    }
+
+    #[test]
+    fn sync_global_plan_command_updates_rippletide_managed_file() {
+        let _guard = env_lock();
+        let home = temp_dir("rippletide-global-plan");
+        let commands_dir = home.join(".claude").join("commands");
+        let plan_path = commands_dir.join("plan.md");
+        fs::create_dir_all(&commands_dir).unwrap();
+        fs::write(
+            &plan_path,
+            r#"---
+description: Generate a repo-aware implementation plan revised against Rippletide rules
+---
+Return exactly the final revised plan below and nothing else.
+
+Final revised plan:
+!`bash "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/plan-command.sh" "$ARGUMENTS"`
+"#,
+        )
+        .unwrap();
+
+        let old_home = std::env::var_os("RIPPLETIDE_CLAUDE_HOME");
+        std::env::set_var("RIPPLETIDE_CLAUDE_HOME", &home);
+
+        let changed = sync_global_plan_command().unwrap();
+        let updated = fs::read_to_string(&plan_path).unwrap();
+
+        assert!(changed);
+        assert_eq!(updated, PLAN_COMMAND_MARKDOWN);
+
+        match old_home {
+            Some(value) => std::env::set_var("RIPPLETIDE_CLAUDE_HOME", value),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_HOME"),
+        }
+        let _ = fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn sync_global_plan_command_leaves_custom_file_untouched() {
+        let _guard = env_lock();
+        let home = temp_dir("rippletide-global-plan-custom");
+        let commands_dir = home.join(".claude").join("commands");
+        let plan_path = commands_dir.join("plan.md");
+        fs::create_dir_all(&commands_dir).unwrap();
+        fs::write(&plan_path, "custom /plan command\n").unwrap();
+
+        let old_home = std::env::var_os("RIPPLETIDE_CLAUDE_HOME");
+        std::env::set_var("RIPPLETIDE_CLAUDE_HOME", &home);
+
+        let changed = sync_global_plan_command().unwrap();
+        let updated = fs::read_to_string(&plan_path).unwrap();
+
+        assert!(!changed);
+        assert_eq!(updated, "custom /plan command\n");
+
+        match old_home {
+            Some(value) => std::env::set_var("RIPPLETIDE_CLAUDE_HOME", value),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_HOME"),
+        }
+        let _ = fs::remove_dir_all(home);
     }
 }

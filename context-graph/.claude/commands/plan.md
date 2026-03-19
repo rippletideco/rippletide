@@ -18,7 +18,7 @@ Follow this workflow exactly:
 2. Write `Drafting initial plan.`
 3. Produce `Draft 1` as a numbered plan that stays strictly within scope and uses the current repository context.
 4. Review that exact draft by using Bash with this shape:
-   `bash "$CLAUDE_PROJECT_DIR/.claude/commands/review-plan-command.sh" "$ARGUMENTS" <<'__RIPPLETIDE_PLAN__'`
+   `bash "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/review-plan-command.sh" "$ARGUMENTS" <<'__RIPPLETIDE_PLAN__'`
    `<draft markdown>`
    `__RIPPLETIDE_PLAN__`
 5. After each review tool call:
