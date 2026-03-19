@@ -343,20 +343,28 @@ fn build_agent_instructions() -> String {
 
 fn ensure_agent_files() -> io::Result<bool> {
     let cwd = std::env::current_dir()?;
-    let content = build_agent_instructions();
+    let instructions = build_agent_instructions();
     let mut changed = false;
+
     for name in ["AGENTS.md", "CLAUDE.md"] {
         let path = cwd.join(name);
-        let needs_write = if path.exists() {
-            fs::read_to_string(&path)? != content
+        if path.exists() {
+            let existing = fs::read_to_string(&path)?;
+            if !existing.contains("# Hook-First Planning Instructions") {
+                let merged = format!(
+                    "{}\n---\n\n{}",
+                    instructions.trim_end(),
+                    existing
+                );
+                fs::write(&path, merged)?;
+                changed = true;
+            }
         } else {
-            true
-        };
-        if needs_write {
-            fs::write(&path, &content)?;
+            fs::write(&path, &instructions)?;
             changed = true;
         }
     }
+
     Ok(changed)
 }
 
