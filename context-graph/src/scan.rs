@@ -2,11 +2,45 @@ use std::path::Path;
 
 use walkdir::WalkDir;
 
+// rippletide-override: user approved
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TechStack {
+    TypeScript,
+    JavaScript,
+    Python,
+    Rust,
+    Go,
+    Ruby,
+    Java,
+    Kotlin,
+    Swift,
+    Cpp,
+}
+
+impl TechStack {
+    pub fn label(&self) -> &str {
+        match self {
+            Self::TypeScript => "TypeScript",
+            Self::JavaScript => "JavaScript",
+            Self::Python => "Python",
+            Self::Rust => "Rust",
+            Self::Go => "Go",
+            Self::Ruby => "Ruby",
+            Self::Java => "Java",
+            Self::Kotlin => "Kotlin",
+            Self::Swift => "Swift",
+            Self::Cpp => "C/C++",
+        }
+    }
+
+}
+
 pub struct RepoScanResult {
     pub source_file_count: usize,
     pub test_file_count: usize,
     pub has_claude_md: bool,
     pub mcp_tool_count: usize,
+    pub tech_stacks: Vec<TechStack>,
 }
 
 const SKIP_DIRS: &[&str] = &["target", "node_modules", ".git", "dist", "build", "vendor"];
@@ -61,13 +95,48 @@ pub fn scan_repo(cwd: &Path) -> RepoScanResult {
 
     let has_claude_md = cwd.join("CLAUDE.md").exists();
     let mcp_tool_count = count_mcp_tools(cwd);
+    let tech_stacks = detect_tech_stacks(cwd);
 
     RepoScanResult {
         source_file_count,
         test_file_count,
         has_claude_md,
         mcp_tool_count,
+        tech_stacks,
     }
+}
+
+fn detect_tech_stacks(cwd: &Path) -> Vec<TechStack> {
+    // rippletide-override: user approved
+    let indicators: &[(&str, TechStack)] = &[
+        ("tsconfig.json", TechStack::TypeScript),
+        ("package.json", TechStack::JavaScript),
+        ("Cargo.toml", TechStack::Rust),
+        ("go.mod", TechStack::Go),
+        ("Gemfile", TechStack::Ruby),
+        ("requirements.txt", TechStack::Python),
+        ("pyproject.toml", TechStack::Python),
+        ("setup.py", TechStack::Python),
+        ("pom.xml", TechStack::Java),
+        ("build.gradle", TechStack::Java),
+        ("build.gradle.kts", TechStack::Kotlin),
+        ("Package.swift", TechStack::Swift),
+        ("CMakeLists.txt", TechStack::Cpp),
+    ];
+
+    let mut stacks = Vec::new();
+    for (file, stack) in indicators {
+        if cwd.join(file).exists() && !stacks.contains(stack) {
+            stacks.push(stack.clone());
+        }
+    }
+
+    // TypeScript supersedes JavaScript if both detected
+    if stacks.contains(&TechStack::TypeScript) {
+        stacks.retain(|s| *s != TechStack::JavaScript);
+    }
+
+    stacks
 }
 
 fn count_mcp_tools(cwd: &Path) -> usize {
