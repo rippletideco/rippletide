@@ -243,6 +243,17 @@ your-project/
 └── CLAUDE.md              # Agent instructions
 ```
 
+### Data privacy
+
+A common question is what Rippletide actually sees when used with Coding Agents.
+
+For Coding Agents, Rippletide only relies on the context available inside your local Claude Code workflow:
+- the current Claude Code chat session for the active project
+- your `CLAUDE.md`
+
+Your codebase is not centrally analyzed outside of your local Claude Code environment. The analysis happens through your own Claude Code setup.
+
+Rippletide only stores the rules extracted from that context, not the rest of the project content. In practice, this means Rippletide keeps reusable conventions and policies, not your full codebase or unrelated session content.
 
 → [Coding Agents docs](https://docs.rippletide.com/docs/coding-agents/overview)
 
