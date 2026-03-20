@@ -1275,14 +1275,9 @@ fn run_benchmark_phase(cwd: &std::path::Path, stacks: &[scan::TechStack]) {
             missing.len()
         ));
         println!();
+        // rippletide-override: user approved
         for (i, rule) in missing.iter().enumerate() {
-            let freq_label = format!("(found in {} repos)", rule.frequency);
-            ui::print_sub(&format!(
-                "{}. {} {}",
-                i + 1,
-                rule.rule,
-                freq_label
-            ));
+            ui::print_sub(&format!("{}. {}", i + 1, rule.rule));
         }
     }
 }

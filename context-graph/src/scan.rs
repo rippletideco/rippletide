@@ -124,10 +124,27 @@ fn detect_tech_stacks(cwd: &Path) -> Vec<TechStack> {
         ("CMakeLists.txt", TechStack::Cpp),
     ];
 
+    // rippletide-override: user approved
     let mut stacks = Vec::new();
+
+    // Check root level
     for (file, stack) in indicators {
         if cwd.join(file).exists() && !stacks.contains(stack) {
             stacks.push(stack.clone());
+        }
+    }
+
+    // Check one level of subdirectories (monorepo support)
+    if let Ok(entries) = std::fs::read_dir(cwd) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            if !entry.path().is_dir() {
+                continue;
+            }
+            for (file, stack) in indicators {
+                if entry.path().join(file).exists() && !stacks.contains(stack) {
+                    stacks.push(stack.clone());
+                }
+            }
         }
     }
 

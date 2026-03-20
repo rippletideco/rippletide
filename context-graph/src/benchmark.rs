@@ -26,7 +26,9 @@ pub struct CorpusRule {
 #[derive(Debug, Clone)]
 // rippletide-override: user approved
 pub struct MissingRule {
+    // rippletide-override: user approved
     pub rule: String,
+    #[allow(dead_code)]
     pub frequency: usize,
     #[allow(dead_code)]
     pub category: String,
