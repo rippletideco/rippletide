@@ -23,3 +23,13 @@ your-project/
 └── CLAUDE.md              # Agent instructions (auto-generated)
 ```
 
+## Data privacy
+
+Rippletide only relies on the context available inside your local Claude Code workflow to identify reusable engineering rules:
+
+- the current Claude Code chat session for the active project
+- your `CLAUDE.md`
+
+Your codebase is analyzed through your own local Claude Code environment, not centrally ingested as a full codebase.
+
+Rippletide only stores the extracted rules and conventions that should persist across sessions, not the rest of the project content or unrelated session context.
