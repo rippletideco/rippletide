@@ -83,12 +83,15 @@ pub enum FixAction {
     None,
 }
 
-pub fn prompt_fix_action(file: &str, changes: &[String]) -> io::Result<FixAction> {
+pub fn prompt_fix_action(file: &str, violations: &[(String, String)]) -> io::Result<FixAction> {
     println!();
     println!("  {} {}", "→".cyan(), file.white().bold());
-    if !changes.is_empty() {
-        for change in changes {
-            println!("    {}", format!("→ {}", change).dimmed());
+    if !violations.is_empty() {
+        for (rule, explanation) in violations {
+            println!("    {}", format!("• {}", rule).red());
+            if !explanation.is_empty() {
+                println!("      {}", explanation.dimmed());
+            }
         }
     }
     print!("  {} ", "[F]ix / [S]kip / [A]ll / [N]one:".yellow());
@@ -101,4 +104,39 @@ pub fn prompt_fix_action(file: &str, changes: &[String]) -> io::Result<FixAction
         "n" | "none" => Ok(FixAction::None),
         _ => Ok(FixAction::Skip),
     }
+}
+
+pub fn print_diff(file_path: &str, original: &str, fixed: &str) {
+    use similar::{ChangeTag, TextDiff};
+
+    let diff = TextDiff::from_lines(original, fixed);
+
+    if diff.ratio() == 1.0 {
+        print_sub("  (no changes)");
+        return;
+    }
+
+    println!();
+    println!("    {}", format!("--- a/{}", file_path).red());
+    println!("    {}", format!("+++ b/{}", file_path).green());
+
+    for hunk in diff.unified_diff().iter_hunks() {
+        println!("    {}", format!("{}", hunk.header()).cyan());
+        for change in hunk.iter_changes() {
+            let line = change.to_string_lossy();
+            let line_trimmed = line.trim_end_matches('\n');
+            match change.tag() {
+                ChangeTag::Delete => {
+                    println!("    {}", format!("-{}", line_trimmed).red());
+                }
+                ChangeTag::Insert => {
+                    println!("    {}", format!("+{}", line_trimmed).green());
+                }
+                ChangeTag::Equal => {
+                    println!("    {}", format!(" {}", line_trimmed).dimmed());
+                }
+            }
+        }
+    }
+    println!();
 }
