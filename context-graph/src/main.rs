@@ -1108,9 +1108,10 @@ fn create_sessions_zip(files: &[PathBuf], base_dir: &std::path::Path) -> io::Res
     Ok(cursor.into_inner())
 }
 
-fn upload_zip(zip_data: &[u8], user_id: &str) -> Result<serde_json::Value, String> {
+fn upload_zip(zip_data: &[u8], user_id: &str, claude_md: Option<&str>) -> Result<serde_json::Value, String> {
     let boundary = "----RippletideBoundary9876543210";
     let mut body: Vec<u8> = Vec::new();
+    // Part 1: session zip
     body.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
     body.extend_from_slice(
         b"Content-Disposition: form-data; name=\"file\"; filename=\"claude_sessions.zip\"\r\n",
@@ -1118,6 +1119,16 @@ fn upload_zip(zip_data: &[u8], user_id: &str) -> Result<serde_json::Value, Strin
     body.extend_from_slice(b"Content-Type: application/zip\r\n");
     body.extend_from_slice(b"\r\n");
     body.extend_from_slice(zip_data);
+    // Part 2 (optional): CLAUDE.md content
+    if let Some(md) = claude_md {
+        body.extend_from_slice(format!("\r\n--{}\r\n", boundary).as_bytes());
+        body.extend_from_slice(
+            b"Content-Disposition: form-data; name=\"claude_md\"; filename=\"CLAUDE.md\"\r\n",
+        );
+        body.extend_from_slice(b"Content-Type: text/markdown\r\n");
+        body.extend_from_slice(b"\r\n");
+        body.extend_from_slice(md.as_bytes());
+    }
     body.extend_from_slice(format!("\r\n--{}--\r\n", boundary).as_bytes());
 
     let content_type = format!("multipart/form-data; boundary={}", boundary);
@@ -1130,7 +1141,7 @@ fn upload_zip(zip_data: &[u8], user_id: &str) -> Result<serde_json::Value, Strin
         .map_err(|e| format!("Invalid response: {e}"))
 }
 
-fn upload_sessions(user_id: &str) -> io::Result<()> {
+fn upload_sessions(user_id: &str, cwd: &std::path::Path) -> io::Result<()> {
     let project_dir = match claude_project_dir() {
         Some(dir) => dir,
         None => {
@@ -1148,10 +1159,16 @@ fn upload_sessions(user_id: &str) -> io::Result<()> {
         return Ok(());
     }
 
+    // Read CLAUDE.md from the working directory if it exists
+    let claude_md = fs::read_to_string(cwd.join("CLAUDE.md")).ok();
+    if claude_md.is_some() {
+        ui::print_sub("Including CLAUDE.md rules in graph build");
+    }
+
     let sp = ui::start_spinner(&format!("Uploading {} session file(s)...", files.len()));
     let zip_data = create_sessions_zip(&files, &project_dir)?;
 
-    match upload_zip(&zip_data, user_id) {
+    match upload_zip(&zip_data, user_id, claude_md.as_deref()) {
         Ok(resp) => {
             ui::finish_spinner(&sp, "Sessions uploaded");
             if let Some(n) = resp.get("messages_extracted").and_then(|v| v.as_u64()) {
@@ -2284,7 +2301,7 @@ fn main() -> io::Result<()> {
             if !had_graph {
                 ui::print_sub("No context graph found — uploading sessions to build one...");
             }
-            upload_sessions(uid)?;
+            upload_sessions(uid, &cwd)?;
         }
     }
 
