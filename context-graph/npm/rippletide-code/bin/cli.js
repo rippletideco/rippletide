@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-const { execFileSync } = require("child_process");
+const { execFileSync, execSync } = require("child_process");
 const path = require("path");
+const fs = require("fs");
 
 const PLATFORMS = {
   "darwin-arm64": "rippletide-code-darwin-arm64",
@@ -22,20 +23,44 @@ if (!pkg) {
   process.exit(1);
 }
 
+const binName = process.platform === "win32" ? "rippletide-code.exe" : "rippletide-code";
+
+function resolveBinPath() {
+  const pkgDir = path.dirname(require.resolve(`${pkg}/package.json`));
+  return path.join(pkgDir, binName);
+}
+
 let binPath;
 try {
-  const binName = process.platform === "win32" ? "rippletide-code.exe" : "rippletide-code";
-  binPath = path.join(require.resolve(`${pkg}/package.json`), "..", binName);
+  binPath = resolveBinPath();
 } catch {
-  console.error(
-    `Could not find the binary package "${pkg}" for your platform.\n` +
-      `Make sure it was installed (it should be an optionalDependency).`
-  );
+  // optionalDependency not installed (common with npx on Windows) — install it on the fly
+  const version = require(path.join(__dirname, "..", "package.json")).version;
+  const installTarget = `${pkg}@${version}`;
+  console.error(`Platform package "${pkg}" not found — installing ${installTarget}...`);
+  try {
+    execSync(`npm install --no-save ${installTarget}`, {
+      stdio: "inherit",
+      cwd: path.join(__dirname, ".."),
+    });
+    binPath = resolveBinPath();
+  } catch (installErr) {
+    console.error(`Failed to install "${installTarget}": ${installErr.message}`);
+    process.exit(1);
+  }
+}
+
+if (!fs.existsSync(binPath)) {
+  console.error(`Binary not found at ${binPath} — the package may be incomplete.`);
   process.exit(1);
 }
 
 try {
   execFileSync(binPath, process.argv.slice(2), { stdio: "inherit" });
 } catch (e) {
-  process.exit(e.status ?? 1);
+  if (e.status != null) {
+    process.exit(e.status);
+  }
+  console.error(`Failed to run rippletide-code: ${e.message}`);
+  process.exit(1);
 }
