@@ -1,6 +1,6 @@
 {
   "name": "rippletide-code",
-  "version": "0.5.9",
+  "version": "0.5.10",
   "description": "Rippletide Code CLI \u2014 prebuilt Rust binary launcher",
   "bin": {
     "rippletide-code": "bin/cli.js"
