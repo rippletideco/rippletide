@@ -2403,6 +2403,7 @@ fn main() -> io::Result<()> {
     };
     println!();
 
+    // rippletide-override: user approved
     // Phase 6d — Offer to fix failed files via POST /fix
     if !failed_files.is_empty() {
         if let Some(ref user_id) = config.user_id {
@@ -2410,7 +2411,7 @@ fn main() -> io::Result<()> {
             let mut bulk_action: Option<ui::FixAction> = None;
             ui::print_header("Fixing rule violations");
 
-            for (rel, _violations) in &failed_files {
+            for (rel, violations) in &failed_files {
                 let abs_path = cwd.join(rel);
 
                 // If user chose None for all remaining, skip
@@ -2419,36 +2420,51 @@ fn main() -> io::Result<()> {
                     continue;
                 }
 
-                let sp = ui::start_spinner(&format!("Fetching fix for {}", rel));
-                match std::fs::read_to_string(&abs_path) {
-                    Ok(code) => {
-                        let payload = serde_json::json!({
-                            "code": code,
-                            "context": rel,
-                        });
-                        match ureq::post(&fix_endpoint)
-                            .set("Content-Type", "application/json")
-                            .set("X-User-Id", user_id)
-                            .send_string(&payload.to_string())
-                        {
-                            Ok(resp) => {
-                                if let Ok(body) = resp.into_json::<serde_json::Value>() {
-                                    if let Some(fixed) = body.get("fixed_code").and_then(|v| v.as_str()) {
-                                        let changes: Vec<String> = body.get("changes_applied")
-                                            .and_then(|v| v.as_array())
-                                            .map(|arr| arr.iter().filter_map(|c| {
-                                                c.get("change_description").and_then(|d| d.as_str()).map(|s| s.to_string())
-                                            }).collect())
-                                            .unwrap_or_default();
-                                        ui::finish_spinner(&sp, &format!("Fix ready for {}", rel));
+                // Prompt user FIRST (before any LLM call)
+                let action = match &bulk_action {
+                    Some(a) => a.clone(),
+                    None => {
+                        let violation_pairs: Vec<(String, String)> = violations
+                            .iter()
+                            .map(|v| (v.rule_text.clone(), v.explanation.clone()))
+                            .collect();
+                        ui::prompt_fix_action(rel, &violation_pairs)
+                            .unwrap_or(ui::FixAction::Skip)
+                    }
+                };
 
-                                        let action = match &bulk_action {
-                                            Some(a) => a.clone(),
-                                            None => ui::prompt_fix_action(rel, &changes)
-                                                .unwrap_or(ui::FixAction::Skip),
-                                        };
-                                        match action {
-                                            ui::FixAction::Fix => {
+                match action {
+                    ui::FixAction::Fix | ui::FixAction::All => {
+                        if matches!(action, ui::FixAction::All) {
+                            bulk_action = Some(ui::FixAction::All);
+                        }
+                        // Only fetch fix AFTER user accepted
+                        let sp = ui::start_spinner(&format!("Fetching fix for {}", rel));
+                        match std::fs::read_to_string(&abs_path) {
+                            Ok(original_code) => {
+                                let payload = serde_json::json!({
+                                    "code": original_code,
+                                    "context": rel,
+                                });
+                                match ureq::post(&fix_endpoint)
+                                    .set("Content-Type", "application/json")
+                                    .set("X-User-Id", user_id)
+                                    .send_string(&payload.to_string())
+                                {
+                                    Ok(resp) => {
+                                        if let Ok(body) = resp.into_json::<serde_json::Value>() {
+                                            if let Some(fixed) = body.get("fixed_code").and_then(|v| v.as_str()) {
+                                                let changes: Vec<String> = body.get("changes_applied")
+                                                    .and_then(|v| v.as_array())
+                                                    .map(|arr| arr.iter().filter_map(|c| {
+                                                        c.get("change_description").and_then(|d| d.as_str()).map(|s| s.to_string())
+                                                    }).collect())
+                                                    .unwrap_or_default();
+                                                ui::finish_spinner(&sp, &format!("Fix ready for {}", rel));
+
+                                                // Show colored diff
+                                                ui::print_diff(rel, &original_code, fixed);
+
                                                 if let Err(e) = std::fs::write(&abs_path, fixed) {
                                                     ui::print_error(&format!("Could not write fix for {}: {}", rel, e));
                                                 } else {
@@ -2457,40 +2473,29 @@ fn main() -> io::Result<()> {
                                                         ui::print_sub(&format!("  → {}", change));
                                                     }
                                                 }
+                                            } else {
+                                                ui::finish_spinner(&sp, &format!("No fix returned for {}", rel));
                                             }
-                                            ui::FixAction::All => {
-                                                bulk_action = Some(ui::FixAction::All);
-                                                if let Err(e) = std::fs::write(&abs_path, fixed) {
-                                                    ui::print_error(&format!("Could not write fix for {}: {}", rel, e));
-                                                } else {
-                                                    ui::print_success(&format!("Fixed {}", rel));
-                                                    for change in &changes {
-                                                        ui::print_sub(&format!("  → {}", change));
-                                                    }
-                                                }
-                                            }
-                                            ui::FixAction::None => {
-                                                bulk_action = Some(ui::FixAction::None);
-                                                ui::print_sub(&format!("  Skipped {}", rel));
-                                            }
-                                            ui::FixAction::Skip => {
-                                                ui::print_sub(&format!("  Skipped {}", rel));
-                                            }
+                                        } else {
+                                            ui::finish_spinner(&sp, &format!("Could not parse fix response for {}", rel));
                                         }
-                                    } else {
-                                        ui::finish_spinner(&sp, &format!("No fix returned for {}", rel));
                                     }
-                                } else {
-                                    ui::finish_spinner(&sp, &format!("Could not parse fix response for {}", rel));
+                                    Err(e) => {
+                                        ui::finish_spinner(&sp, &format!("Fix request failed for {}: {}", rel, e));
+                                    }
                                 }
                             }
                             Err(e) => {
-                                ui::finish_spinner(&sp, &format!("Fix request failed for {}: {}", rel, e));
+                                ui::finish_spinner(&sp, &format!("Could not read {}: {}", rel, e));
                             }
                         }
                     }
-                    Err(e) => {
-                        ui::finish_spinner(&sp, &format!("Could not read {}: {}", rel, e));
+                    ui::FixAction::None => {
+                        bulk_action = Some(ui::FixAction::None);
+                        ui::print_sub(&format!("  Skipped {}", rel));
+                    }
+                    ui::FixAction::Skip => {
+                        ui::print_sub(&format!("  Skipped {}", rel));
                     }
                 }
             }
