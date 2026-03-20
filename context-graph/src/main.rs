@@ -72,6 +72,7 @@ const SIGN_UP_PATH: &str = "/api/auth/sign-up/email";
 const SEND_OTP_PATH: &str = "/api/auth/email-otp/send-verification-otp";
 const SIGN_IN_OTP_PATH: &str = "/api/auth/sign-in/email-otp";
 const UPLOAD_URL: &str = "https://coding-agent.up.railway.app/upload";
+const CLAUDE_MD_CONTRADICTIONS_PATH: &str = "/claude-md/contradictions";
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -1230,6 +1231,63 @@ fn run_rules_phase(cwd: &std::path::Path) {
     ui::print_success(&format!("{count} explicit rules detected"));
 }
 
+#[derive(Deserialize, Default)]
+struct ClaudeMdContradictionsResponse {
+    #[serde(default)]
+    skipped: bool,
+    #[serde(default)]
+    terminal_output: String,
+}
+
+fn claude_md_contradictions_url() -> String {
+    std::env::var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL").unwrap_or_else(|_| {
+        format!(
+            "{}{}",
+            UPLOAD_URL.trim_end_matches("/upload"),
+            CLAUDE_MD_CONTRADICTIONS_PATH
+        )
+    })
+}
+
+fn fetch_claude_md_contradictions(user_id: &str, claude_md: &str) -> Option<String> {
+    let payload = serde_json::json!({
+        "source_path": "CLAUDE.md",
+        "content": claude_md,
+    });
+    let resp = ureq::post(&claude_md_contradictions_url())
+        .set("Content-Type", "application/json")
+        .set("X-User-Id", user_id)
+        .send_string(&payload.to_string())
+        .ok()?;
+    let body: ClaudeMdContradictionsResponse = resp.into_json().ok()?;
+    if body.skipped {
+        return None;
+    }
+    let output = body.terminal_output.trim().to_string();
+    if output.is_empty() {
+        None
+    } else {
+        Some(output)
+    }
+}
+
+fn run_contradiction_phase(cwd: &std::path::Path, user_id: &str) {
+    let claude_md = match fs::read_to_string(cwd.join("CLAUDE.md")) {
+        Ok(content) if !content.trim().is_empty() => content,
+        _ => return,
+    };
+    let sp = ui::start_spinner("Scanning your CLAUDE.md for contradictions");
+    match fetch_claude_md_contradictions(user_id, &claude_md) {
+        Some(output) => {
+            sp.finish_and_clear();
+            println!("{output}");
+        }
+        None => {
+            sp.finish_and_clear();
+        }
+    }
+}
+
 fn run_conventions_phase() {
     let sp = ui::start_spinner("Inferring repository conventions");
     thread::sleep(Duration::from_millis(800));
@@ -2312,6 +2370,10 @@ fn main() -> io::Result<()> {
     if scan_result.has_claude_md {
         run_rules_phase(&cwd);
         println!();
+        if let Some(ref user_id) = config.user_id {
+            run_contradiction_phase(&cwd, user_id);
+            println!();
+        }
     }
 
     // Phase 5 — Inferring conventions
@@ -2756,6 +2818,33 @@ mod tests {
         let _ = fs::remove_file(cli_stub);
         let _ = fs::remove_file(command_script);
         let _ = fs::remove_dir(dir);
+    }
+
+    #[test]
+    fn claude_md_contradictions_url_uses_override_when_present() {
+        let _guard = env_lock();
+        let old_value = std::env::var_os("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL");
+        std::env::set_var(
+            "RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL",
+            "http://127.0.0.1:5051/claude-md/contradictions",
+        );
+
+        let value = claude_md_contradictions_url();
+        assert_eq!(value, "http://127.0.0.1:5051/claude-md/contradictions");
+
+        match old_value {
+            Some(v) => std::env::set_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL"),
+        }
+    }
+
+    #[test]
+    fn claude_md_contradictions_url_defaults_from_upload_url() {
+        let value = claude_md_contradictions_url();
+        assert_eq!(
+            value,
+            "https://coding-agent.up.railway.app/claude-md/contradictions"
+        );
     }
 
     #[test]
