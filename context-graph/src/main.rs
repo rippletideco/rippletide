@@ -1385,6 +1385,7 @@ fn call_claude(path: &std::path::Path, prompt: &str) -> Result<String, String> {
     cmd.args([
         "-p",
         prompt,
+        "--no-session-persistence",
         "--output-format",
         "stream-json",
         "--verbose",
@@ -1471,6 +1472,7 @@ fn call_planner_claude(path: &std::path::Path, prompt: &str) -> Result<String, S
     cmd.args([
         "-p",
         prompt,
+        "--no-session-persistence",
         "--output-format",
         "text",
         "--model",
@@ -2567,7 +2569,7 @@ mod tests {
 
         fs::write(
             &stub,
-            "#!/bin/bash\nif [[ -n \"${CLAUDECODE:-}\" ]]; then\n  echo nested >&2\n  exit 42\nfi\nprintf 'ok\\n'\n",
+            "#!/bin/bash\nif [[ -n \"${CLAUDECODE:-}\" ]]; then\n  echo nested >&2\n  exit 42\nfi\nFOUND=0\nfor arg in \"$@\"; do\n  if [[ \"$arg\" == \"--no-session-persistence\" ]]; then\n    FOUND=1\n    break\n  fi\ndone\nif [[ \"$FOUND\" != \"1\" ]]; then\n  echo missing-session-flag >&2\n  exit 43\nfi\nprintf 'ok\\n'\n",
         )
         .unwrap();
         #[cfg(unix)]
@@ -2595,6 +2597,35 @@ mod tests {
         match old_project {
             Some(value) => std::env::set_var("CLAUDE_PROJECT_DIR", value),
             None => std::env::remove_var("CLAUDE_PROJECT_DIR"),
+        }
+
+        let _ = fs::remove_file(stub);
+        let _ = fs::remove_dir(dir);
+    }
+
+    #[test]
+    fn claude_stream_invocation_disables_session_persistence() {
+        let _guard = env_lock();
+        let dir = temp_dir("rippletide-check-env");
+        let stub = dir.join("claude-stub.sh");
+
+        fs::write(
+            &stub,
+            "#!/bin/bash\nFOUND=0\nfor arg in \"$@\"; do\n  if [[ \"$arg\" == \"--no-session-persistence\" ]]; then\n    FOUND=1\n    break\n  fi\ndone\nif [[ \"$FOUND\" != \"1\" ]]; then\n  echo missing-session-flag >&2\n  exit 43\nfi\nprintf '%s\\n' '{\"type\":\"assistant\",\"message\":{\"content\":[{\"type\":\"text\",\"text\":\"ok\"}]}}'\n",
+        )
+        .unwrap();
+        #[cfg(unix)]
+        fs::set_permissions(&stub, fs::Permissions::from_mode(0o755)).unwrap();
+
+        let old_bin = std::env::var_os("RIPPLETIDE_CLAUDE_BIN");
+        std::env::set_var("RIPPLETIDE_CLAUDE_BIN", &stub);
+
+        let result = call_claude(&dir, "hello").unwrap();
+        assert_eq!(result, "ok");
+
+        match old_bin {
+            Some(value) => std::env::set_var("RIPPLETIDE_CLAUDE_BIN", value),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_BIN"),
         }
 
         let _ = fs::remove_file(stub);
