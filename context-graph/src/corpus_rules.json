@@ -1,0 +1,3461 @@
+[
+  {
+    "frequency": 66,
+    "rule": "Never commit secrets, API keys, or .env files",
+    "type": "DONT",
+    "category": "security",
+    "sources": [
+      "peas_balanceatlas__CLAUDE",
+      "weaties_toar-warehouse__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "Keelando_surf-website__site_docs_CLAUDE",
+      "cadieuxj_Developpment_App__CLAUDE",
+      "tmhntr_migrainelog-deprecated__CLAUDE",
+      "digital-public-ventures_cfpb-mcp__claude",
+      "sudhansu1974_video-platform__CLAUDE",
+      "kontent-ai_mcp-server__CLAUDE",
+      "AndrijaSkontra_ai-driven-project-template__claude",
+      "open-horizon-labs_wm__CLAUDE",
+      "dannysmith_dotfiles__claude_CLAUDE",
+      "kleer001_shot-gopher__CLAUDE",
+      "ouro-ai-labs_ouro__CLAUDE",
+      "AlexeyPlatkovsky_custom_webelement__.claude_CLAUDE",
+      "runtm-ai_runtm__templates_docker_CLAUDE",
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "mcleodchris_mage.chrismcleod.dev__CLAUDE",
+      "Sherin-SEF-AI_SurakshaNet__CLAUDE",
+      "Ameen-Alam_Full-Stack-Web-Application__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_nodejs_pupper_CLAUDE",
+      "0xAxiom_AppFactory__agent-factory_CLAUDE",
+      "jwulff_signage__CLAUDE",
+      "dotimplement_HealthChain__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_kruzna-karta-hrvatska_CLAUDE",
+      "spin-stack_spinbox__CLAUDE",
+      "IGRSoft_Lock-Watcher__CLAUDE",
+      "enuno_unifi-mcp-server__CLAUDE",
+      "parascan_Claude-Vibe-Coding__CLAUDE",
+      "Hana-X-AI_hx-docling-application__claude",
+      "chrisuthe_Multi-SendSpin-Player-Container__CLAUDE",
+      "StefanMaron_BusinessCentral.AL.Mutations__CLAUDE",
+      "Phazzie_NoVacancies__claude",
+      "0xAxiom_AppFactory__dapp-factory_CLAUDE",
+      "spin-stack_erofs-snapshotter__CLAUDE",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "joanmarcriera_ai-factory__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE",
+      "Bapplan_kalianak_platform__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "arelyx_PlottedPlant__CLAUDE",
+      "bsaffel_moneybin__CLAUDE",
+      "aaronshaf_ger__CLAUDE",
+      "myrjola_petrapp__CLAUDE",
+      "FROSTR-ORG_bifrost__CLAUDE",
+      "stebennett_slack-invite-mgr__.claude_CLAUDE",
+      "KesetebirhanDelele_cora-recap-engine__CLAUDE",
+      "seonghobae_discord-bot__CLAUDE",
+      "seanbecker15_cbs-fantasy-tooling__CLAUDE",
+      "CULPRITCHAOS_Interlock__CLAUDE",
+      "sonha2409_alumni-network__CLAUDE",
+      "hyperpolymath_ambientops__system-tools_recovery_operating-theatre_.claude_CLAUDE",
+      "khawajanaqeeb_Q4-Hackathon-0-Personal-AI-Employee__CLAUDE",
+      "MacPhobos_article-mind-ui__CLAUDE",
+      "IBS27_kitchen-assistant__CLAUDE",
+      "jack-jackhui_AI_Daily_News_Crawler__CLAUDE"
+    ],
+    "variants": [
+      "Never hardcode credentials. Use `.env` for secrets.",
+      "Never commit secrets, API keys, or credentials",
+      "Never commit secrets, API keys, or credentials.",
+      "Never hardcode secrets in code.",
+      "Never commit secrets.",
+      "Do not hardcode any credentials anywhere",
+      "Never commit tokens, API keys, passwords, or credentials",
+      "Never commit the .env file; use .env.example as a template."
+    ]
+  },
+  {
+    "frequency": 51,
+    "rule": "Use TypeScript strict mode",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "weaties_toar-warehouse__CLAUDE",
+      "harmonicabot_harmonica-web-app__CLAUDE",
+      "kreuzhofer_second-brain__CLAUDE",
+      "ejirocodes_vite-plugin-asset-manager__CLAUDE",
+      "magic-cabinet_tsuriai__CLAUDE",
+      "sudhansu1974_video-platform__CLAUDE",
+      "joshsmithxrm_ppds-extension-archived__CLAUDE",
+      "kontent-ai_mcp-server__CLAUDE",
+      "mariepop13_mivoa__CLAUDE",
+      "Z333Q_p402-router__CLAUDE",
+      "AndrijaSkontra_ai-driven-project-template__claude",
+      "alilloig_trade-wars__CLAUDE",
+      "jean-guy-gif_NXT-perf__CLAUDE",
+      "nickth3man_basketball-site__nba-reference_CLAUDE",
+      "j1king_grovr__CLAUDE",
+      "jaime-oriol_blog__CLAUDE",
+      "primsh_prim.sh__CLAUDE",
+      "bxacosta_wsclip__apps_relay_CLAUDE",
+      "cgmhc_website__CLAUDE",
+      "gixi404_lymbrarie__CLAUDE",
+      "stormwings_quake_wallet__CLAUDE",
+      "MartinSola55_bar-occupation__CLAUDE",
+      "mtskf_Snooooze__CLAUDE",
+      "Hana-X-AI_hx-docling-application__claude",
+      "verythorough_fishbowl__claude",
+      "elizaOS_elizaos.github.io__CLAUDE",
+      "drewe4point0_podcast-summary-app__CLAUDE",
+      "dtsong_claude-code-wsl-setup__templates_CLAUDE",
+      "ellisapotheosis_Project-Nyra__docs_templates_claude-md-backups_apps_web_crm-dashboard_CLAUDE",
+      "nbaghiro_flowmaestro__claude",
+      "jc-noel_sci-fi-ipsum__claude",
+      "langadventurellc_health-ai-plugin__CLAUDE",
+      "jxdai2007_FocusLock__CLAUDE",
+      "FROSTR-ORG_bifrost__CLAUDE",
+      "Craigtut_animus__CLAUDE",
+      "mikepsinn_optomitron__CLAUDE",
+      "juev_hledger-vscode__CLAUDE",
+      "arbachegit_iconsaiPwa__.claude_CLAUDE",
+      "BRTZL_persona__.claude_CLAUDE",
+      "sonha2409_alumni-network__CLAUDE",
+      "citypaul_.dotfiles__claude_.claude_CLAUDE",
+      "darinc_darinchambers.com__CLAUDE",
+      "tradingstrategy-ai_frontend__CLAUDE",
+      "BjoernSchotte_atlcli__CLAUDE",
+      "MacPhobos_article-mind-ui__CLAUDE",
+      "joshuarg007_quanta__CLAUDE",
+      "phuetz_code-buddy__CLAUDE",
+      "dtsong_claude-code-windows-setup__templates_CLAUDE",
+      "subtract0_AgencyOS__CLAUDE",
+      "nathanstefanov_timesheet-app__CLAUDE"
+    ],
+    "variants": [
+      "Always use strict TypeScript without `any` or `unknown` types",
+      "Use TypeScript strict mode.",
+      "Use TypeScript strict mode with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.",
+      "Always use TypeScript strict mode in the frontend.",
+      "Always use TypeScript with strict types.",
+      "Use TypeScript strict mode and avoid `any` types.",
+      "Always enable strict TypeScript mode",
+      "Always use TypeScript strict mode in both workspaces"
+    ]
+  },
+  {
+    "frequency": 43,
+    "rule": "Use conventional commit messages",
+    "type": "DO",
+    "category": "git",
+    "sources": [
+      "dbfx_wsl-cleaner__CLAUDE",
+      "ginishuh_sogecon-app__CLAUDE",
+      "Codesushi-com_gsd-console__CLAUDE",
+      "Smartling_java-api-sdk__CLAUDE",
+      "AndrijaSkontra_ai-driven-project-template__claude",
+      "sequencer_asl__CLAUDE",
+      "zerobias-org_crosswalk__CLAUDE",
+      "jaime-oriol_blog__CLAUDE",
+      "Baughn_machine-config-template__CLAUDE",
+      "StarTuz_X-Addon-Oxide__CLAUDE",
+      "primsh_prim.sh__CLAUDE",
+      "jwulff_signage__CLAUDE",
+      "jonwiggins_urlx__CLAUDE",
+      "NOBI327_infinite_text_world__CLAUDE",
+      "IGRSoft_Lock-Watcher__CLAUDE",
+      "doublegate_SPECTRE__CLAUDE",
+      "CodingWithCalvin_VS-SuperClean__CLAUDE",
+      "clwmfksek_pofo__CLAUDE",
+      "verythorough_fishbowl__claude",
+      "Bizzy211_aes-bizzy__templates_CLAUDE",
+      "dtsong_claude-code-wsl-setup__templates_CLAUDE",
+      "phuetz_code-buddy__CLAUDE",
+      "arelyx_PlottedPlant__CLAUDE",
+      "jrgleason_mqtt-ollama-presentation__CLAUDE",
+      "ujjwal-9_lenad__CLAUDE",
+      "finos_morphir-dotnet__CLAUDE",
+      "aaronshaf_ger__CLAUDE",
+      "WillBooster_build-ts__CLAUDE",
+      "FROSTR-ORG_bifrost__CLAUDE",
+      "levu304_claude-code-boilerplate__CLAUDE",
+      "schalkneethling_linkstack__CLAUDE",
+      "mikepsinn_optomitron__CLAUDE",
+      "tokuhirom_dbmate-deployer__CLAUDE",
+      "darinc_darinchambers.com__CLAUDE",
+      "tomzhengy_claude-code__claude-code_config_CLAUDE",
+      "narrowin_networka__CLAUDE",
+      "Bad3r_nixos__CLAUDE",
+      "BjoernSchotte_atlcli__CLAUDE",
+      "sanmak_specops__CLAUDE",
+      "ricklon_makerspace-rsvp__CLAUDE",
+      "dtsong_claude-code-windows-setup__templates_CLAUDE"
+    ],
+    "variants": [
+      "Follow the Conventional Commits specification for commit messages.",
+      "Use conventional commit prefixes: feat, fix, docs, refactor, chore, test, style.",
+      "Use conventional commits for every commit.",
+      "Use conventional commit messages.",
+      "Use Conventional Commits for commit messages.",
+      "Follow Conventional Commits for commit messages.",
+      "Use Conventional Commits",
+      "Use Conventional Commits for commits"
+    ]
+  },
+  {
+    "frequency": 28,
+    "rule": "Use ESLint for code linting",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "harmonicabot_harmonica-web-app__CLAUDE",
+      "DZWEI-Projects_latticefs__CLAUDE",
+      "phara0hcom_next-tamerelsayeddotcom__CLAUDE",
+      "ejirocodes_vite-plugin-asset-manager__CLAUDE",
+      "cadieuxj_Developpment_App__CLAUDE",
+      "tmhntr_migrainelog-deprecated__CLAUDE",
+      "magic-cabinet_tsuriai__CLAUDE",
+      "lsendel_llmrank_app__CLAUDE",
+      "benjamin-kraatz_latticefs__CLAUDE",
+      "thekgiga_spanish-class__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_nodejs_pupper_CLAUDE",
+      "cgmhc_website__CLAUDE",
+      "RaggedR_Russian-transcription__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_kruzna-karta-hrvatska_CLAUDE",
+      "gixi404_lymbrarie__CLAUDE",
+      "chittyos_chittyconnect__CLAUDE",
+      "lalitgehani_SnackBase__CLAUDE",
+      "doublegate_SPECTRE__CLAUDE",
+      "archestra-ai_website__CLAUDE",
+      "dkyazzentwatwa_leaf-ai__CLAUDE",
+      "vsandvold_mawimbi__CLAUDE",
+      "10srav_AI-FIR-GENERATION__Intelligent_FIR_Auto_Writing_System-main_CLAUDE",
+      "ebergstedt_action-idle__CLAUDE",
+      "jigargosar_song-engine__CLAUDE",
+      "langadventurellc_health-ai-plugin__CLAUDE",
+      "schalkneethling_linkstack__CLAUDE",
+      "next-friday_eslint-plugin-nextfriday__CLAUDE",
+      "sanmak_specops__CLAUDE"
+    ],
+    "variants": [
+      "Use ESLint with @typescript-eslint/consistent-type-assertions and assertionStyle set to 'never'.",
+      "Use ESLint for linting in the frontend.",
+      "Use ESLint 9 flat config for code linting.",
+      "Use ESLint for linting the code.",
+      "Use ESLint for checking code quality",
+      "Always use ESLint.",
+      "Always use ESLint and Prettier for TypeScript/JavaScript.",
+      "Always use ESLint for code linting."
+    ]
+  },
+  {
+    "frequency": 24,
+    "rule": "Run tests before committing",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "fulcrologic_fulcro-spec__CLAUDE",
+      "withmartian_ares__CLAUDE",
+      "joeygibson_yamlquill__CLAUDE",
+      "HassanSE_Hearts__CLAUDE",
+      "open-horizon-labs_wm__CLAUDE",
+      "incubateur-ademe_benefriches__CLAUDE",
+      "seantomburke_sitemapper__CLAUDE",
+      "cancelself_HelloWorld__Claude",
+      "systmms_segnomms__CLAUDE",
+      "zs-varga_home-assignment-source__CLAUDE",
+      "Hana-X-AI_hx-docling-application__claude",
+      "Bizzy211_aes-bizzy__templates_CLAUDE",
+      "dtsong_claude-code-wsl-setup__templates_CLAUDE",
+      "mrares_claude_issue_solver__claude",
+      "LordOfMyatar_Radoub__CLAUDE",
+      "erlloyd_cardtable2__CLAUDE",
+      "finos_morphir-dotnet__CLAUDE",
+      "Robertg761_HA-Desktop-Widget__CLAUDE",
+      "teseor_teseor__CLAUDE",
+      "0xPolygon_heimdall-v2__CLAUDE",
+      "ricklon_makerspace-rsvp__CLAUDE",
+      "dtsong_claude-code-windows-setup__templates_CLAUDE"
+    ],
+    "variants": [
+      "Run typecheck, lint, and tests before committing.",
+      "Run the test suite and ensure all tests pass before committing.",
+      "Always run `python3 -m pytest tests` before committing.",
+      "Ensure all tests pass before committing",
+      "Run the full suite with make tests before committing.",
+      "Run all tests before committing",
+      "Run all tests before commit",
+      "Run tool-specific tests before committing."
+    ]
+  },
+  {
+    "frequency": 17,
+    "rule": "Maintain high test coverage (80%+)",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "tyler-technologies-oss_forge-ai__CLAUDE",
+      "stebennett_slack-invite-mgr__.claude_CLAUDE",
+      "lasswellt_govee-homeassistant__CLAUDE",
+      "mivertowski_DotCompute__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_nodejs_pupper_CLAUDE",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "jonniecumming_harmonia_hall__claude",
+      "darinc_darinchambers.com__CLAUDE",
+      "jbmiller10_semantik__tests_CLAUDE",
+      "rshade_finfocus-mcp__CLAUDE",
+      "buildworksai_EUCORA__CLAUDE",
+      "c-leffy_tic-tac-toe__CLAUDE",
+      "enuno_unifi-mcp-server__CLAUDE",
+      "ricklon_makerspace-rsvp__CLAUDE",
+      "tenfourty_guten-morgen__CLAUDE"
+    ],
+    "variants": [
+      "Aim for high test coverage but focus on critical paths.",
+      "Maintain a minimum of 80% test coverage for new code.",
+      "Maintain more than 80% coverage on critical paths.",
+      "Aim for approximately 80% code coverage.",
+      "Aim for good test coverage.",
+      "Aim for high test coverage of critical paths",
+      "Ensure coverage minimum is 90%.",
+      "Aim for high coverage in tests."
+    ]
+  },
+  {
+    "frequency": 16,
+    "rule": "Use descriptive variable and function names",
+    "type": "DO",
+    "category": "naming",
+    "sources": [
+      "stebennett_slack-invite-mgr__.claude_CLAUDE",
+      "verythorough_fishbowl__claude",
+      "c-leffy_tic-tac-toe__CLAUDE",
+      "Craigtut_animus__CLAUDE",
+      "tokuhirom_dbmate-deployer__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "pengcai6_vue1__claude",
+      "chiditarod_dogtag__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_kruzna-karta-hrvatska_CLAUDE",
+      "andre-morise_better-t-app-neon__.claude_CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "Xerus-ai_openwork__CLAUDE",
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "lixxz_claude-workflow__CLAUDE"
+    ],
+    "variants": [
+      "Use meaningful variable names instead of magic numbers - extract constants with descriptive names",
+      "Use meaningful variable and function names.",
+      "Use meaningful variable names",
+      "Use descriptive variable and method names.",
+      "Use meaningful variable and function names",
+      "Use descriptive names without abbreviations.",
+      "Prefer descriptive names over abbreviations.",
+      "Avoid abbreviations and use meaningful, descriptive names."
+    ]
+  },
+  {
+    "frequency": 16,
+    "rule": "Follow existing code patterns and conventions",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "parascan_Claude-Vibe-Coding__CLAUDE",
+      "jaime-oriol_blog__CLAUDE",
+      "Bizzy211_aes-bizzy__templates_CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "Max-Health-Inc_RalphMeter__CLAUDE",
+      "mrares_claude_issue_solver__claude",
+      "charlesbihdev_buame_2r__src_CLAUDE",
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "baleen37_dotfiles__users_shared_.config_claude_CLAUDE",
+      "noahsw_mlp-ppa-ics__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "gilbertwong96_dotfiles__claude_CLAUDE",
+      "ephes_kptncook__CLAUDE",
+      "kleer001_shot-gopher__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "enuno_unifi-mcp-server__CLAUDE"
+    ],
+    "variants": [
+      "Follow all existing code conventions used in this application.",
+      "Follow existing code style and patterns.",
+      "Match existing style even if you would do it differently.",
+      "Follow existing code patterns.",
+      "Follow existing patterns in the codebase.",
+      "Match existing style even if you would do it differently",
+      "Follow the existing code style and patterns",
+      "Match existing style in the code, even if you would do it differently."
+    ]
+  },
+  {
+    "frequency": 16,
+    "rule": "Always validate user input",
+    "type": "DO",
+    "category": "security",
+    "sources": [
+      "stebennett_slack-invite-mgr__.claude_CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "levu304_claude-code-boilerplate__CLAUDE",
+      "enuno_unifi-mcp-server__CLAUDE",
+      "abandini_happygotchadays__CLAUDE",
+      "arbachegit_iconsaiPwa__.claude_CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_nodejs_pupper_CLAUDE",
+      "memphis-iis_mofacts__svelte-app_CLAUDE",
+      "jonniecumming_harmonia_hall__claude",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "ridgebackinfosec_cerno__CLAUDE",
+      "sonha2409_alumni-network__CLAUDE",
+      "sudhansu1974_video-platform__CLAUDE",
+      "Parthvats13_Aqua-Cult__claude",
+      "andre-morise_better-t-app-neon__.claude_CLAUDE",
+      "DobroslavRadosavljevic_ogie__.claude_CLAUDE"
+    ],
+    "variants": [
+      "Always validate and sanitize user input",
+      "Sanitize all user inputs on the server side.",
+      "Validate and sanitize user input",
+      "Always validate user input.",
+      "Sanitize all user input",
+      "Always validate ALL inputs with Zod 4 (both client and server).",
+      "Validate all user inputs.",
+      "Validate all user inputs for security."
+    ]
+  },
+  {
+    "frequency": 13,
+    "rule": "Never force push to main",
+    "type": "DONT",
+    "category": "git",
+    "sources": [
+      "bmaynard87_tiresias__claude",
+      "parascan_Claude-Vibe-Coding__CLAUDE",
+      "primsh_prim.sh__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_vendoreval4_CLAUDE",
+      "spin-stack_erofs-snapshotter__CLAUDE",
+      "jwulff_signage__CLAUDE",
+      "TomasWard1_strava-cli__CLAUDE",
+      "spin-stack_spinbox__CLAUDE",
+      "ouro-ai-labs_ouro__CLAUDE",
+      "corneliu-iancu_claude-code-config__CLAUDE",
+      "EdwardRosenberg_template-base__claude",
+      "jsschrstrcks1_InTheWake__claude"
+    ],
+    "variants": [
+      "Never commit directly to `main`.",
+      "Never push directly to main/master.",
+      "Never force push to main/master.",
+      "Do not force-push to main",
+      "Never force push to main.",
+      "Never force push to main branch",
+      "Never push to main/master directly.",
+      "Never push directly to `main`."
+    ]
+  },
+  {
+    "frequency": 13,
+    "rule": "Don't create documentation files unless explicitly requested",
+    "type": "DONT",
+    "category": "documentation",
+    "sources": [
+      "astrolabsoftware_fink-broker__CLAUDE",
+      "elizaOS_elizaos.github.io__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "streetrace-ai_streetrace__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "Bad3r_nixos__CLAUDE",
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "inzi_surpathmig__surpath112_CLAUDE"
+    ],
+    "variants": [
+      "Create documentation files only if explicitly requested by the user.",
+      "Never create files unless absolutely necessary for achieving your goal.",
+      "Never create files unless absolutely necessary for achieving the goal",
+      "Never proactively create documentation files (*.md) or README files unless explicitly requested",
+      "Never create files unless they're absolutely necessary for achieving your goal.",
+      "Never proactively create documentation files (*.md) or README files unless explicitly requested.",
+      "Never proactively create documentation files (*.md) or README files."
+    ]
+  },
+  {
+    "frequency": 12,
+    "rule": "Keep functions small and focused",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "clwmfksek_pofo__CLAUDE",
+      "stebennett_slack-invite-mgr__.claude_CLAUDE",
+      "Bizzy211_aes-bizzy__templates_CLAUDE",
+      "Craigtut_animus__CLAUDE",
+      "tokuhirom_dbmate-deployer__CLAUDE",
+      "tianzhou_react-starter__.claude_claude",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_kruzna-karta-hrvatska_CLAUDE",
+      "NicolaasGrobler_roblox-skyscraper__CLAUDE",
+      "jc-noel_sci-fi-ipsum__claude",
+      "MattArcady_claude-guiderails__react_CLAUDE",
+      "sequencer_asl__CLAUDE"
+    ],
+    "variants": [
+      "Keep functions small and focused (single responsibility principle).",
+      "Keep components small and focused.",
+      "Keep components small and focused",
+      "Keep functions focused and single-purpose.",
+      "Keep functions small and focused on a single responsibility.",
+      "Keep components focused and composable.",
+      "Keep functions small and focused.",
+      "Keep functions small and focused (single responsibility)"
+    ]
+  },
+  {
+    "frequency": 12,
+    "rule": "Use environment variables for configuration and secrets",
+    "type": "DO",
+    "category": "security",
+    "sources": [
+      "stebennett_slack-invite-mgr__.claude_CLAUDE",
+      "jaime-oriol_blog__CLAUDE",
+      "arbachegit_iconsaiPwa__.claude_CLAUDE",
+      "spin-stack_erofs-snapshotter__CLAUDE",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "spin-stack_spinbox__CLAUDE",
+      "rshade_finfocus-mcp__CLAUDE",
+      "kontent-ai_mcp-server__CLAUDE",
+      "Parthvats13_Aqua-Cult__claude",
+      "gfxjef_ssh_nexjs__CLAUDE",
+      "kleer001_shot-gopher__CLAUDE",
+      "bilalinit_evolution-of-todo__.claude_skills_mcp-integration_CLAUDE"
+    ],
+    "variants": [
+      "DO use environment variables for secrets instead of hardcoded credentials.",
+      "Always use environment variables.",
+      "Use environment variables for configuration",
+      "Use environment variables for configuration.",
+      "Always use environment variables for configuration",
+      "Use environment variables for secrets.",
+      "Use environment variables for sensitive data.",
+      "Always use environment variables for database configuration."
+    ]
+  },
+  {
+    "frequency": 11,
+    "rule": "Use functional components with hooks",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "clwmfksek_pofo__CLAUDE",
+      "stebennett_slack-invite-mgr__.claude_CLAUDE",
+      "dtsong_claude-code-wsl-setup__templates_CLAUDE",
+      "tianzhou_react-starter__.claude_claude",
+      "tmhntr_migrainelog-deprecated__CLAUDE",
+      "gixi404_lymbrarie__CLAUDE",
+      "jc-noel_sci-fi-ipsum__claude",
+      "joshuarg007_quanta__CLAUDE",
+      "ricklon_makerspace-rsvp__CLAUDE",
+      "dtsong_claude-code-windows-setup__templates_CLAUDE",
+      "nathanstefanov_timesheet-app__CLAUDE"
+    ],
+    "variants": [
+      "Always use functional components with hooks in React.",
+      "Use functional components with hooks, avoiding class components.",
+      "Use functional components with TypeScript",
+      "Use functional components with hooks.",
+      "Use functional components and React hooks, not class components.",
+      "Use functional components with TypeScript.",
+      "Use functional components with hooks in TypeScript."
+    ]
+  },
+  {
+    "frequency": 11,
+    "rule": "Use descriptive commit messages",
+    "type": "DO",
+    "category": "git",
+    "sources": [
+      "parascan_Claude-Vibe-Coding__CLAUDE",
+      "MasatoMakino_threejs-interactive-object__CLAUDE",
+      "Syndnet-CRE_scoutgptpro-backend__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_vendoreval4_CLAUDE",
+      "mrares_claude_issue_solver__claude",
+      "jaimejim_soexpensive__CLAUDE",
+      "paggarwal2016_MOVO_HB_IOS__claude",
+      "akirasoft1_discord-article-bot__CLAUDE",
+      "LordOfMyatar_Radoub__CLAUDE",
+      "joshuarg007_quanta__CLAUDE"
+    ],
+    "variants": [
+      "Use meaningful commit messages in Git",
+      "Use clear, descriptive commit messages.",
+      "Use descriptive commit messages.",
+      "Commit changes with descriptive messages following Conventional Commits.",
+      "Commit changes with clear, descriptive messages.",
+      "Commit changes with descriptive messages.",
+      "Commit checkpoints with descriptive messages during development.",
+      "Use descriptive commit messages that reference the sprint issue."
+    ]
+  },
+  {
+    "frequency": 11,
+    "rule": "Name components using PascalCase",
+    "type": "DO",
+    "category": "naming",
+    "sources": [
+      "jaime-oriol_blog__CLAUDE",
+      "leighayanid_PRMPT__claude",
+      "verythorough_fishbowl__claude",
+      "YusukeIwaki_puppeteer-bidi__CLAUDE",
+      "alilloig_trade-wars__CLAUDE",
+      "BRTZL_persona__.claude_CLAUDE",
+      "darinc_darinchambers.com__CLAUDE",
+      "NicolaasGrobler_roblox-skyscraper__CLAUDE",
+      "jc-noel_sci-fi-ipsum__claude",
+      "8cH9azbsFifZ_hangboard__CLAUDE",
+      "phuetz_code-buddy__CLAUDE"
+    ],
+    "variants": [
+      "Use `PascalCase` for class names, `snake_case` for methods, and `SCREAMING_SNAKE_CASE` for constants",
+      "Name components using PascalCase.",
+      "Use PascalCase for component names.",
+      "Name components using PascalCase (e.g., `CourseCard.tsx`)",
+      "Use PascalCase for classes and types.",
+      "Use PascalCase for component names",
+      "Always use PascalCase for class names.",
+      "Use PascalCase for class names."
+    ]
+  },
+  {
+    "frequency": 10,
+    "rule": "Don't add dependencies without justification",
+    "type": "DONT",
+    "category": "dependencies",
+    "sources": [
+      "xiaoxinghu_doing.el__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "davidhariri_pith__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE",
+      "engseclabs_graphgrc__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "cr330326_TigerFire__CLAUDE"
+    ],
+    "variants": [
+      "Do not change the application's dependencies without approval.",
+      "Do not add new dependencies without justification.",
+      "Do not add dependencies without justification",
+      "Do not change the application's dependencies without approval",
+      "Do not introduce new dependencies without justification.",
+      "Do not introduce new dependencies unless clearly justified."
+    ]
+  },
+  {
+    "frequency": 9,
+    "rule": "Never commit directly to main",
+    "type": "DONT",
+    "category": "git",
+    "sources": [
+      "dtsong_claude-code-wsl-setup__templates_CLAUDE",
+      "CodingWithCalvin_VS-SuperClean__CLAUDE",
+      "jwulff_signage__CLAUDE",
+      "paggarwal2016_MOVO_HB_IOS__claude",
+      "Bad3r_nixos__CLAUDE",
+      "aaronshaf_ger__CLAUDE",
+      "Data-Wise_scribe__docs_reference_CLAUDE",
+      "jrgleason_mqtt-ollama-presentation__CLAUDE",
+      "dtsong_claude-code-windows-setup__templates_CLAUDE"
+    ],
+    "variants": [
+      "Never commit directly to the main branch.",
+      "Don't commit directly to main",
+      "Never commit directly to main.",
+      "Never commit directly to main unless the user explicitly approves.",
+      "Never commit directly to 'main' or 'develop'.",
+      "Never commit directly to `main`; always use feature branches.",
+      "Never commit directly to main; always create a feature branch and submit a pull request."
+    ]
+  },
+  {
+    "frequency": 9,
+    "rule": "Prefer editing existing files over creating new ones",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "astrolabsoftware_fink-broker__CLAUDE",
+      "elizaOS_elizaos.github.io__CLAUDE",
+      "Convex-Dev_convex.ts__CLAUDE",
+      "streetrace-ai_streetrace__CLAUDE",
+      "Bad3r_nixos__CLAUDE",
+      "Container-xChange_cdc-connector__claude",
+      "protella_chatgpt-bots__CLAUDE",
+      "corneliu-iancu_claude-code-config__CLAUDE",
+      "inzi_surpathmig__surpath112_CLAUDE"
+    ],
+    "variants": [
+      "Always prefer editing an existing file to creating a new one",
+      "Prefer editing existing files over creating new ones.",
+      "Prefer editing existing files rather than creating new ones",
+      "DO prefer editing existing files over creating new ones.",
+      "Always prefer editing existing files over creating new ones.",
+      "Always prefer editing an existing file to creating a new one."
+    ]
+  },
+  {
+    "frequency": 9,
+    "rule": "Use parameterized/prepared statements to prevent SQL injection",
+    "type": "DO",
+    "category": "security",
+    "sources": [
+      "abandini_happygotchadays__CLAUDE",
+      "mcleodchris_mage.chrismcleod.dev__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_nodejs_pupper_CLAUDE",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "ridgebackinfosec_cerno__CLAUDE",
+      "Parthvats13_Aqua-Cult__claude",
+      "kleer001_shot-gopher__CLAUDE",
+      "ricklon_makerspace-rsvp__CLAUDE",
+      "myrjola_petrapp__CLAUDE"
+    ],
+    "variants": [
+      "Use prepared statements to prevent SQL injection.",
+      "Use parameterized queries for SQL.",
+      "Parameterize all SQL queries.",
+      "Use parameterized queries to prevent SQL injection.",
+      "Use parameterized queries only to prevent SQL injection."
+    ]
+  },
+  {
+    "frequency": 8,
+    "rule": "Use bun as the package manager",
+    "type": "DO",
+    "category": "dependencies",
+    "sources": [
+      "KingNNT_backend-nestjs-application__CLAUDE",
+      "coollabsio_coolify-docs__CLAUDE",
+      "jc-noel_sci-fi-ipsum__claude",
+      "delorenj_pjangler__CLAUDE",
+      "AlbertoBarrago_ml5js-demo__CLAUDE",
+      "HealthSamurai_bunbox__CLAUDE",
+      "sezaiarda_Matrix__CLAUDE",
+      "LinkCredit_link-credit__CLAUDE"
+    ],
+    "variants": [
+      "Use bun as the package manager.",
+      "Use bun install instead of npm install or yarn install or pnpm install",
+      "Use `bun` as the preferred package manager",
+      "Use bun as the package manager instead of npm or yarn.",
+      "Use 'bun install' instead of 'npm install' or 'yarn install' or 'pnpm install'.",
+      "Always use Bun as the package manager."
+    ]
+  },
+  {
+    "frequency": 8,
+    "rule": "Use Vitest for testing",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "kreuzhofer_second-brain__CLAUDE",
+      "zenml-io_zenml-dashboard__CLAUDE",
+      "0xkemcho_AutoClaw__CLAUDE",
+      "sonha2409_alumni-network__CLAUDE",
+      "ebergstedt_action-idle__CLAUDE",
+      "tradingstrategy-ai_frontend__CLAUDE",
+      "marcushyett_query-space__Claude",
+      "TripCreighton_peeky-search__CLAUDE"
+    ],
+    "variants": [
+      "Use `Vitest` for unit and integration tests.",
+      "Use Vitest for unit and integration testing.",
+      "Use Vitest for tests with globals enabled and colocated `*.test.ts` files next to source.",
+      "Use Vitest for frontend testing",
+      "Use Vitest for all testing",
+      "Use Vitest for running unit tests.",
+      "Use Vitest for unit tests.",
+      "Use Vitest for testing React components."
+    ]
+  },
+  {
+    "frequency": 8,
+    "rule": "Do not use emojis in code or responses",
+    "type": "DONT",
+    "category": "code_style",
+    "sources": [
+      "elianortega_dotfiles__claude_.claude_CLAUDE",
+      "bxacosta_wsclip__apps_relay_CLAUDE",
+      "Miandari_gritful__claude",
+      "teseor_teseor__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_kruzna-karta-hrvatska_CLAUDE",
+      "tomzhengy_claude-code__claude-code_config_CLAUDE",
+      "OpenMDAO_OpenMDAO__CLAUDE",
+      "sequencer_asl__CLAUDE"
+    ],
+    "variants": [
+      "Do not use emojis in code, comments, or documentation.",
+      "Do not use emojis in code or output.",
+      "Do not use emojis anywhere (code, logs, errors, documentation)",
+      "Do not use emojis.",
+      "Do not use emojis in any part of the code.",
+      "Do not use emojis or AI characters.",
+      "Do not use emojis",
+      "Do not use emojis anywhere in the codebase, file content, UI/UX, or commit messages unless explicitly necessary."
+    ]
+  },
+  {
+    "frequency": 7,
+    "rule": "Use Tailwind CSS utility classes for styling",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "forzamin521-a11y_sportshub__CLAUDE",
+      "stebennett_slack-invite-mgr__.claude_CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "tianzhou_react-starter__.claude_claude",
+      "charlesbihdev_buame_2r__src_CLAUDE",
+      "jc-noel_sci-fi-ipsum__claude",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE"
+    ],
+    "variants": [
+      "Use Tailwind CSS classes to style HTML.",
+      "Always use Tailwind CSS classes to style HTML.",
+      "Use Tailwind CSS utility classes for all styling.",
+      "Use Tailwind utility classes for styling.",
+      "Use Tailwind CSS for styling (utility-first approach)"
+    ]
+  },
+  {
+    "frequency": 7,
+    "rule": "Use the `search-docs` tool to get version specific documentation.",
+    "type": "DO",
+    "category": "documentation",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Use the `search-docs` tool before any other approaches to find version-specific documentation.",
+      "Use the `search-docs` tool before any other approaches for documentation."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Always handle errors properly",
+    "type": "DO",
+    "category": "error_handling",
+    "sources": [
+      "Bizzy211_aes-bizzy__templates_CLAUDE",
+      "zhubert_milo__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_kruzna-karta-hrvatska_CLAUDE",
+      "darinc_darinchambers.com__CLAUDE",
+      "rshade_finfocus-mcp__CLAUDE"
+    ],
+    "variants": [
+      "Provide meaningful error messages for debugging.",
+      "Always handle errors properly.",
+      "Always explicitly handle every error.",
+      "Always handle errors explicitly.",
+      "Provide meaningful error messages",
+      "Provide meaningful error messages."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Prefer named exports over default exports",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "clwmfksek_pofo__CLAUDE",
+      "leighayanid_PRMPT__claude",
+      "drewe4point0_podcast-summary-app__CLAUDE",
+      "dtsong_claude-code-wsl-setup__templates_CLAUDE",
+      "dtsong_claude-code-windows-setup__templates_CLAUDE",
+      "mtskf_Snooooze__CLAUDE"
+    ],
+    "variants": [
+      "Use named exports instead of default exports",
+      "Use named exports instead of default exports.",
+      "Prefer named exports for components",
+      "Prefer named exports for components."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Always use explicit return type declarations for methods and functions",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Always use explicit return type declarations for methods and functions."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Use appropriate PHP type hints for method parameters",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Use appropriate PHP type hints for method parameters."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Always create Form Request classes for validation.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Always create Form Request classes for validation rather than inline validation in controllers.",
+      "Always create Form Request classes for validation rather than inline validation in controllers"
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Use Laravel's built-in authentication and authorization features",
+    "type": "DO",
+    "category": "security",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Use Laravel's built-in authentication and authorization features."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "When creating models for tests, use the factories for the models",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "When creating models for tests, use the factories for the models."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Do not create verification scripts when tests cover that functionality.",
+    "type": "DONT",
+    "category": "testing",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Do not create verification scripts or tinker when tests cover that functionality.",
+      "Do not create verification scripts or tinker when tests cover that functionality"
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Stick to existing directory structure; don't create new base folders without approval",
+    "type": "DONT",
+    "category": "architecture",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Stick to existing directory structure and don't create new base folders without approval.",
+      "Stick to existing directory structure and do not create new base folders without approval.",
+      "Stick to existing directory structure; don't create new base folders without approval."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Limit line width to 100 characters.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "phara0hcom_next-tamerelsayeddotcom__CLAUDE",
+      "MakerCorn_coral-photo-de-duper__CLAUDE",
+      "carlos-sarmiento_domovoy__CLAUDE",
+      "c-leffy_tic-tac-toe__CLAUDE",
+      "nbaghiro_flowmaestro__claude",
+      "AlexeyPlatkovsky_custom_webelement__.claude_CLAUDE"
+    ],
+    "variants": [
+      "Limit line length to 100 characters.",
+      "Limit line length to 120 characters.",
+      "Limit lines to 80 characters or fewer.",
+      "Limit line length to a maximum of 100 characters."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Always include \ud83d\ude01 in each section.",
+    "type": "DO",
+    "category": "other",
+    "sources": [
+      "vtemian_claude-context__workspace_04-verbose-rules-r70_CLAUDE"
+    ],
+    "variants": [
+      "Always include \ud83d\ude00 in every section.",
+      "Always include \ud83d\ude42 in every section.",
+      "Always include \ud83d\ude1b in each section.",
+      "Always include \ud83e\udd29 in each section."
+    ]
+  },
+  {
+    "frequency": 6,
+    "rule": "Ensure every section contains \ud83d\ude04.",
+    "type": "DO",
+    "category": "other",
+    "sources": [
+      "vtemian_claude-context__workspace_04-verbose-rules-r70_CLAUDE"
+    ],
+    "variants": [
+      "Ensure every section contains \ud83d\ude0d.",
+      "Ensure every section contains \ud83e\udd70.",
+      "Ensure every section contains \ud83d\ude07.",
+      "Ensure every section contains \ud83d\ude02."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Be concise in explanations",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE"
+    ],
+    "variants": [
+      "Be concise in your explanations and focus on what's important.",
+      "Be concise in your explanations."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Search documentation before making changes",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE"
+    ],
+    "variants": [
+      "Search the documentation before making code changes to ensure the correct approach.",
+      "Search documentation before making code changes.",
+      "Search the documentation before making code changes."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Start the dev server using `npm run dev`.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_noetic2-0_CLAUDE",
+      "alilloig_trade-wars__CLAUDE",
+      "itsacoyote_zksync-nuxt-starter__CLAUDE",
+      "ligisoftware_introd__CLAUDE"
+    ],
+    "variants": [
+      "Run 'npm run dev' to start the development server.",
+      "Start the dev server using 'npm run dev'.",
+      "Use `npm run dev` to start the development server"
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Check for existing components to reuse before writing a new one.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Ask users to run `npm run build`, `npm run dev`, or `composer run dev` if they don't see a frontend change reflected in the UI.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use Laravel Boost tools designed specifically for this application.",
+    "type": "DO",
+    "category": "other",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use the `list-artisan-commands` tool to check available parameters when calling an Artisan command.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Use the `list-artisan-commands` tool to double check available parameters when calling an Artisan command.",
+      "Use the `list-artisan-commands` tool to double-check available parameters when calling an Artisan command."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use the `get-absolute-url` tool when sharing project URLs.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Use the `get-absolute-url` tool when sharing project URLs with the user."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use the `tinker` tool for debugging code or querying Eloquent models directly.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Use the `tinker` tool to execute PHP for debugging code or querying Eloquent models directly."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use the `database-query` tool when only reading from the database.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Use the `database-query` tool when you only need to read from the database."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use multiple, broad, simple, topic-based queries to start documentation searches.",
+    "type": "DO",
+    "category": "documentation",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use PHP 8 constructor property promotion in `__construct()`.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Prefer PHPDoc blocks over comments.",
+    "type": "DO",
+    "category": "documentation",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Prefer PHPDoc blocks over comments and avoid comments within the code unless necessary.",
+      "Prefer PHPDoc blocks over inline comments."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Add useful array shape type definitions for arrays when appropriate.",
+    "type": "DO",
+    "category": "documentation",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use php artisan make: commands to create new files",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Use `php artisan make:` commands to create new files."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Prefer named routes and the `route()` function when generating links.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Prefer named routes and the `route()` function when generating links to other pages.",
+      "When generating links to other pages, prefer named routes and the `route()` function."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use methods such as `$this->faker->word()` or `fake()->randomDigit()` for Faker.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "When creating tests, use `php artisan make:test [options] {name}`.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "When creating tests, use `php artisan make:test [options] {name}` to create a feature test.",
+      "Make use of `php artisan make:test [options] {name}` to create a feature test.",
+      "Make use of `php artisan make:test [options] <name>` to create a feature test."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Read only recent browser logs using the `browser-logs` tool.",
+    "type": "DONT",
+    "category": "other",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Do not allow empty `__construct()` methods with zero parameters.",
+    "type": "DONT",
+    "category": "code_style",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Do not allow empty `__construct()` methods with zero parameters unless the constructor is private."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use environment variables only in configuration files",
+    "type": "DONT",
+    "category": "security",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Use environment variables only in configuration files."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Mock external dependencies in tests",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_nodejs_pupper_CLAUDE",
+      "stebennett_slack-invite-mgr__.claude_CLAUDE",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "Bizzy211_aes-bizzy__templates_CLAUDE",
+      "ellisapotheosis_Project-Nyra__docs_templates_claude-md-backups_apps_web_crm-dashboard_CLAUDE"
+    ],
+    "variants": [
+      "Mock all external dependencies in unit tests.",
+      "Mock external dependencies appropriately.",
+      "Mock external dependencies in tests."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use 2 spaces for indentation.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "phara0hcom_next-tamerelsayeddotcom__CLAUDE",
+      "phuetz_code-buddy__CLAUDE",
+      "pniemczyk_inquiry_attrs__CLAUDE",
+      "abandini_happygotchadays__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_python_multirheoflow_CLAUDE"
+    ],
+    "variants": [
+      "Use 2-space tabs for indentation.",
+      "Use a 2-space indent for code.",
+      "Use 2-space indentation and no tabs",
+      "Use 2 spaces for indentation and avoid tabs."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Never silently swallow errors.",
+    "type": "DONT",
+    "category": "error_handling",
+    "sources": [
+      "tothedarktowercame_futon0__CLAUDE",
+      "LordOfMyatar_Radoub__CLAUDE",
+      "jluszcz_dotfiles__dot_claude_CLAUDE",
+      "paggarwal2016_MOVO_HB_IOS__claude",
+      "evildarkarchon_AutoQACSharp__CLAUDE"
+    ],
+    "variants": [
+      "Never silently swallow exceptions.",
+      "Do not swallow errors silently.",
+      "Never swallow exceptions silently."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Enter plan mode for any non-trivial task.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "hay-chat_hay-core__CLAUDE",
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE",
+      "hchulkim_replication-template-nix__CLAUDE"
+    ],
+    "variants": [
+      "Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use Prettier for code formatting.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "thekgiga_spanish-class__CLAUDE",
+      "tradingstrategy-ai_frontend__CLAUDE",
+      "AndrijaSkontra_ai-driven-project-template__claude",
+      "schalkneethling_linkstack__CLAUDE",
+      "langadventurellc_health-ai-plugin__CLAUDE"
+    ],
+    "variants": [
+      "Use Prettier for formatting if configured.",
+      "Use Prettier for all code formatting.",
+      "Use Prettier for consistent code formatting."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use camelCase for variable names.",
+    "type": "DO",
+    "category": "naming",
+    "sources": [
+      "darinc_darinchambers.com__CLAUDE",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "verythorough_fishbowl__claude",
+      "abandini_happygotchadays__CLAUDE",
+      "kase1111-hash_Shredsquatch__claude"
+    ],
+    "variants": [
+      "Use camelCase for variables and functions unless language conventions dictate otherwise.",
+      "Use camelCase for variables and functions.",
+      "Use camelCase for variable and function names, and PascalCase for class names.",
+      "Use `camelCase` for local variables/parameters."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use descriptive test names.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "darinc_darinchambers.com__CLAUDE",
+      "StefanMaron_BusinessCentral.AL.Mutations__CLAUDE",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "HassanSE_Hearts__CLAUDE",
+      "spin-stack_spinbox__CLAUDE"
+    ],
+    "variants": [
+      "Use descriptive test names for clarity.",
+      "Use descriptive test names that explain what is being tested.",
+      "Always give tests descriptive names."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use Playwright for E2E tests.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "RaggedR_Russian-transcription__CLAUDE",
+      "tradingstrategy-ai_frontend__CLAUDE",
+      "sonha2409_alumni-network__CLAUDE",
+      "zenml-io_zenml-dashboard__CLAUDE"
+    ],
+    "variants": [
+      "Use Playwright for integration tests.",
+      "Use `Playwright` for E2E tests."
+    ]
+  },
+  {
+    "frequency": 5,
+    "rule": "Use ruff as the linter",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "tom-010_boring-stack__py_CLAUDE",
+      "klausj1_homeassistant-statistics__CLAUDE",
+      "ephes_kptncook__CLAUDE",
+      "rmill040_citrees__CLAUDE",
+      "withmartian_ares__CLAUDE"
+    ],
+    "variants": [
+      "Use ruff as the linter/formatter.",
+      "Use Ruff for linting and formatting.",
+      "Always use ruff for linting and formatting."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Enter plan mode for non-trivial tasks",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "kaveriC_claude-setup__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "HannesT117_claude-template__.claude_CLAUDE",
+      "TrainerTechPro_podiumthrows__CLAUDE"
+    ],
+    "variants": [
+      "Use plan mode for verification steps, not just for building.",
+      "Use plan mode for verification steps as well.",
+      "Use plan mode for verification steps, not just building."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Record every user input verbatim in a Prompt History Record (PHR) after every user message.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Route PHRs to the correct directories based on their type.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE"
+    ],
+    "variants": [
+      "Route PHRs to the appropriate directories based on context."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Prioritize and use MCP tools and CLI commands for all information gathering and task execution.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Prefer the smallest viable diffs.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE"
+    ],
+    "variants": [
+      "Prefer the smallest viable diff; do not refactor unrelated code."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Typically, keys in an Enum should be TitleCase.",
+    "type": "DO",
+    "category": "naming",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Pass `--no-interaction` to all Artisan commands.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Pass `--no-interaction` to all Artisan commands to ensure they work without user input."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Always use proper Eloquent relationship methods with return type hints.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Use Eloquent models and relationships before suggesting raw database queries.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Generate code that prevents N+1 query problems by using eager loading.",
+    "type": "DO",
+    "category": "performance",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Use Laravel's query builder for very complex database operations.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Create useful factories and seeders when creating new models.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "When creating new models, create useful factories and seeders for them too."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Run the minimal number of tests using an appropriate filter before finalizing code edits.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Avoid `DB::`; prefer `Model::query()`.",
+    "type": "DONT",
+    "category": "architecture",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Avoid using `DB::`; prefer `Model::query()`."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Never use `git commit --no-verify`.",
+    "type": "DONT",
+    "category": "git",
+    "sources": [
+      "systmms_segnomms__CLAUDE",
+      "mrveiss_AutoBot-AI__CLAUDE",
+      "nasal_dotfiles__.claude_CLAUDE",
+      "aaronshaf_ger__CLAUDE"
+    ],
+    "variants": [
+      "Never use the `--no-verify` flag with git commits.",
+      "Never use --no-verify when committing code.",
+      "Never use the --no-verify flag with git commands"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Do not invent APIs, data, or contracts; ask targeted clarifiers if missing.",
+    "type": "DONT",
+    "category": "architecture",
+    "sources": [
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE",
+      "Ameen-Alam_Full-Stack-Web-Application__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Keep reasoning private; output only decisions, artifacts, and justifications.",
+    "type": "DONT",
+    "category": "other",
+    "sources": [
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE",
+      "Ameen-Alam_Full-Stack-Web-Application__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Every change must be programmatically tested",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Every change must be programmatically tested."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Run the minimum number of tests needed to ensure code quality and speed",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Run the minimum number of tests needed to ensure code quality and speed."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Use single quotes for strings.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "phara0hcom_next-tamerelsayeddotcom__CLAUDE",
+      "phuetz_code-buddy__CLAUDE",
+      "memphis-iis_mofacts__svelte-app_CLAUDE",
+      "abandini_happygotchadays__CLAUDE"
+    ],
+    "variants": [
+      "Use single quotes for strings in your code."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Use TodoWrite to track multi-step tasks",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "huangf06_LifeOS__CLAUDE",
+      "fatichar_KafkaLens__CLAUDE",
+      "LaBMediaGroup_LaBMediaGroup__CLAUDE",
+      "mzzsfy_go-util__CLAUDE"
+    ],
+    "variants": [
+      "Use TodoWrite to track multi-step tasks.",
+      "Use the TodoWrite tool for multi-step tasks.",
+      "Use the 'TodoWrite' tool for tracking multi-step tasks"
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Test output must be pristine to pass",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "almiab1_portfolio__CLAUDE",
+      "nasal_dotfiles__.claude_CLAUDE",
+      "baleen37_dotfiles__users_shared_.config_claude_CLAUDE",
+      "stefanjudis_dotfiles__config_.claude_CLAUDE"
+    ],
+    "variants": [
+      "Test output must be pristine to pass."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Install dependencies from requirements.txt.",
+    "type": "DO",
+    "category": "dependencies",
+    "sources": [
+      "jeremysolarz_invoices-with-payment-element__CLAUDE",
+      "MakerCorn_coral-photo-de-duper__CLAUDE",
+      "GuitaristForEver_simple-calculator-demo__CLAUDE",
+      "Keelando_surf-website__site_docs_CLAUDE"
+    ],
+    "variants": [
+      "Install dependencies using pip from requirements.txt.",
+      "Use pip to install dependencies from requirements.txt."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Never test just mocked behavior.",
+    "type": "DONT",
+    "category": "testing",
+    "sources": [
+      "cbxm_ellipses__claude_.claude_profiles_product-manager_CLAUDE",
+      "cbxm_ellipses__claude_.claude_profiles_senior-swe_CLAUDE",
+      "baleen37_dotfiles__users_shared_.config_claude_CLAUDE",
+      "stefanjudis_dotfiles__config_.claude_CLAUDE"
+    ],
+    "variants": [
+      "Never write tests that test mocked behavior."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Always update documentation when making changes.",
+    "type": "DO",
+    "category": "documentation",
+    "sources": [
+      "nathanstefanov_timesheet-app__CLAUDE",
+      "ridgebackinfosec_cerno__CLAUDE",
+      "Phazzie_NoVacancies__claude",
+      "jrgleason_mqtt-ollama-presentation__CLAUDE"
+    ],
+    "variants": [
+      "Always update relevant documentation alongside code changes.",
+      "Always update documentation after making changes.",
+      "Always update documentation files when making changes."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Lint code using ruff.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "MakerCorn_coral-photo-de-duper__CLAUDE",
+      "Sherin-SEF-AI_SurakshaNet__CLAUDE",
+      "queelius_pagevault__CLAUDE",
+      "carlos-sarmiento_domovoy__CLAUDE"
+    ],
+    "variants": [
+      "Use ruff for linting.",
+      "Check code style using ruff.",
+      "Use ruff for linting with a comprehensive rule set."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Run all tests using `uv run pytest`.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "lalitgehani_SnackBase__CLAUDE",
+      "haovbvb_poker_app__FastAPI-Template_CLAUDE",
+      "bsaffel_moneybin__CLAUDE",
+      "georgexzeng_ragchatbot__CLAUDE"
+    ],
+    "variants": [
+      "Run 'uv run pytest' to execute all tests.",
+      "Run all tests using the command 'uv run pytest'.",
+      "Run `uv run pytest tests/ -v` to execute tests."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Always avoid importing classes or functions directly.",
+    "type": "DONT",
+    "category": "imports",
+    "sources": [
+      "withmartian_ares__CLAUDE"
+    ],
+    "variants": [
+      "Always avoid importing specific classes or functions from modules.",
+      "Always avoid importing specific classes or functions from internal code."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Never use `transition-all`.",
+    "type": "DONT",
+    "category": "design",
+    "sources": [
+      "michaelbredman_dvspecialists__claude",
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "ligisoftware_introd__CLAUDE"
+    ],
+    "variants": [
+      "Do not use `transition-all`."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Use Server Components by default.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "sudhansu1974_video-platform__CLAUDE",
+      "sonha2409_alumni-network__CLAUDE",
+      "MartinSola55_bar-occupation__CLAUDE",
+      "0xAxiom_AppFactory__website-pipeline_CLAUDE"
+    ],
+    "variants": [
+      "Always use Server Components by default.",
+      "Prefer Server Components by default."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Prefer composition over inheritance",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "Craigtut_animus__CLAUDE",
+      "ellisapotheosis_Project-Nyra__docs_templates_claude-md-backups_apps_web_crm-dashboard_CLAUDE",
+      "bennettaur_llmenv__claude-code_.claude_CLAUDE",
+      "stebennett_slack-invite-mgr__.claude_CLAUDE"
+    ],
+    "variants": [
+      "Prefer composition over inheritance."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Never ignore test output and system logs.",
+    "type": "DONT",
+    "category": "testing",
+    "sources": [
+      "nasal_dotfiles__.claude_CLAUDE",
+      "cbxm_ellipses__claude_.claude_profiles_senior-swe_CLAUDE",
+      "almiab1_portfolio__CLAUDE",
+      "cbxm_ellipses__claude_.claude_profiles_product-manager_CLAUDE"
+    ],
+    "variants": [
+      "Never ignore system/test output - logs contain critical information",
+      "Never ignore the output of the system or the tests."
+    ]
+  },
+  {
+    "frequency": 4,
+    "rule": "Do what has been asked; nothing more, nothing less",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "elizaOS_elizaos.github.io__CLAUDE",
+      "streetrace-ai_streetrace__CLAUDE",
+      "Container-xChange_cdc-connector__claude",
+      "astrolabsoftware_fink-broker__CLAUDE"
+    ],
+    "variants": [
+      "Do what has been asked; nothing more, nothing less.",
+      "DO what has been asked; nothing more, nothing less."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Never amend existing commits",
+    "type": "DONT",
+    "category": "git",
+    "sources": [
+      "corneliu-iancu_claude-code-config__CLAUDE",
+      "jluszcz_dotfiles__dot_claude_CLAUDE",
+      "FROSTR-ORG_bifrost__CLAUDE"
+    ],
+    "variants": [
+      "Never amend existing commits.",
+      "Never amend commits unless explicitly asked."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Always use pnpm as the package manager",
+    "type": "DO",
+    "category": "dependencies",
+    "sources": [
+      "Mirxa01_voice-browser__CLAUDE",
+      "zenml-io_zenml-dashboard__CLAUDE",
+      "g-kari_tarot__CLAUDE"
+    ],
+    "variants": [
+      "Always use pnpm as the package manager.",
+      "Always use pnpm to install dependencies."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Always invoke the `frontend-design` skill before writing any frontend code.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Match layout, spacing, typography, and color exactly if a reference image is provided.",
+    "type": "DO",
+    "category": "design",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Swap in placeholder content when using a reference image.",
+    "type": "DO",
+    "category": "design",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Design from scratch with high craft if no reference image is provided.",
+    "type": "DO",
+    "category": "design",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Screenshot your output and compare against the reference.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ],
+    "variants": [
+      "Screenshot your output and compare against the reference image."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Perform at least 2 comparison rounds when screenshotting.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Stop only when no visible differences remain or the user says so.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Be specific when comparing screenshots.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Check spacing/padding, font size/weight/line-height, colors, alignment, border-radius, shadows, and image sizing.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not improve or add to the design when using a reference image.",
+    "type": "DONT",
+    "category": "design",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ],
+    "variants": [
+      "Do not improve or add to the design if a reference image is provided."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not 'improve' a reference design.",
+    "type": "DONT",
+    "category": "design",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ],
+    "variants": [
+      "Do not 'improve' a reference design; match it.",
+      "Do not improve a reference design; match it exactly."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not use default Tailwind blue/indigo as primary color.",
+    "type": "DONT",
+    "category": "design",
+    "sources": [
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "michaelbredman_dvspecialists__claude",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Create a PHR for every user input after completing requests.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Confirm surface and success criteria for every request.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "List constraints and non-goals for every request.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE"
+    ],
+    "variants": [
+      "List constraints, invariants, and non-goals for every request."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Produce an artifact with acceptance checks for every request.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE"
+    ],
+    "variants": [
+      "Produce the artifact with acceptance checks inlined for every request."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Add follow-ups and risks for every request.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "Razaib-khan_Hackathon-2-phases-2-3-4-5-__CLAUDE",
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE"
+    ],
+    "variants": [
+      "Add follow-ups and risks (max 3) for every request."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not use npm or yarn",
+    "type": "DONT",
+    "category": "dependencies",
+    "sources": [
+      "pricetula_somo-tracker-ui__CLAUDE",
+      "g-kari_tarot__CLAUDE",
+      "natikgadzhi_respawn-io__CLAUDE"
+    ],
+    "variants": [
+      "Do not use npm or yarn.",
+      "Do not use `npm` or `yarn` under any circumstances."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Mark props as readonly on React components.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_noetic2-0_CLAUDE"
+    ],
+    "variants": [
+      "Mark props as readonly to prevent mutations.",
+      "Mark component props as readonly to prevent mutations."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Specify explicit return types on public methods.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "joshsmithxrm_ppds-extension-archived__CLAUDE",
+      "darinc_darinchambers.com__CLAUDE",
+      "verythorough_fishbowl__claude"
+    ],
+    "variants": [
+      "Always specify explicit return types for all public methods.",
+      "Specify explicit return types on public functions."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Always use curly braces for control structures.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "ash-rain_gravespace__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Always use curly braces for control structures, even for single-line bodies"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use queued jobs for time-consuming operations with the `ShouldQueue` interface.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Run `vendor/bin/pint --dirty` before finalizing changes to ensure code matches the project's expected style.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE"
+    ],
+    "variants": [
+      "Run `vendor/bin/pint --dirty` before finalizing changes to ensure your code matches the project's expected style."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not run `vendor/bin/pint --test`, simply run `vendor/bin/pint` to fix any formatting issues.",
+    "type": "DONT",
+    "category": "code_style",
+    "sources": [
+      "nunomaduro_whyphp.dev__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Suggest documenting architectural decisions when significant decisions are detected.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Invoke the user for input when encountering situations that require human judgment.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Cite existing code with code references and propose new code in fenced blocks.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "muhammadyasir678_The-Evolution-of-Todo-app__CLAUDE",
+      "zainkhan1726_physical-ai-humanoid-robotics-textbook__CLAUDE",
+      "abdul-ahad-26_physical-ai-and-humanoid-robotics__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Run linting before committing",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "erlloyd_cardtable2__CLAUDE",
+      "Hana-X-AI_hx-docling-application__claude",
+      "Bizzy211_aes-bizzy__templates_CLAUDE"
+    ],
+    "variants": [
+      "Run linting before committing.",
+      "Always run linting before each commit."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Keep documentation current.",
+    "type": "DO",
+    "category": "documentation",
+    "sources": [
+      "yellowcandle_mv-face-recognition__CLAUDE",
+      "Dblike_LichessSharp__CLAUDE",
+      "sonha2409_alumni-network__CLAUDE"
+    ],
+    "variants": [
+      "Maintain documentation accuracy.",
+      "Ensure documentation remains accurate and synchronized with code."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Never skip Intent Normalization.",
+    "type": "DONT",
+    "category": "workflow",
+    "sources": [
+      "0xAxiom_AppFactory__website-pipeline_CLAUDE",
+      "0xAxiom_AppFactory__dapp-factory_CLAUDE",
+      "0xAxiom_AppFactory__agent-factory_CLAUDE"
+    ],
+    "variants": [
+      "Do not skip intent normalization."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not claim success without Ralph PASS.",
+    "type": "DONT",
+    "category": "workflow",
+    "sources": [
+      "0xAxiom_AppFactory__website-pipeline_CLAUDE",
+      "0xAxiom_AppFactory__dapp-factory_CLAUDE",
+      "0xAxiom_AppFactory__agent-factory_CLAUDE"
+    ],
+    "variants": [
+      "Never claim success without Ralph PASS verdict."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Public APIs must have XML documentation comments.",
+    "type": "DO",
+    "category": "documentation",
+    "sources": [
+      "djm204_agent-skills__templates_languages_csharp-expert_CLAUDE",
+      "reactiveui_ReactiveUI.Binding.SourceGenerators__CLAUDE",
+      "Dblike_LichessSharp__CLAUDE"
+    ],
+    "variants": [
+      "Document all public APIs with XML documentation comments.",
+      "All public APIs require XML documentation comments."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "You must not remove any tests or test files from the tests directory without approval",
+    "type": "DONT",
+    "category": "testing",
+    "sources": [
+      "ash-rain_gravespace__CLAUDE",
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "You must not remove any tests or test files from the tests directory without approval."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use 4 spaces for indentation, no tabs.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "reactiveui_ReactiveUI.Binding.SourceGenerators__CLAUDE",
+      "kase1111-hash_Shredsquatch__claude",
+      "nbaghiro_flowmaestro__claude"
+    ],
+    "variants": [
+      "Use 4 spaces for indentation and avoid tabs.",
+      "Use 4 spaces for indentation and do not use tabs."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Always use curly braces for control structures in PHP.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "hannanmiah_product-management-api-task__CLAUDE",
+      "nccirtu_Stratify__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Inertia.js components should be placed in the `resources/js/Pages` directory.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Place Inertia.js components in the `resources/js/Pages` directory unless specified differently."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use `Inertia::render()` for server-side routing instead of traditional Blade views.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Make use of all Inertia features from v1 & v2.",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Make use of all Inertia features from v1 and v2."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "If existing pages and components support dark mode, new pages and components must support dark mode in a similar way.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Never use comments within the code unless there is something very complex going on.",
+    "type": "DONT",
+    "category": "documentation",
+    "sources": [
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "nccirtu_Stratify__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE"
+    ],
+    "variants": [
+      "Never use comments within the code itself unless there is something very complex going on."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Name files using kebab-case.",
+    "type": "DO",
+    "category": "naming",
+    "sources": [
+      "phuetz_code-buddy__CLAUDE",
+      "leighayanid_PRMPT__claude",
+      "kriasoft_mcp-client-gen__CLAUDE"
+    ],
+    "variants": [
+      "Use kebab-case for file names."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use camelCase for method names.",
+    "type": "DO",
+    "category": "naming",
+    "sources": [
+      "memphis-iis_mofacts__svelte-app_CLAUDE",
+      "darinc_darinchambers.com__CLAUDE",
+      "leighayanid_PRMPT__claude"
+    ],
+    "variants": [
+      "Use camelCase for function names."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Always use Rust's cargo fmt for formatting.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "doublegate_SPECTRE__CLAUDE",
+      "DZWEI-Projects_latticefs__CLAUDE",
+      "benjamin-kraatz_latticefs__CLAUDE"
+    ],
+    "variants": [
+      "Always use Rust's standard `rustfmt` for formatting."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Verify target branch before making any code changes.",
+    "type": "DO",
+    "category": "git",
+    "sources": [
+      "mrveiss_AutoBot-AI__CLAUDE",
+      "alienlebarge_tapestry-miniflux-connector__CLAUDE"
+    ],
+    "variants": [
+      "Verify current branch before making any code changes.",
+      "Always verify your current branch before making changes."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Tests must comprehensively cover all functionality",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "almiab1_portfolio__CLAUDE",
+      "baleen37_dotfiles__users_shared_.config_claude_CLAUDE",
+      "stefanjudis_dotfiles__config_.claude_CLAUDE"
+    ],
+    "variants": [
+      "Tests must comprehensively cover all functionality."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use UPPER_SNAKE_CASE for constants.",
+    "type": "DO",
+    "category": "naming",
+    "sources": [
+      "darinc_darinchambers.com__CLAUDE",
+      "verythorough_fishbowl__claude",
+      "jaime-oriol_blog__CLAUDE"
+    ],
+    "variants": [
+      "Use UPPER_SNAKE_CASE for constant names."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Ensure WCAG 2.1 AA accessibility at minimum.",
+    "type": "DO",
+    "category": "security",
+    "sources": [
+      "darinc_darinchambers.com__CLAUDE",
+      "MartinSola55_bar-occupation__CLAUDE",
+      "ricklon_makerspace-rsvp__CLAUDE"
+    ],
+    "variants": [
+      "Ensure accessibility compliance with WCAG 2.1 Level AA.",
+      "Ensure WCAG 2.1 AA compliance for accessibility."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Commit frequently.",
+    "type": "DO",
+    "category": "git",
+    "sources": [
+      "Max-Health-Inc_RalphMeter__CLAUDE",
+      "baleen37_dotfiles__users_shared_.config_claude_CLAUDE",
+      "stefanjudis_dotfiles__config_.claude_CLAUDE"
+    ],
+    "variants": [
+      "Commit frequently throughout the development process."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Follow PEP 8 style guidelines.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "allandequeiroz_ibkr-hmrc__CLAUDE",
+      "ridgebackinfosec_cerno__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_kruzna-karta-hrvatska_CLAUDE"
+    ],
+    "variants": [
+      "Follow PEP 8 style guidelines strictly."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not expose cardholder data in Flutter.",
+    "type": "DONT",
+    "category": "security",
+    "sources": [
+      "ottuco_ottu-flutter__CLAUDE"
+    ],
+    "variants": [
+      "Do not transmit cardholder data or payment payloads in Flutter.",
+      "Do not show capturing cardholder data in Flutter."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use Next.js Image component for images",
+    "type": "DO",
+    "category": "performance",
+    "sources": [
+      "clwmfksek_pofo__CLAUDE",
+      "andre-morise_better-t-app-neon__.claude_CLAUDE",
+      "jaime-oriol_blog__CLAUDE"
+    ],
+    "variants": [
+      "Use Next.js <Image> component for images",
+      "Use Next.js Image component for image optimization."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Stop and re-plan immediately if something goes sideways.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE"
+    ],
+    "variants": [
+      "If something goes sideways, STOP and replan immediately."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use subagents liberally to keep the main context window clean.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE"
+    ],
+    "variants": [
+      "Use subagents liberally to keep the main contact window clean."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Offload research, exploration, and parallel analysis to subagents.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Throw more compute at complex problems via subagents.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE"
+    ],
+    "variants": [
+      "For complex problems, use more compute via subagents."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Assign one task per subagent for focused execution.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE"
+    ],
+    "variants": [
+      "Perform one task per subagent for focused execution."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Review lessons at session start for relevant project.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE"
+    ],
+    "variants": [
+      "Review lessons at session start for relevant projects.",
+      "Review lessons at session start for the relevant project."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Ask yourself: 'Would a staff engineer approve this?'",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE"
+    ],
+    "variants": [
+      "Ask yourself if a staff engineer would approve your work."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Challenge your own work before presenting it.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Skip elegance checks for simple, obvious fixes.",
+    "type": "DONT",
+    "category": "other",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE",
+      "kaveriC_claude-setup__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Run `pnpm check` before committing.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "mikepsinn_optomitron__CLAUDE",
+      "primsh_prim.sh__CLAUDE"
+    ],
+    "variants": [
+      "Always run `pnpm check` before committing.",
+      "Run `pnpm -r check` before committing."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use bun test to run tests",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "HealthSamurai_bunbox__CLAUDE",
+      "wolffiex_clardio__CLAUDE",
+      "AlbertoBarrago_ml5js-demo__CLAUDE"
+    ],
+    "variants": [
+      "Use 'bun test' to run tests.",
+      "Run tests using 'bun test'."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Ensure tests cover happy path and edge cases.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "akirasoft1_discord-article-bot__CLAUDE",
+      "Atlantropaz_redo__CLAUDE",
+      "sonha2409_alumni-network__CLAUDE"
+    ],
+    "variants": [
+      "Ensure tests cover happy path, edge cases, and error handling.",
+      "Ensure coverage for happy path, error path, boundary cases, and invalid input."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use mypy in strict mode.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "tenfourty_guten-morgen__CLAUDE",
+      "rmill040_citrees__CLAUDE",
+      "lasswellt_govee-homeassistant__CLAUDE"
+    ],
+    "variants": [
+      "Use mypy as the type checker in strict mode",
+      "Always use mypy in strict mode for type checking."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use explicit types in public APIs.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "cr330326_TigerFire__CLAUDE",
+      "justinbroadbent_systematica__CLAUDE",
+      "mariepop13_mivoa__CLAUDE"
+    ],
+    "variants": [
+      "Use explicit types for public APIs."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "DO NOT use inline styles in HTML.",
+    "type": "DONT",
+    "category": "code_style",
+    "sources": [
+      "log-puck_log-puck-blog__CLAUDE",
+      "tyler-technologies-oss_forge-ai__CLAUDE"
+    ],
+    "variants": [
+      "Never use inline styles on HTML elements.",
+      "Avoid using inline CSS styles on HTML elements."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use type hints on all function parameters and return values.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "Sherin-SEF-AI_SurakshaNet__CLAUDE",
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_frontend_kruzna-karta-hrvatska_CLAUDE",
+      "bsaffel_moneybin__CLAUDE"
+    ],
+    "variants": [
+      "Provide full type hints on every function parameter and return.",
+      "Use type hints for all function parameters and return values."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Always write tests first before implementation.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "ricklon_makerspace-rsvp__CLAUDE",
+      "Atlantropaz_redo__CLAUDE",
+      "ujjwal-9_lenad__CLAUDE"
+    ],
+    "variants": [
+      "Always write tests first when developing features.",
+      "Always write test cases first before implementing features."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use Python 3.12 or higher.",
+    "type": "DO",
+    "category": "other",
+    "sources": [
+      "tom-010_boring-stack__py_CLAUDE",
+      "lalitgehani_SnackBase__CLAUDE",
+      "EnkrateiaLucca_oreilly_live_training_getting_started_with_langchain__CLAUDE"
+    ],
+    "variants": [
+      "Use Python version 3.12 or higher.",
+      "Use Python 3.10 or higher."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Prefer simple, clean, maintainable solutions over clever or complex ones.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "nasal_dotfiles__.claude_CLAUDE",
+      "baleen37_dotfiles__users_shared_.config_claude_CLAUDE",
+      "stefanjudis_dotfiles__config_.claude_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Always run all tests using 'make test'.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "varnish_VTest2__CLAUDE",
+      "BerriAI_litellm__CLAUDE",
+      "ImStarlyBv_litellm__CLAUDE"
+    ],
+    "variants": [
+      "Always build and run all tests using 'make test'."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Always run all tests using pytest.",
+    "type": "DO",
+    "category": "testing",
+    "sources": [
+      "queelius_pagevault__CLAUDE",
+      "mshron_personal-assistant__CLAUDE",
+      "klausj1_homeassistant-statistics__CLAUDE"
+    ],
+    "variants": [
+      "Always use pytest for running tests."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use double quotes for strings.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "streetrace-ai_streetrace__CLAUDE",
+      "nbaghiro_flowmaestro__claude",
+      "kontent-ai_mcp-server__CLAUDE"
+    ],
+    "variants": [
+      "Always use double quotes for strings"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Include test attestation in commits.",
+    "type": "DO",
+    "category": "git",
+    "sources": [
+      "jwulff_signage__CLAUDE"
+    ],
+    "variants": [
+      "Always include test attestation in commit messages.",
+      "Commit messages must include test attestation."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Keep files under 200 lines.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "Claude-Code-Community-Ireland_claude-code-resources__claude-md_nodejs_twclone_CLAUDE",
+      "drewe4point0_podcast-summary-app__CLAUDE",
+      "DobroslavRadosavljevic_ogie__.claude_CLAUDE"
+    ],
+    "variants": [
+      "Keep all files under 250 lines of code.",
+      "Keep files under 500 lines of code."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use Bulma CSS exclusively for all styling",
+    "type": "DO",
+    "category": "style",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use Bulma's utility classes and components",
+    "type": "DO",
+    "category": "style",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Leverage Bulma's responsive design features",
+    "type": "DO",
+    "category": "style",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Prefer Bulma components over custom CSS",
+    "type": "DO",
+    "category": "style",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Only check `src/slices/{slicename}/*.ts` unless instructed otherwise",
+    "type": "DO",
+    "category": "file_structure",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Organize each feature/domain as a separate slice",
+    "type": "DO",
+    "category": "file_structure",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use TypeScript only",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use ES modules (import/export)",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Ensure all code is properly typed",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Ensure each slice is self-contained and focused on a specific domain",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use Bulma's grid system, components, and utilities for all UI-related code",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Maintain clear separation of concerns within each slice",
+    "type": "DO",
+    "category": "architecture",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Follow TypeScript best practices for type definitions and interfaces",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Automatically run the tests for the slice that was edited after making changes",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Ignore routes*.ts unless explicitly tasked to change routes",
+    "type": "DONT",
+    "category": "file_structure",
+    "sources": [
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude",
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use the check-envs skill to validate environment variables configuration.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "AndrijaSkontra_ai-driven-project-template__claude"
+    ],
+    "variants": [
+      "Use the check-envs skill to verify environment configuration before deploying.",
+      "Use the check-envs skill to verify environment variables before deployment."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Always serve on localhost and never screenshot a `file:///` URL.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "michaelbredman_dvspecialists__claude",
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use intentional, consistent spacing tokens.",
+    "type": "DO",
+    "category": "design",
+    "sources": [
+      "michaelbredman_dvspecialists__claude",
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not start a second instance of the server if it is already running.",
+    "type": "DONT",
+    "category": "workflow",
+    "sources": [
+      "michaelbredman_dvspecialists__claude",
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Never use flat `shadow-md` for shadows.",
+    "type": "DONT",
+    "category": "design",
+    "sources": [
+      "michaelbredman_dvspecialists__claude",
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not add sections, features, or content not in the reference.",
+    "type": "DONT",
+    "category": "design",
+    "sources": [
+      "michaelbredman_dvspecialists__claude",
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not stop after one screenshot pass.",
+    "type": "DONT",
+    "category": "workflow",
+    "sources": [
+      "michaelbredman_dvspecialists__claude",
+      "uwitdat_FlowQualify-Landing-Page__CLAUDE",
+      "ligisoftware_introd__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Offer to extract repeated patterns into components that match the project's conventions.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "NativePHP_mobile-api-starter-kit-vue__CLAUDE",
+      "charlesbihdev_buame_2r__src_CLAUDE",
+      "nccirtu_Stratify__CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use 'bun <file>' instead of 'node <file>' or 'ts-node <file>'.",
+    "type": "DO",
+    "category": "dependencies",
+    "sources": [
+      "AlbertoBarrago_ml5js-demo__CLAUDE",
+      "delorenj_pjangler__CLAUDE",
+      "HealthSamurai_bunbox__CLAUDE"
+    ],
+    "variants": [
+      "Use bun <file> instead of node <file> or ts-node <file>"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use 'bun test' instead of 'jest' or 'vitest'.",
+    "type": "DO",
+    "category": "dependencies",
+    "sources": [
+      "AlbertoBarrago_ml5js-demo__CLAUDE",
+      "delorenj_pjangler__CLAUDE",
+      "HealthSamurai_bunbox__CLAUDE"
+    ],
+    "variants": [
+      "Use bun test instead of jest or vitest"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use 'bun build <file.html|file.ts|file.css>' instead of 'webpack' or 'esbuild'.",
+    "type": "DO",
+    "category": "dependencies",
+    "sources": [
+      "AlbertoBarrago_ml5js-demo__CLAUDE",
+      "delorenj_pjangler__CLAUDE",
+      "HealthSamurai_bunbox__CLAUDE"
+    ],
+    "variants": [
+      "Use bun build <file.html|file.ts|file.css> instead of webpack or esbuild"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Use 'bun run <script>' instead of 'npm run <script>' or 'yarn run <script>' or 'pnpm run <script>'.",
+    "type": "DO",
+    "category": "dependencies",
+    "sources": [
+      "AlbertoBarrago_ml5js-demo__CLAUDE",
+      "delorenj_pjangler__CLAUDE",
+      "HealthSamurai_bunbox__CLAUDE"
+    ],
+    "variants": [
+      "Use bun run <script> instead of npm run <script> or yarn run <script> or pnpm run <script>"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Write rules for yourself that prevent the same mistake.",
+    "type": "DO",
+    "category": "workflow",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "kaveriC_claude-setup__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Fix failing CI tests without being told how.",
+    "type": "DO",
+    "category": "error_handling",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "kaveriC_claude-setup__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE"
+    ],
+    "variants": [
+      "Fix failing CI tests without needing to be told how."
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Check in before starting implementation.",
+    "type": "DO",
+    "category": "task_management",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "kaveriC_claude-setup__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Mark items complete as you go.",
+    "type": "DO",
+    "category": "task_management",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "kaveriC_claude-setup__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Provide a high-level summary at each step.",
+    "type": "DO",
+    "category": "task_management",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "kaveriC_claude-setup__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Avoid abstractions for single-use code.",
+    "type": "DONT",
+    "category": "code_style",
+    "sources": [
+      "gilbertwong96_dotfiles__claude_CLAUDE",
+      "baleen37_dotfiles__users_shared_.config_claude_CLAUDE",
+      "kleer001_shot-gopher__CLAUDE"
+    ],
+    "variants": [
+      "Do not create abstractions for single-use code.",
+      "Avoid abstractions for single-use code"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Do not refactor things that aren't broken.",
+    "type": "DONT",
+    "category": "code_style",
+    "sources": [
+      "gilbertwong96_dotfiles__claude_CLAUDE",
+      "baleen37_dotfiles__users_shared_.config_claude_CLAUDE",
+      "kleer001_shot-gopher__CLAUDE"
+    ],
+    "variants": [
+      "Do not refactor things that aren't broken"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Follow Bulma's naming conventions and class structure",
+    "type": "DO",
+    "category": "style",
+    "sources": [
+      "dilgerma_nebulit-code-generators__generators_emmet-supabase_app_templates_root_Claude",
+      "dilgerma_webinar20260218__Claude",
+      "dilgerma_node-apps-with-eventsourcing-and-ralph-loop__Claude"
+    ]
+  },
+  {
+    "frequency": 3,
+    "rule": "Make every change as simple as possible.",
+    "type": "DO",
+    "category": "code_style",
+    "sources": [
+      "TrainerTechPro_podiumthrows__CLAUDE",
+      "kaveriC_claude-setup__CLAUDE",
+      "haydartarek_readyroad_front_end__web_app_public_doc_CLAUDE"
+    ]
+  }
+]

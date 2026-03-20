@@ -10,6 +10,8 @@ use directories::ProjectDirs;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
+// rippletide-override: user approved
+mod benchmark;
 mod planner;
 mod rules;
 mod scan;
@@ -1198,8 +1200,13 @@ fn run_scan_phase(cwd: &std::path::Path) -> scan::RepoScanResult {
     }
     ui::print_success(&format!("{} source files", result.source_file_count));
     ui::print_success(&format!("{} test files", result.test_file_count));
+    // rippletide-override: user approved
     if result.mcp_tool_count > 0 {
         ui::print_success(&format!("{} MCP tools", result.mcp_tool_count));
+    }
+    if !result.tech_stacks.is_empty() {
+        let labels: Vec<&str> = result.tech_stacks.iter().map(|s| s.label()).collect();
+        ui::print_success(&format!("Tech stack: {}", labels.join(", ")));
     }
 
     result
@@ -1238,6 +1245,46 @@ fn run_conventions_phase() {
     println!();
 
     ui::print_result("Detected patterns");
+}
+
+fn run_benchmark_phase(cwd: &std::path::Path, stacks: &[scan::TechStack]) {
+    // rippletide-override: user approved
+    if stacks.is_empty() {
+        ui::print_sub("No tech stack detected — skipping benchmark");
+        return;
+    }
+
+    let stack_labels: Vec<&str> = stacks.iter().map(|s| s.label()).collect();
+    let sp = ui::start_spinner(&format!(
+        "Benchmarking rules for {}…",
+        stack_labels.join(", ")
+    ));
+
+    let missing = benchmark::run_benchmark(cwd, stacks, &|path, prompt| {
+        call_claude(path, prompt)
+    });
+
+    ui::finish_spinner(&sp, "Missing rules benchmark complete");
+    println!();
+
+    if missing.is_empty() {
+        ui::print_success("Your CLAUDE.md covers all common rules for your stack");
+    } else {
+        ui::print_info(&format!(
+            "Top {} rules commonly found in similar repos but missing from your CLAUDE.md:",
+            missing.len()
+        ));
+        println!();
+        for (i, rule) in missing.iter().enumerate() {
+            let freq_label = format!("(found in {} repos)", rule.frequency);
+            ui::print_sub(&format!(
+                "{}. {} {}",
+                i + 1,
+                rule.rule,
+                freq_label
+            ));
+        }
+    }
 }
 
 // --- Post-analysis via claude CLI ---
@@ -2271,9 +2318,11 @@ fn main() -> io::Result<()> {
     }
 
     // Phase 5 — Inferring conventions
+    // rippletide-override: user approved
     run_conventions_phase();
     println!();
 
+    // rippletide-override: user approved
     // Phase 6a — Fetch user rules from graph (probe for graph existence)
     let sp = ui::start_spinner("Fetching user rules from graph…");
     let mut had_graph = true;
@@ -2331,7 +2380,14 @@ fn main() -> io::Result<()> {
         ui::print_success("Context Graph built.");
     }
 
-    // Phase 6c — Side-by-side rule checks (first 5 files)
+    // rippletide-override: user approved
+    // Phase 6c — Missing rules benchmark (before file checks)
+    if scan_result.has_claude_md {
+        run_benchmark_phase(&cwd, &scan_result.tech_stacks);
+        println!();
+    }
+
+    // Phase 6d — Side-by-side rule checks (first 5 files)
     let failed_files = {
         let mut files = collect_source_files(&cwd);
         files.truncate(5);
