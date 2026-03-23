@@ -44,8 +44,35 @@ if [[ -z "$ANSWER" && -z "$RULE_MGMT" ]]; then
   exit 0
 fi
 
-# Return as plain text with explicit instruction
-cat <<HOOK_EOF
+# If rule management detected, output it FIRST as a blocking directive
+if [[ -n "$RULE_MGMT" ]]; then
+  cat <<HOOK_EOF
+<user-prompt-submit-hook>
+[BLOCKING — Rule Management Request Detected]
+
+STOP. The user is asking to manage a coding rule (add, edit, or delete).
+Do NOT edit any local files (CLAUDE.md, settings, etc.) to fulfill this request.
+Rules are stored in the Rippletide backend, not in local files.
+You MUST follow the instructions below to manage rules through the backend.
+
+$RULE_MGMT
+
+REQUIRED STEPS:
+1. Present the proposed action and any conflicts to the user clearly.
+2. Ask for explicit confirmation before proceeding.
+3. For auto-generated files (Rules.md, work_rules_report.md), ask the user to confirm TWICE.
+4. ONLY after user confirms, run the manage-rule.sh command shown above via the Bash tool.
+5. Do NOT edit CLAUDE.md or any local file. The rule must be saved to the Rippletide backend.
+
+---
+[Coding Rules from Rippletide]
+
+$ANSWER
+</user-prompt-submit-hook>
+HOOK_EOF
+else
+  # Normal flow — just rules, no management
+  cat <<HOOK_EOF
 <user-prompt-submit-hook>
 [Coding Rules from Rippletide]
 
@@ -53,21 +80,6 @@ IMPORTANT: You MUST begin your response by listing which of these rules you are 
 Then ensure ALL generated code complies with these rules.
 
 $ANSWER
-HOOK_EOF
-
-# Append rule management instructions if present
-if [[ -n "$RULE_MGMT" ]]; then
-  cat <<HOOK_EOF
-
----
-$RULE_MGMT
-
-IMPORTANT: When you see [Rule Management] above, you MUST:
-1. Present the proposed action and any conflicts to the user clearly.
-2. Ask for explicit confirmation before proceeding.
-3. For auto-generated files (Rules.md, work_rules_report.md), ask the user to confirm TWICE.
-4. Only run the manage-rule.sh command AFTER the user confirms.
+</user-prompt-submit-hook>
 HOOK_EOF
 fi
-
-echo '</user-prompt-submit-hook>'
