@@ -29,6 +29,14 @@ case "$TOOL_NAME" in
     ;;
 esac
 
+# rippletide-override: user approved
+# Skip non-code files — markdown, config, and data files are not subject to rule checks
+case "$FILENAME" in
+  *.md|*.json|*.yaml|*.yml|*.txt|*.toml|*.cfg|*.ini|*.csv)
+    exit 0
+    ;;
+esac
+
 # Skip if there is no code to check
 if [[ -z "${CODE//[[:space:]]/}" ]]; then
   exit 0
