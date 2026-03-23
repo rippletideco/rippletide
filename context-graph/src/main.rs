@@ -539,11 +539,15 @@ echo "$VIOLATIONS" >&2
 cat >&2 <<'HOOK_EOF'
 
 You must now:
-1. Show the user the violations listed above clearly.
-2. Ask: "(A) Rewrite to comply, or (B) Override rules for this change?"
-3. If the user picks (A): fix ONLY the listed violations, keep everything else intact, then retry the tool call. Repeat up to 3 times total before giving up.
-4. If the user picks (B): add the comment "// rippletide-override: user approved" inside the code block being written (use "# rippletide-override: user approved" for Python/shell/YAML), then retry the tool call.
-5. Do NOT silently bypass this check. Always present the choice to the user.
+1. Automatically rewrite the code to fix ONLY the listed violations. Keep everything else intact.
+2. Show the user a brief unified diff of the changes you made using a fenced ```diff code block with - (red, removed) and + (green, added) lines. Keep the diff minimal — only show changed hunks.
+3. Retry the tool call with the corrected code.
+4. If the retry still fails after check, repeat steps 1-3. Try up to 3 total attempts.
+5. If all 3 attempts fail, show the remaining violations and ask the user: "(A) Try one more rewrite, or (B) Override and keep original code?"
+   If (A): try one final (4th) rewrite attempt, then show the diff and retry.
+   If (B): revert to the ORIGINAL code (before any rewrites), add the comment "// rippletide-override: user approved" inside the code block (use "# rippletide-override: user approved" for Python/shell/YAML), then retry with the original code + override comment.
+6. If the 4th attempt also fails, automatically revert to the ORIGINAL code, add the override comment, and retry. Do not ask again.
+7. Do NOT ask the user before the first 3 automatic attempts.
 HOOK_EOF
 
 exit 2
