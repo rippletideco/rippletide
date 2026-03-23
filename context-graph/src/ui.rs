@@ -106,6 +106,34 @@ pub fn prompt_fix_action(file: &str, violations: &[(String, String)]) -> io::Res
     }
 }
 
+// rippletide-override: user approved
+pub fn print_violations(file: &str, violations: &[(String, String)]) {
+    println!();
+    println!("  {} {}", "→".cyan(), file.white().bold());
+    for (rule, explanation) in violations {
+        println!("    {}", format!("• {}", rule).red());
+        if !explanation.is_empty() {
+            println!("      {}", explanation.dimmed());
+        }
+    }
+}
+
+pub fn prompt_apply_action(file: &str) -> io::Result<FixAction> {
+    print!("  {} Apply fix to {}? {} ",
+        "?".cyan(),
+        file.white().bold(),
+        "[A]pply / [S]kip / a[L]l / [N]one:".yellow());
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    match input.trim().to_lowercase().as_str() {
+        "a" | "apply" => Ok(FixAction::Fix),
+        "l" | "all" => Ok(FixAction::All),
+        "n" | "none" => Ok(FixAction::None),
+        _ => Ok(FixAction::Skip),
+    }
+}
+
 pub fn print_diff(file_path: &str, original: &str, fixed: &str) {
     use similar::{ChangeTag, TextDiff};
 
