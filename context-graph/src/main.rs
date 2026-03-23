@@ -468,7 +468,7 @@ HOOK_EOF
 fi
 "#;
 
-const MANAGE_RULE_SCRIPT: &str = r#"#!/bin/bash
+const MANAGE_RULE_SCRIPT: &str = r##"#!/bin/bash
 
 # Helper script for managing Rippletide coding rules from a Claude Code session.
 # Called by Claude via Bash tool after user confirmation.
@@ -558,7 +558,7 @@ case "$ACTION" in
     exit 1
     ;;
 esac
-"#;
+"##;
 
 const CHECK_CODE_SCRIPT: &str = r##"#!/bin/bash
 
