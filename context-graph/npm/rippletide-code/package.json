@@ -1,17 +1,26 @@
 {
   "name": "rippletide-code",
-  "version": "0.5.27",
+  "version": "0.5.28",
   "description": "Rippletide Code CLI \u2014 prebuilt Rust binary launcher",
   "bin": {
     "rippletide-code": "bin/cli.js"
   },
   "optionalDependencies": {
-    "rippletide-code-darwin-arm64": "0.5.27",
-    "rippletide-code-darwin-x64": "0.5.27",
-    "rippletide-code-linux-x64": "0.5.27",
-    "rippletide-code-win32-x64": "0.5.27",
-    "rippletide-code-win32-arm64": "0.5.27",
-    "rippletide-code-linux-arm64": "0.5.27"
+<<<<<<< HEAD
+    "rippletide-code-darwin-arm64": "0.5.28",
+    "rippletide-code-darwin-x64": "0.5.28",
+    "rippletide-code-linux-x64": "0.5.28",
+    "rippletide-code-win32-x64": "0.5.28",
+    "rippletide-code-win32-arm64": "0.5.28",
+    "rippletide-code-linux-arm64": "0.5.28"
+=======
+    "rippletide-code-darwin-arm64": "0.5.28",
+    "rippletide-code-darwin-x64": "0.5.28",
+    "rippletide-code-linux-x64": "0.5.28",
+    "rippletide-code-win32-x64": "0.5.28",
+    "rippletide-code-win32-arm64": "0.5.28",
+    "rippletide-code-linux-arm64": "0.5.28"
+>>>>>>> 2f678cf (Stabilize interactive rule list rendering)
   },
   "license": "MIT",
   "repository": {

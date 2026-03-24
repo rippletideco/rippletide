@@ -58,6 +58,17 @@ pub fn styled_prompt(label: &str) -> io::Result<String> {
     Ok(input.trim().to_string())
 }
 
+fn truncate_single_line(text: &str, max_chars: usize) -> String {
+    let clean = text.replace(['\r', '\n'], " ");
+    let mut chars = clean.chars();
+    let truncated: String = chars.by_ref().take(max_chars).collect();
+    if chars.next().is_some() {
+        format!("{}…", truncated.trim_end())
+    } else {
+        truncated
+    }
+}
+
 pub fn prompt_multi_select(
     title: &str,
     subtitle: &[&str],
@@ -76,6 +87,7 @@ pub fn prompt_multi_select(
     term.write_line("")?;
 
     let help_line = "  ↑/↓ move • space toggle • enter confirm";
+    let item_width = 92usize;
     let total_lines = items.len() + 2;
 
     loop {
@@ -87,7 +99,12 @@ pub fn prompt_multi_select(
             } else {
                 " ".to_string()
             };
-            let line = format!("  {} {} {}", prefix, checkbox, item);
+            let line = format!(
+                "  {} {} {}",
+                prefix,
+                checkbox,
+                truncate_single_line(item, item_width)
+            );
             if is_cursor {
                 term.write_line(&format!("{}", line.black().on_white()))?;
             } else {
