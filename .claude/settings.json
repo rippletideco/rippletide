@@ -9,6 +9,24 @@
             "timeout": 180
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/invite-rules.sh\"",
+            "timeout": 60
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/receive-rules.sh\"",
+            "timeout": 120
+          }
+        ]
       }
     ],
     "PreToolUse": [
