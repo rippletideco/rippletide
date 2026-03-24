@@ -1881,6 +1881,7 @@ const DEFAULT_USER_RULES: &[&str] = &[
 ];
 
 const QUERY_RULES_PATH: &str = "/query-rules";
+const GENERATED_RULES_FILE_ID: &str = "Rules.md";
 const SELECTED_RULES_FILE_ID: &str = "SelectedRules.md";
 const LOCAL_SELECTED_RULES_DIR: &str = ".rippletide";
 const LOCAL_SELECTED_RULES_PATH: &str = ".rippletide/selected-rules.md";
@@ -1943,6 +1944,10 @@ fn query_rules_url() -> String {
     })
 }
 
+fn files_base_url() -> String {
+    format!("{}/files", upload_url().trim_end_matches("/upload"))
+}
+
 fn fetch_rules_payload(query: &str, query_source: QuerySource) -> serde_json::Value {
     serde_json::json!({
         "query": query,
@@ -1993,6 +1998,70 @@ fn fetch_rules(user_id: &str, query: &str, query_source: QuerySource) -> FetchRu
         Some(s) => FetchRulesResult::Rules(s.to_string()),
         None => FetchRulesResult::NoGraph,
     }
+}
+
+fn fetch_markdown_file(user_id: &str, file_id: &str) -> Result<Option<String>, String> {
+    let url = format!("{}/{}", files_base_url(), file_id);
+    let resp = match ureq::get(&url).set("X-User-Id", user_id).call() {
+        Ok(resp) => resp,
+        Err(ureq::Error::Status(404, _)) => return Ok(None),
+        Err(ureq::Error::Status(_, resp)) => {
+            let body: serde_json::Value = match resp.into_json() {
+                Ok(body) => body,
+                Err(_) => return Err("api error".to_string()),
+            };
+            let message = body
+                .get("error")
+                .and_then(|value| value.as_str())
+                .unwrap_or("api error");
+            return Err(message.to_string());
+        }
+        Err(err) => return Err(format!("{err}")),
+    };
+
+    let body: serde_json::Value = match resp.into_json() {
+        Ok(body) => body,
+        Err(err) => return Err(format!("{err}")),
+    };
+
+    Ok(body
+        .get("file")
+        .and_then(|value| value.get("content"))
+        .and_then(|value| value.as_str())
+        .map(|value| value.to_string()))
+}
+
+fn parse_rules_markdown(markdown: &str) -> Vec<String> {
+    let mut rules = Vec::new();
+    let mut in_code_block = false;
+
+    for line in markdown.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("```") {
+            in_code_block = !in_code_block;
+            continue;
+        }
+        if in_code_block {
+            continue;
+        }
+
+        let bullet = trimmed
+            .strip_prefix("- ")
+            .or_else(|| trimmed.strip_prefix("* "));
+        let Some(rule) = bullet.map(str::trim) else {
+            continue;
+        };
+        if !rule.is_empty() {
+            rules.push(rule.to_string());
+        }
+    }
+
+    rules
+}
+
+fn fetch_generated_rules(user_id: &str) -> Result<Option<Vec<String>>, String> {
+    fetch_markdown_file(user_id, GENERATED_RULES_FILE_ID)
+        .map(|content| content.map(|markdown| parse_rules_markdown(&markdown)))
 }
 
 fn selected_rules_local_path(cwd: &Path) -> PathBuf {
@@ -2786,6 +2855,8 @@ fn main() -> io::Result<()> {
 mod tests {
     use super::*;
     use std::fs;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
     #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
@@ -2810,6 +2881,28 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("{prefix}-{}-{nanos}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    fn serve_single_http_response(status: &str, body: &str) -> (String, std::thread::JoinHandle<String>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let response_status = status.to_string();
+        let response_body = body.to_string();
+
+        let handle = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buffer = [0_u8; 4096];
+            let bytes_read = stream.read(&mut buffer).unwrap();
+            let request = String::from_utf8_lossy(&buffer[..bytes_read]).to_string();
+            let response = format!(
+                "HTTP/1.1 {response_status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response_body}",
+                response_body.as_bytes().len()
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+            request
+        });
+
+        (format!("http://{address}/upload"), handle)
     }
 
     #[test]
@@ -2864,6 +2957,94 @@ mod tests {
         assert_eq!(payload["query_source"], "bootstrap");
         assert_eq!(payload["beam_width"], 2);
         assert_eq!(payload["beam_max_depth"], 8);
+    }
+
+    #[test]
+    fn parse_rules_markdown_keeps_all_rule_bullets() {
+        let markdown = r#"# Rules
+
+## Priority of Instruction Sources (Hook-First)
+### When to apply hook-first behavior
+- Before answering any request that may lead to planning, code generation, refactoring, architecture, or tests, first use the hook-injected context tagged `[Coding Rules from Rippletide]` when it is present.
+- Treat plan-style requests as including (at minimum):
+- /plan ...
+- Requests that ask for a step-by-step implementation plan
+
+## Coding and Implementation
+### Code on request
+- When the user asks to code something, produce the requested code artifact directly.
+- Keep the code small and practical.
+```md
+- ignore code block bullets
+```
+"#;
+
+        let rules = parse_rules_markdown(markdown);
+        assert_eq!(
+            rules,
+            vec![
+                "Before answering any request that may lead to planning, code generation, refactoring, architecture, or tests, first use the hook-injected context tagged `[Coding Rules from Rippletide]` when it is present.".to_string(),
+                "Treat plan-style requests as including (at minimum):".to_string(),
+                "/plan ...".to_string(),
+                "Requests that ask for a step-by-step implementation plan".to_string(),
+                "When the user asks to code something, produce the requested code artifact directly.".to_string(),
+                "Keep the code small and practical.".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn fetch_generated_rules_reads_rules_file_content() {
+        let _guard = env_lock();
+        let (base_url, server) = serve_single_http_response(
+            "200 OK",
+            r##"{"file":{"id":"Rules.md","content":"# Rules\n- Keep handlers small\n- Write focused tests\n"}}"##,
+        );
+        let old_upload_url = std::env::var_os("RIPPLETIDE_CODING_AGENT_UPLOAD_URL");
+        std::env::set_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL", &base_url);
+
+        let rules = fetch_generated_rules("user-123").unwrap().unwrap();
+        assert_eq!(
+            rules,
+            vec![
+                "Keep handlers small".to_string(),
+                "Write focused tests".to_string(),
+            ]
+        );
+
+        let request = server.join().unwrap();
+        assert!(request.starts_with("GET /files/Rules.md HTTP/1.1"));
+        assert!(request.contains("X-User-Id: user-123"));
+
+        match old_upload_url {
+            Some(value) => std::env::set_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL", value),
+            None => std::env::remove_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL"),
+        }
+    }
+
+    #[test]
+    fn build_rule_candidates_from_full_rules_markdown_keeps_later_sections() {
+        let generated_rules = parse_rules_markdown(
+            r#"# Rules
+
+## Hook-First
+### Required behavior for code-generation responses
+- Read the hook-injected rules first.
+
+## Models, Providers, and Configuration
+### Cloud limits investigation
+- When asked about quotas/limits, investigate and report what is and is not exposed by the provider tooling.
+- Summarize findings.
+"#,
+        );
+
+        let candidates = build_rule_candidates(&generated_rules, &[], &[]);
+        assert_eq!(candidates.len(), 3);
+        assert_eq!(
+            candidates[1].rule,
+            "When asked about quotas/limits, investigate and report what is and is not exposed by the provider tooling."
+        );
+        assert_eq!(candidates[2].rule, "Summarize findings.");
     }
 
     #[test]
