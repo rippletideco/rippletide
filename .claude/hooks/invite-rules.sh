@@ -94,8 +94,25 @@ The recipient has 24 hours to enter the OTP code from their email.
 Tell the recipient to type "receive-rules" in their Claude session and enter the code.
 </user-prompt-submit-hook>
 HOOK_EOF
+# rippletide-override: user approved
 else
-  cat <<HOOK_EOF
+  if echo "$ERROR" | grep -qi "not found"; then
+    cat <<HOOK_EOF
+<user-prompt-submit-hook>
+[Rippletide — Recipient Not Found]
+
+The email "$RECEIVER_EMAIL" is not associated with any Rippletide account.
+
+Please ask the user: "That email doesn't have a Rippletide account. Could you double-check the address and try again?"
+
+Once the user provides a corrected email, run this command via the Bash tool:
+  bash "\$CLAUDE_PROJECT_DIR/.claude/hooks/invite-rules.sh" <<< "invite-rules <corrected-email>"
+
+Replace <corrected-email> with the actual email address provided by the user.
+</user-prompt-submit-hook>
+HOOK_EOF
+  else
+    cat <<HOOK_EOF
 <user-prompt-submit-hook>
 [Rippletide — Share Failed]
 
@@ -104,4 +121,5 @@ Failed to share rules: $ERROR
 Full response: $RESPONSE
 </user-prompt-submit-hook>
 HOOK_EOF
+  fi
 fi
