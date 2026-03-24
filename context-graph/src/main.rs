@@ -2710,53 +2710,38 @@ fn main() -> io::Result<()> {
     println!();
 
     // rippletide-override: user approved
-    // Phase 6a — Fetch inferred rules from graph (probe for graph existence)
-    let sp = ui::start_spinner("Fetching inferred rules from graph…");
-    let mut had_graph = true;
-    let mut inferred_rules: Vec<String> = match config
-        .user_id
-        .as_deref()
-        .map(|uid| fetch_rules(uid, "Return all coding rules", QuerySource::Bootstrap))
+    // Phase 6a — Load the full generated Rules.md document for setup selection
+    let sp = ui::start_spinner("Loading generated rules…");
+    let mut has_generated_rules = true;
+    let mut generated_rules: Vec<String> = match config.user_id.as_deref().map(fetch_generated_rules)
     {
-        Some(FetchRulesResult::Rules(text)) => text
-            .lines()
-            .map(|l| l.trim().trim_start_matches('-').trim().to_string())
-            .filter(|l| !l.is_empty())
-            .collect(),
-        Some(FetchRulesResult::NoGraph) => {
-            had_graph = false;
+        Some(Ok(Some(rules))) => rules,
+        Some(Ok(None)) => {
+            has_generated_rules = false;
             Vec::new()
         }
-        Some(FetchRulesResult::Error(_)) | None => Vec::new(),
+        Some(Err(_)) | None => Vec::new(),
     };
-    ui::finish_spinner(&sp, "Inferred rules loaded");
+    ui::finish_spinner(&sp, "Generated rules loaded");
 
-    // Phase 6b — Upload sessions to build graph if none exists, then re-fetch inferred rules
-    if !had_graph || !is_logged_in {
+    // Phase 6b — Upload sessions to build graph if no generated rules exist, then re-fetch
+    if !has_generated_rules || !is_logged_in {
         if let Some(ref uid) = config.user_id {
             println!();
-            if !had_graph {
+            if !has_generated_rules {
                 ui::print_sub("No context graph found — uploading sessions to build one...");
             }
             upload_sessions(uid, &cwd)?;
         }
     }
 
-    if !had_graph {
-        let sp = ui::start_spinner("Loading inferred rules from new graph…");
-        inferred_rules = match config
-            .user_id
-            .as_deref()
-            .map(|uid| fetch_rules(uid, "Return all coding rules", QuerySource::Bootstrap))
-        {
-            Some(FetchRulesResult::Rules(text)) => text
-                .lines()
-                .map(|l| l.trim().trim_start_matches('-').trim().to_string())
-                .filter(|l| !l.is_empty())
-                .collect(),
-            _ => inferred_rules,
+    if !has_generated_rules {
+        let sp = ui::start_spinner("Loading generated rules from new graph…");
+        generated_rules = match config.user_id.as_deref().map(fetch_generated_rules) {
+            Some(Ok(Some(rules))) => rules,
+            _ => generated_rules,
         };
-        ui::finish_spinner(&sp, "Rules loaded from graph");
+        ui::finish_spinner(&sp, "Generated rules loaded");
     }
 
     {
@@ -2771,7 +2756,7 @@ fn main() -> io::Result<()> {
     println!();
 
     let candidate_rules = build_rule_candidates(
-        &inferred_rules,
+        &generated_rules,
         &generic_rules,
         &DEFAULT_USER_RULES
             .iter()
@@ -2779,13 +2764,13 @@ fn main() -> io::Result<()> {
             .collect::<Vec<_>>(),
     );
 
-    let current_rules = if inferred_rules.is_empty() {
+    let current_rules = if generated_rules.is_empty() {
         DEFAULT_USER_RULES
             .iter()
             .map(|s| s.to_string())
             .collect::<Vec<_>>()
     } else {
-        inferred_rules.clone()
+        generated_rules.clone()
     };
 
     let _selected_rules = if candidate_rules.is_empty() {
