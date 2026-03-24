@@ -58,7 +58,11 @@ pub fn styled_prompt(label: &str) -> io::Result<String> {
     Ok(input.trim().to_string())
 }
 
-pub fn prompt_multi_select(title: &str, subtitle: &[&str], items: &[String]) -> io::Result<Vec<usize>> {
+pub fn prompt_multi_select(
+    title: &str,
+    subtitle: &[&str],
+    items: &[String],
+) -> io::Result<Vec<usize>> {
     let term = Term::stdout();
     let mut cursor: usize = 0;
     let mut selected = vec![false; items.len()];
@@ -78,7 +82,11 @@ pub fn prompt_multi_select(title: &str, subtitle: &[&str], items: &[String]) -> 
         for (idx, item) in items.iter().enumerate() {
             let is_cursor = idx == cursor;
             let checkbox = if selected[idx] { "[x]" } else { "[ ]" };
-            let prefix = if is_cursor { ">".cyan().to_string() } else { " ".to_string() };
+            let prefix = if is_cursor {
+                ">".cyan().to_string()
+            } else {
+                " ".to_string()
+            };
             let line = format!("  {} {} {}", prefix, checkbox, item);
             if is_cursor {
                 term.write_line(&format!("{}", line.black().on_white()))?;
@@ -142,98 +150,4 @@ pub fn start_spinner(msg: &str) -> ProgressBar {
 pub fn finish_spinner(pb: &ProgressBar, msg: &str) {
     pb.finish_and_clear();
     print_progress(msg);
-}
-
-#[derive(Clone, Debug)]
-pub enum FixAction {
-    Fix,
-    Skip,
-    All,
-    None,
-}
-
-pub fn prompt_fix_action(file: &str, violations: &[(String, String)]) -> io::Result<FixAction> {
-    println!();
-    println!("  {} {}", "→".cyan(), file.white().bold());
-    if !violations.is_empty() {
-        for (rule, explanation) in violations {
-            println!("    {}", format!("• {}", rule).red());
-            if !explanation.is_empty() {
-                println!("      {}", explanation.dimmed());
-            }
-        }
-    }
-    print!("  {} ", "[F]ix / [S]kip / [A]ll / [N]one:".yellow());
-    io::stdout().flush()?;
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-    match input.trim().to_lowercase().as_str() {
-        "f" | "fix" => Ok(FixAction::Fix),
-        "a" | "all" => Ok(FixAction::All),
-        "n" | "none" => Ok(FixAction::None),
-        _ => Ok(FixAction::Skip),
-    }
-}
-
-// rippletide-override: user approved
-pub fn print_violations(file: &str, violations: &[(String, String)]) {
-    println!();
-    println!("  {} {}", "→".cyan(), file.white().bold());
-    for (rule, explanation) in violations {
-        println!("    {}", format!("• {}", rule).red());
-        if !explanation.is_empty() {
-            println!("      {}", explanation.dimmed());
-        }
-    }
-}
-
-pub fn prompt_apply_action(file: &str) -> io::Result<FixAction> {
-    print!("  {} Apply fix to {}? {} ",
-        "?".cyan(),
-        file.white().bold(),
-        "[A]pply / [S]kip / a[L]l / [N]one:".yellow());
-    io::stdout().flush()?;
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-    match input.trim().to_lowercase().as_str() {
-        "a" | "apply" => Ok(FixAction::Fix),
-        "l" | "all" => Ok(FixAction::All),
-        "n" | "none" => Ok(FixAction::None),
-        _ => Ok(FixAction::Skip),
-    }
-}
-
-pub fn print_diff(file_path: &str, original: &str, fixed: &str) {
-    use similar::{ChangeTag, TextDiff};
-
-    let diff = TextDiff::from_lines(original, fixed);
-
-    if diff.ratio() == 1.0 {
-        print_sub("  (no changes)");
-        return;
-    }
-
-    println!();
-    println!("    {}", format!("--- a/{}", file_path).red());
-    println!("    {}", format!("+++ b/{}", file_path).green());
-
-    for hunk in diff.unified_diff().iter_hunks() {
-        println!("    {}", format!("{}", hunk.header()).cyan());
-        for change in hunk.iter_changes() {
-            let line = change.to_string_lossy();
-            let line_trimmed = line.trim_end_matches('\n');
-            match change.tag() {
-                ChangeTag::Delete => {
-                    println!("    {}", format!("-{}", line_trimmed).red());
-                }
-                ChangeTag::Insert => {
-                    println!("    {}", format!("+{}", line_trimmed).green());
-                }
-                ChangeTag::Equal => {
-                    println!("    {}", format!(" {}", line_trimmed).dimmed());
-                }
-            }
-        }
-    }
-    println!();
 }
