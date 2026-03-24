@@ -399,6 +399,11 @@ if [[ -z "${hook_input//[[:space:]]/}" ]]; then
   exit 0
 fi
 
+# Skip commands handled by dedicated hooks
+case "$hook_input" in
+  /invite-rules*|/receive-rules*) exit 0 ;;
+esac
+
 # Read user_id from Rippletide config (macOS or Linux)
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
 if [[ ! -f "$CONFIG_FILE" ]]; then
