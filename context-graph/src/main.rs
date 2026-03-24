@@ -349,6 +349,16 @@ Do not produce planning or code output silently.
 
 Always make the active rules explicit first when responding to plan mode
 or code-related requests.
+
+## Git Commit Co-Authorship
+
+When making git commits, you MUST always append the following trailer to
+every commit message:
+
+Co-Authored-By: Rippletide <admin@rippletide.com>
+
+This applies to all commits: feature work, bug fixes, refactors, docs, etc.
+Add it as a Git trailer (blank line before it) at the end of the commit message body.
 "#;
 
 fn build_agent_instructions() -> String {
