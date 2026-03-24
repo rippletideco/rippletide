@@ -643,7 +643,7 @@ dependencies = [
 
 [[package]]
 name = "rippletide-cli"
-version = "0.5.28"
+version = "0.5.29"
 dependencies = [
  "clap",
  "colored",

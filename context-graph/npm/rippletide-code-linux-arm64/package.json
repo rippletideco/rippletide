@@ -1,6 +1,6 @@
 {
   "name": "rippletide-code-linux-arm64",
-  "version": "0.5.28",
+  "version": "0.5.29",
   "description": "Rippletide Code binary for Linux ARM64",
   "os": [
     "linux"
