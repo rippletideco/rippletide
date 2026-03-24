@@ -4,6 +4,7 @@ use std::thread;
 use std::time::Duration;
 
 use colored::Colorize;
+use console::{Key, Term};
 use indicatif::{ProgressBar, ProgressStyle};
 
 const LINE_DELAY: Duration = Duration::from_millis(100);
@@ -55,6 +56,74 @@ pub fn styled_prompt(label: &str) -> io::Result<String> {
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
     Ok(input.trim().to_string())
+}
+
+pub fn prompt_multi_select(title: &str, subtitle: &[&str], items: &[String]) -> io::Result<Vec<usize>> {
+    let term = Term::stdout();
+    let mut cursor: usize = 0;
+    let mut selected = vec![false; items.len()];
+
+    term.write_line("")?;
+    term.write_line(&format!("  {}", title.green().bold()))?;
+    term.write_line("")?;
+    for line in subtitle {
+        term.write_line(&format!("    {}", line.dimmed()))?;
+    }
+    term.write_line("")?;
+
+    let help_line = "  ↑/↓ move • space toggle • enter confirm";
+    let total_lines = items.len() + 2;
+
+    loop {
+        for (idx, item) in items.iter().enumerate() {
+            let is_cursor = idx == cursor;
+            let checkbox = if selected[idx] { "[x]" } else { "[ ]" };
+            let prefix = if is_cursor { ">".cyan().to_string() } else { " ".to_string() };
+            let line = format!("  {} {} {}", prefix, checkbox, item);
+            if is_cursor {
+                term.write_line(&format!("{}", line.black().on_white()))?;
+            } else {
+                term.write_line(&line)?;
+            }
+        }
+        term.write_line("")?;
+        term.write_line(help_line)?;
+
+        match term.read_key()? {
+            Key::ArrowUp => {
+                cursor = cursor.saturating_sub(1);
+            }
+            Key::ArrowDown => {
+                if cursor + 1 < items.len() {
+                    cursor += 1;
+                }
+            }
+            Key::Char(' ') => {
+                if !items.is_empty() {
+                    selected[cursor] = !selected[cursor];
+                }
+            }
+            Key::Enter => {
+                term.clear_last_lines(total_lines)?;
+                break;
+            }
+            Key::Char('a') | Key::Char('A') => {
+                let all_selected = selected.iter().all(|v| *v);
+                for value in &mut selected {
+                    *value = !all_selected;
+                }
+            }
+            _ => {}
+        }
+
+        term.clear_last_lines(total_lines)?;
+    }
+
+    Ok(selected
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, keep)| if *keep { Some(idx) } else { None })
+        .collect())
 }
 
 pub fn start_spinner(msg: &str) -> ProgressBar {

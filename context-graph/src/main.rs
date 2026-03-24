@@ -1698,6 +1698,32 @@ fn normalize_rule(rule: &str) -> String {
         .to_lowercase()
 }
 
+fn is_rule_candidate_displayable(rule: &str) -> bool {
+    let trimmed = rule.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+    if trimmed.starts_with('#') {
+        return false;
+    }
+    let lower = trimmed.to_lowercase();
+    let structural = [
+        "code quality standards",
+        "code hygiene",
+        "design & structure",
+        "single responsibility",
+        "size & focus",
+        "avoid duplication",
+        "naming & public interfaces",
+        "dependencies & patterns",
+        "robustness",
+    ];
+    if structural.iter().any(|s| lower == *s) {
+        return false;
+    }
+    true
+}
+
 fn build_rule_candidates(
     inferred_rules: &[String],
     generic_rules: &[String],
@@ -1708,6 +1734,9 @@ fn build_rule_candidates(
 
     for rule in inferred_rules {
         let normalized = normalize_rule(rule);
+        if !is_rule_candidate_displayable(rule) {
+            continue;
+        }
         if !normalized.is_empty() && seen.insert(normalized) {
             out.push(RuleCandidate {
                 rule: rule.trim().to_string(),
@@ -1718,6 +1747,9 @@ fn build_rule_candidates(
 
     for rule in generic_rules {
         let normalized = normalize_rule(rule);
+        if !is_rule_candidate_displayable(rule) {
+            continue;
+        }
         if !normalized.is_empty() && seen.insert(normalized) {
             out.push(RuleCandidate {
                 rule: rule.trim().to_string(),
@@ -1729,6 +1761,9 @@ fn build_rule_candidates(
     if out.is_empty() {
         for rule in fallback_rules {
             let normalized = normalize_rule(rule);
+            if !is_rule_candidate_displayable(rule) {
+                continue;
+            }
             if !normalized.is_empty() && seen.insert(normalized) {
                 out.push(RuleCandidate {
                     rule: rule.trim().to_string(),
@@ -1741,101 +1776,36 @@ fn build_rule_candidates(
     out
 }
 
-fn parse_rule_selection(input: &str, max_index: usize) -> Result<Vec<usize>, String> {
-    let trimmed = input.trim();
-    if trimmed.is_empty() {
-        return Ok(Vec::new());
-    }
-    if trimmed.eq_ignore_ascii_case("a") || trimmed.eq_ignore_ascii_case("all") {
-        return Ok((1..=max_index).collect());
-    }
-
-    let mut selected = HashSet::new();
-    for token in trimmed.split(|c: char| c == ',' || c.is_whitespace()) {
-        let token = token.trim();
-        if token.is_empty() {
-            continue;
-        }
-        if let Some((start, end)) = token.split_once('-') {
-            let start_num = start
-                .trim()
-                .parse::<usize>()
-                .map_err(|_| format!("Invalid selection token: {token}"))?;
-            let end_num = end
-                .trim()
-                .parse::<usize>()
-                .map_err(|_| format!("Invalid selection token: {token}"))?;
-            if start_num == 0
-                || end_num == 0
-                || start_num > max_index
-                || end_num > max_index
-                || start_num > end_num
-            {
-                return Err(format!("Selection out of range: {token}"));
-            }
-            for idx in start_num..=end_num {
-                selected.insert(idx);
-            }
-        } else {
-            let idx = token
-                .parse::<usize>()
-                .map_err(|_| format!("Invalid selection token: {token}"))?;
-            if idx == 0 || idx > max_index {
-                return Err(format!("Selection out of range: {token}"));
-            }
-            selected.insert(idx);
-        }
-    }
-
-    let mut values: Vec<usize> = selected.into_iter().collect();
-    values.sort_unstable();
-    Ok(values)
-}
-
-fn prompt_rule_selection(
-    candidates: &[RuleCandidate],
-    current_rules: &[String],
-) -> io::Result<Vec<String>> {
+fn prompt_rule_selection(candidates: &[RuleCandidate], current_rules: &[String]) -> io::Result<Vec<String>> {
     let review = ui::styled_prompt("Would you like to review your Rippletide rules? (y/n)")?;
     if !matches!(review.trim().to_lowercase().as_str(), "y" | "yes") {
         return Ok(current_rules.to_vec());
     }
 
-    println!();
-    ui::print_header("Pick the rules you'd like your coding agent to follow");
-    ui::print_sub(
-        "Select the rules to keep. These become the final Rippletide rule set for this repo.",
-    );
-    ui::print_sub("Enter numbers separated by spaces, commas, or ranges like 1-3. Type 'a' to keep all shown rules.");
-    println!();
+    let items: Vec<String> = candidates
+        .iter()
+        .map(|candidate| {
+            format!(
+                "{} {}",
+                candidate.rule,
+                format!("({})", candidate.source.label()).to_lowercase()
+            )
+        })
+        .collect();
+    let indices = ui::prompt_multi_select(
+        "Pick the rules you'd like your coding agent to follow",
+        &[
+            "Select the rules to keep. These become the final Rippletide rule set for this repo.",
+            "Use ↑/↓ to move, space to toggle, enter to confirm, and 'a' to toggle all.",
+        ],
+        &items,
+    )?;
 
-    for (index, candidate) in candidates.iter().enumerate() {
-        println!(
-            "  [ ] {:>2}. {} {}",
-            index + 1,
-            candidate.rule,
-            format!("({})", candidate.source.label()).to_lowercase()
-        );
-    }
-    println!();
-    println!("  [ ] Type your own rule after the selection");
-    println!();
-
-    let selected_rules = loop {
-        let input = ui::styled_prompt("Select rules to keep")?;
-        match parse_rule_selection(&input, candidates.len()) {
-            Ok(indices) => {
-                let selected: Vec<String> = indices
-                    .into_iter()
-                    .filter_map(|idx| candidates.get(idx - 1))
-                    .map(|candidate| candidate.rule.clone())
-                    .collect();
-                println!();
-                break selected;
-            }
-            Err(err) => ui::print_error(&err),
-        }
-    };
+    let selected_rules: Vec<String> = indices
+        .into_iter()
+        .filter_map(|idx| candidates.get(idx))
+        .map(|candidate| candidate.rule.clone())
+        .collect();
 
     let mut final_rules = selected_rules;
     loop {
@@ -3269,9 +3239,17 @@ mod tests {
     }
 
     #[test]
-    fn parse_rule_selection_supports_ranges_and_commas() {
-        let selected = parse_rule_selection("1,3-5 7", 8).unwrap();
-        assert_eq!(selected, vec![1, 3, 4, 5, 7]);
+    fn filters_out_markdown_headings_from_rule_candidates() {
+        let inferred = vec![
+            "## Code Quality Standards".to_string(),
+            "Prefer small, focused functions.".to_string(),
+        ];
+        let generic = vec!["### Design & structure".to_string()];
+        let fallback = vec![];
+
+        let candidates = build_rule_candidates(&inferred, &generic, &fallback);
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].rule, "Prefer small, focused functions.");
     }
 
     #[test]
