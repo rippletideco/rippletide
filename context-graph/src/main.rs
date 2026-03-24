@@ -430,7 +430,8 @@ fi
 # Query coding rules for the current user request
 PAYLOAD=$(jq -Rn \
   --arg query "$hook_input" \
-  '{query: $query, beam_width: 2, beam_max_depth: 8}' 2>/dev/null)
+  --arg query_source "user_prompt" \
+  '{query: $query, query_source: $query_source, beam_width: 2, beam_max_depth: 8}' 2>/dev/null)
 if [[ -z "$PAYLOAD" ]]; then
   exit 0
 fi
@@ -1913,6 +1914,21 @@ enum FetchRulesResult {
     Error(String),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum QuerySource {
+    UserPrompt,
+    Bootstrap,
+}
+
+impl QuerySource {
+    fn as_str(self) -> &'static str {
+        match self {
+            QuerySource::UserPrompt => "user_prompt",
+            QuerySource::Bootstrap => "bootstrap",
+        }
+    }
+}
+
 fn upload_url() -> String {
     std::env::var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL").unwrap_or_else(|_| UPLOAD_URL.to_string())
 }
@@ -1927,13 +1943,18 @@ fn query_rules_url() -> String {
     })
 }
 
-fn fetch_rules(user_id: &str, query: &str) -> FetchRulesResult {
-    let url = query_rules_url();
-    let payload = serde_json::json!({
+fn fetch_rules_payload(query: &str, query_source: QuerySource) -> serde_json::Value {
+    serde_json::json!({
         "query": query,
+        "query_source": query_source.as_str(),
         "beam_width": 2,
         "beam_max_depth": 8,
-    });
+    })
+}
+
+fn fetch_rules(user_id: &str, query: &str, query_source: QuerySource) -> FetchRulesResult {
+    let url = query_rules_url();
+    let payload = fetch_rules_payload(query, query_source);
     let resp = match ureq::post(&url)
         .set("Content-Type", "application/json")
         .set("X-User-Id", user_id)
@@ -2363,7 +2384,7 @@ impl planner::RulesProvider for LiveRulesProvider {
             return planner::RulesFetchResult::NoRules;
         };
 
-        match fetch_rules(user_id, query) {
+        match fetch_rules(user_id, query, QuerySource::UserPrompt) {
             FetchRulesResult::Rules(text) => {
                 let rules: Vec<String> = text
                     .lines()
@@ -2626,7 +2647,7 @@ fn main() -> io::Result<()> {
     let mut inferred_rules: Vec<String> = match config
         .user_id
         .as_deref()
-        .map(|uid| fetch_rules(uid, "Return all coding rules"))
+        .map(|uid| fetch_rules(uid, "Return all coding rules", QuerySource::Bootstrap))
     {
         Some(FetchRulesResult::Rules(text)) => text
             .lines()
@@ -2657,7 +2678,7 @@ fn main() -> io::Result<()> {
         inferred_rules = match config
             .user_id
             .as_deref()
-            .map(|uid| fetch_rules(uid, "Return all coding rules"))
+            .map(|uid| fetch_rules(uid, "Return all coding rules", QuerySource::Bootstrap))
         {
             Some(FetchRulesResult::Rules(text)) => text
                 .lines()
@@ -2834,6 +2855,21 @@ mod tests {
         assert!(markdown.contains("# Selected Rules"));
         assert!(markdown.contains("- Keep handlers small"));
         assert!(markdown.contains("- Write focused tests"));
+    }
+
+    #[test]
+    fn fetch_rules_payload_includes_query_source() {
+        let payload = fetch_rules_payload("Return all coding rules", QuerySource::Bootstrap);
+        assert_eq!(payload["query"], "Return all coding rules");
+        assert_eq!(payload["query_source"], "bootstrap");
+        assert_eq!(payload["beam_width"], 2);
+        assert_eq!(payload["beam_max_depth"], 8);
+    }
+
+    #[test]
+    fn hook_script_tags_prompt_queries_as_user_prompts() {
+        assert!(HOOK_SCRIPT.contains("query_source"));
+        assert!(HOOK_SCRIPT.contains("\"user_prompt\""));
     }
 
     #[test]
