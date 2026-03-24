@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 use std::fs;
 use std::io;
+use std::io::BufRead;
+use std::io::IsTerminal;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::thread;
@@ -376,11 +378,7 @@ fn ensure_agent_files() -> io::Result<bool> {
         if path.exists() {
             let existing = fs::read_to_string(&path)?;
             if !existing.contains("# Hook-First Planning Instructions") {
-                let merged = format!(
-                    "{}\n---\n\n{}",
-                    instructions.trim_end(),
-                    existing
-                );
+                let merged = format!("{}\n---\n\n{}", instructions.trim_end(), existing);
                 fs::write(&path, merged)?;
                 changed = true;
             }
@@ -1074,7 +1072,8 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
             config.email = Some(resp.user.email);
             let dashboard_url = format!(
                 "https://app.rippletide.com/code?token={}&user_id={}",
-                resp.token, config.user_id.as_deref().unwrap_or("")
+                resp.token,
+                config.user_id.as_deref().unwrap_or("")
             );
             config.session_token = Some(resp.token);
             save_config(config)?;
@@ -1113,7 +1112,8 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
                     config.email = Some(resp.user.email);
                     let dashboard_url = format!(
                         "https://app.rippletide.com/code?token={}&user_id={}",
-                        resp.token, config.user_id.as_deref().unwrap_or("")
+                        resp.token,
+                        config.user_id.as_deref().unwrap_or("")
                     );
                     config.session_token = Some(resp.token);
                     save_config(config)?;
@@ -1171,35 +1171,113 @@ fn claude_projects_base() -> Option<PathBuf> {
     }
 }
 
+fn encode_claude_project_name(path: &Path) -> Option<String> {
+    let raw = path.to_str()?;
+    let mut encoded = String::with_capacity(raw.len());
+    let mut last_was_dash = false;
+
+    for ch in raw.chars() {
+        if ch == '/' || ch.is_whitespace() {
+            if !last_was_dash {
+                encoded.push('-');
+                last_was_dash = true;
+            }
+        } else {
+            encoded.push(ch);
+            last_was_dash = false;
+        }
+    }
+
+    Some(encoded)
+}
+
+fn legacy_claude_project_name(path: &Path) -> Option<String> {
+    Some(path.to_str()?.replace('/', "-"))
+}
+
+fn claude_project_recorded_cwd(project_dir: &Path) -> Option<String> {
+    let mut files = collect_jsonl_files(project_dir).ok()?;
+    files.sort();
+
+    for file in files {
+        let handle = fs::File::open(file).ok()?;
+        let reader = io::BufReader::new(handle);
+        for line in reader.lines().map_while(Result::ok) {
+            if !line.contains("\"cwd\"") {
+                continue;
+            }
+            let payload: serde_json::Value = match serde_json::from_str(&line) {
+                Ok(value) => value,
+                Err(_) => continue,
+            };
+            if let Some(cwd) = payload.get("cwd").and_then(|value| value.as_str()) {
+                return Some(cwd.to_string());
+            }
+        }
+    }
+
+    None
+}
+
+fn claude_project_dir_for_cwd(base: &Path, cwd: &Path) -> Option<PathBuf> {
+    let mut candidates = Vec::new();
+    if let Some(name) = encode_claude_project_name(cwd) {
+        candidates.push(name);
+    }
+    if let Some(name) = legacy_claude_project_name(cwd) {
+        if !candidates.contains(&name) {
+            candidates.push(name);
+        }
+    }
+
+    for candidate in candidates {
+        let dir = base.join(candidate);
+        if dir.exists() {
+            return Some(dir);
+        }
+    }
+
+    for entry in fs::read_dir(base).ok()? {
+        let entry = entry.ok()?;
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        if claude_project_recorded_cwd(&path).as_deref().map(Path::new) == Some(cwd) {
+            return Some(path);
+        }
+    }
+
+    None
+}
+
 fn claude_project_dir() -> Option<PathBuf> {
     let base = claude_projects_base()?;
     let cwd = std::env::current_dir().ok()?;
-    let project_name = cwd.to_str()?.replace('/', "-");
-    let dir = base.join(&project_name);
-    if dir.exists() {
-        Some(dir)
-    } else {
-        None
-    }
+    claude_project_dir_for_cwd(&base, &cwd)
 }
 
-fn list_claude_projects() -> io::Result<Vec<(String, PathBuf)>> {
-    let Some(base) = claude_projects_base() else {
-        return Ok(Vec::new());
-    };
+fn list_claude_projects_from_base(base: &Path) -> io::Result<Vec<(String, PathBuf)>> {
     let mut projects = Vec::new();
-    for entry in fs::read_dir(&base)? {
+    for entry in fs::read_dir(base)? {
         let entry = entry?;
         let path = entry.path();
         if !path.is_dir() {
             continue;
         }
         let dir_name = entry.file_name().to_string_lossy().to_string();
-        let display_name = dir_name.replacen('-', "/", dir_name.matches('-').count());
+        let display_name = claude_project_recorded_cwd(&path).unwrap_or(dir_name);
         projects.push((display_name, path));
     }
     projects.sort_by(|a, b| a.0.cmp(&b.0));
     Ok(projects)
+}
+
+fn list_claude_projects() -> io::Result<Vec<(String, PathBuf)>> {
+    let Some(base) = claude_projects_base() else {
+        return Ok(Vec::new());
+    };
+    list_claude_projects_from_base(&base)
 }
 
 fn select_claude_project() -> io::Result<Option<PathBuf>> {
@@ -1257,7 +1335,11 @@ fn create_sessions_zip(files: &[PathBuf], base_dir: &std::path::Path) -> io::Res
     Ok(cursor.into_inner())
 }
 
-fn upload_zip(zip_data: &[u8], user_id: &str, claude_md: Option<&str>) -> Result<serde_json::Value, String> {
+fn upload_zip(
+    zip_data: &[u8],
+    user_id: &str,
+    claude_md: Option<&str>,
+) -> Result<serde_json::Value, String> {
     let boundary = "----RippletideBoundary9876543210";
     let mut body: Vec<u8> = Vec::new();
     // Part 1: session zip
@@ -1464,9 +1546,7 @@ fn run_benchmark_phase(cwd: &std::path::Path, stacks: &[scan::TechStack]) -> Vec
         stack_labels.join(", ")
     ));
 
-    let missing = benchmark::run_benchmark(cwd, stacks, &|path, prompt| {
-        call_claude(path, prompt)
-    });
+    let missing = benchmark::run_benchmark(cwd, stacks, &|path, prompt| call_claude(path, prompt));
 
     ui::finish_spinner(&sp, "Generic rule candidates ready");
     missing.into_iter().map(|rule| rule.rule).collect()
@@ -1543,9 +1623,8 @@ fn query_rules_url() -> String {
 }
 
 fn fix_url() -> String {
-    std::env::var("RIPPLETIDE_FIX_URL").unwrap_or_else(|_| {
-        format!("{}/fix", upload_url().trim_end_matches("/upload"))
-    })
+    std::env::var("RIPPLETIDE_FIX_URL")
+        .unwrap_or_else(|_| format!("{}/fix", upload_url().trim_end_matches("/upload")))
 }
 
 fn fetch_rules(user_id: &str, query: &str) -> FetchRulesResult {
@@ -1619,7 +1698,11 @@ fn normalize_rule(rule: &str) -> String {
         .to_lowercase()
 }
 
-fn build_rule_candidates(inferred_rules: &[String], generic_rules: &[String], fallback_rules: &[String]) -> Vec<RuleCandidate> {
+fn build_rule_candidates(
+    inferred_rules: &[String],
+    generic_rules: &[String],
+    fallback_rules: &[String],
+) -> Vec<RuleCandidate> {
     let mut seen = HashSet::new();
     let mut out = Vec::new();
 
@@ -1674,16 +1757,29 @@ fn parse_rule_selection(input: &str, max_index: usize) -> Result<Vec<usize>, Str
             continue;
         }
         if let Some((start, end)) = token.split_once('-') {
-            let start_num = start.trim().parse::<usize>().map_err(|_| format!("Invalid selection token: {token}"))?;
-            let end_num = end.trim().parse::<usize>().map_err(|_| format!("Invalid selection token: {token}"))?;
-            if start_num == 0 || end_num == 0 || start_num > max_index || end_num > max_index || start_num > end_num {
+            let start_num = start
+                .trim()
+                .parse::<usize>()
+                .map_err(|_| format!("Invalid selection token: {token}"))?;
+            let end_num = end
+                .trim()
+                .parse::<usize>()
+                .map_err(|_| format!("Invalid selection token: {token}"))?;
+            if start_num == 0
+                || end_num == 0
+                || start_num > max_index
+                || end_num > max_index
+                || start_num > end_num
+            {
                 return Err(format!("Selection out of range: {token}"));
             }
             for idx in start_num..=end_num {
                 selected.insert(idx);
             }
         } else {
-            let idx = token.parse::<usize>().map_err(|_| format!("Invalid selection token: {token}"))?;
+            let idx = token
+                .parse::<usize>()
+                .map_err(|_| format!("Invalid selection token: {token}"))?;
             if idx == 0 || idx > max_index {
                 return Err(format!("Selection out of range: {token}"));
             }
@@ -1696,7 +1792,10 @@ fn parse_rule_selection(input: &str, max_index: usize) -> Result<Vec<usize>, Str
     Ok(values)
 }
 
-fn prompt_rule_selection(candidates: &[RuleCandidate], current_rules: &[String]) -> io::Result<Vec<String>> {
+fn prompt_rule_selection(
+    candidates: &[RuleCandidate],
+    current_rules: &[String],
+) -> io::Result<Vec<String>> {
     let review = ui::styled_prompt("Would you like to review your Rippletide rules? (y/n)")?;
     if !matches!(review.trim().to_lowercase().as_str(), "y" | "yes") {
         return Ok(current_rules.to_vec());
@@ -1704,7 +1803,9 @@ fn prompt_rule_selection(candidates: &[RuleCandidate], current_rules: &[String])
 
     println!();
     ui::print_header("Pick the rules you'd like your coding agent to follow");
-    ui::print_sub("Select the rules to keep. These become the final Rippletide rule set for this repo.");
+    ui::print_sub(
+        "Select the rules to keep. These become the final Rippletide rule set for this repo.",
+    );
     ui::print_sub("Enter numbers separated by spaces, commas, or ranges like 1-3. Type 'a' to keep all shown rules.");
     println!();
 
@@ -1759,7 +1860,11 @@ fn persist_selected_rules_local(cwd: &Path, rules: &[String]) -> io::Result<Path
 }
 
 fn persist_selected_rules_remote(user_id: &str, rules: &[String]) -> Result<(), String> {
-    let url = format!("{}/files/{}", upload_url().trim_end_matches("/upload"), SELECTED_RULES_FILE_ID);
+    let url = format!(
+        "{}/files/{}",
+        upload_url().trim_end_matches("/upload"),
+        SELECTED_RULES_FILE_ID
+    );
     let payload = serde_json::json!({
         "content": selected_rules_markdown(rules),
     });
@@ -1945,6 +2050,28 @@ fn scrub_claude_runtime_env(cmd: &mut std::process::Command) {
     }
 }
 
+fn should_launch_interactive_claude() -> bool {
+    io::stdin().is_terminal() && io::stdout().is_terminal()
+}
+
+fn launch_interactive_claude(cwd: &Path) -> io::Result<()> {
+    let claude_bin =
+        std::env::var("RIPPLETIDE_CLAUDE_BIN").unwrap_or_else(|_| "claude".to_string());
+    let mut cmd = std::process::Command::new(claude_bin);
+    cmd.current_dir(cwd);
+    scrub_claude_runtime_env(&mut cmd);
+
+    let status = cmd.status()?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("Claude exited with status {status}"),
+        ))
+    }
+}
+
 fn collect_source_files(cwd: &std::path::Path) -> Vec<std::path::PathBuf> {
     use walkdir::WalkDir;
 
@@ -2021,7 +2148,11 @@ fn parse_violations(raw: &str, file_path: &str) -> Vec<Violation> {
             action: v["action"].as_str().unwrap_or("Refactor").to_string(),
             scope: v["scope"]
                 .as_array()
-                .map(|a| a.iter().filter_map(|s| s.as_str().map(String::from)).collect())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|s| s.as_str().map(String::from))
+                        .collect()
+                })
                 .unwrap_or_default(),
             risk_category: v["risk_category"].as_str().unwrap_or("c").to_string(),
             is_never_rule: v["is_never_rule"].as_bool().unwrap_or(false),
@@ -2060,7 +2191,10 @@ fn parse_check_result(raw: &str, file_path: &str) -> FileCheckResult {
         if let Ok(val) = serde_json::from_str::<serde_json::Value>(json_str) {
             let pass = val["pass"].as_bool().unwrap_or(false);
             if pass {
-                return FileCheckResult { pass: true, violations: Vec::new() };
+                return FileCheckResult {
+                    pass: true,
+                    violations: Vec::new(),
+                };
             }
             let violations = val["violations"]
                 .as_array()
@@ -2074,7 +2208,11 @@ fn parse_check_result(raw: &str, file_path: &str) -> FileCheckResult {
                             action: v["action"].as_str().unwrap_or("Refactor").to_string(),
                             scope: v["scope"]
                                 .as_array()
-                                .map(|a| a.iter().filter_map(|s| s.as_str().map(String::from)).collect())
+                                .map(|a| {
+                                    a.iter()
+                                        .filter_map(|s| s.as_str().map(String::from))
+                                        .collect()
+                                })
                                 .unwrap_or_default(),
                             risk_category: v["risk_category"].as_str().unwrap_or("c").to_string(),
                             is_never_rule: v["is_never_rule"].as_bool().unwrap_or(false),
@@ -2084,7 +2222,10 @@ fn parse_check_result(raw: &str, file_path: &str) -> FileCheckResult {
                         .collect()
                 })
                 .unwrap_or_default();
-            return FileCheckResult { pass: false, violations };
+            return FileCheckResult {
+                pass: false,
+                violations,
+            };
         }
     }
 
@@ -2116,7 +2257,12 @@ fn extract_json_object(raw: &str) -> Option<&str> {
     None
 }
 
-fn upload_violations(violations: &[Violation], session_token: &str, user_id: Option<&str>, auth_url: &str) {
+fn upload_violations(
+    violations: &[Violation],
+    session_token: &str,
+    user_id: Option<&str>,
+    auth_url: &str,
+) {
     // The stored session_token is already URL-encoded (from the Set-Cookie header),
     // so interpolate it directly into the query string rather than using .query()
     // which would double-encode it.
@@ -2198,9 +2344,15 @@ fn render_table_frame(
     let left_hdr_plain: String;
 
     if is_final {
-        let cp = common_st.iter().filter(|a: &&AtomicU8| a.load(Ordering::Relaxed) == 2).count();
+        let cp = common_st
+            .iter()
+            .filter(|a: &&AtomicU8| a.load(Ordering::Relaxed) == 2)
+            .count();
         let cf = n - cp;
-        let up = user_st.iter().filter(|a: &&AtomicU8| a.load(Ordering::Relaxed) == 2).count();
+        let up = user_st
+            .iter()
+            .filter(|a: &&AtomicU8| a.load(Ordering::Relaxed) == 2)
+            .count();
         let uf = n - up;
         left_hdr = format!(
             "Common Rules  {} passed, {} failed",
@@ -2215,23 +2367,42 @@ fn render_table_frame(
         left_hdr_plain = format!("Common Rules  {} passed, {} failed", cp, cf);
     } else {
         left_hdr = format!("{}", format!("Common Rules ({}/{})", cd, n).yellow().bold());
-        right_hdr = format!("{}", format!("Selected Rules ({}/{})", ud, n).green().bold());
+        right_hdr = format!(
+            "{}",
+            format!("Selected Rules ({}/{})", ud, n).green().bold()
+        );
         left_hdr_plain = format!("Common Rules ({}/{})", cd, n);
     }
 
     let left_pad = col_width.saturating_sub(left_hdr_plain.len());
     let _ = term.write_line(&format!(
-        "  {}{}{}{}", left_hdr, " ".repeat(left_pad), gap, right_hdr
+        "  {}{}{}{}",
+        left_hdr,
+        " ".repeat(left_pad),
+        gap,
+        right_hdr
     ));
     let _ = term.write_line(&format!("  {}{}{}", sep.dimmed(), gap, sep.dimmed()));
 
     for i in 0..max_rule_lines {
-        let left = if i < common_disp.len() { common_disp[i].as_str() } else { "" };
+        let left = if i < common_disp.len() {
+            common_disp[i].as_str()
+        } else {
+            ""
+        };
         let left_vis = left.chars().count();
         let lp = col_width.saturating_sub(left_vis);
-        let right = if i < user_disp.len() { user_disp[i].as_str() } else { "" };
+        let right = if i < user_disp.len() {
+            user_disp[i].as_str()
+        } else {
+            ""
+        };
         let _ = term.write_line(&format!(
-            "  {}{}{}{}", left.dimmed(), " ".repeat(lp), gap, right.dimmed()
+            "  {}{}{}{}",
+            left.dimmed(),
+            " ".repeat(lp),
+            gap,
+            right.dimmed()
         ));
     }
 
@@ -2330,10 +2501,22 @@ fn run_side_by_side_checks(
     let term = console::Term::stdout();
 
     render_table_frame(
-        &term, n, col_width, gap, max_name, max_rule_lines, &sep,
-        0, 0, 0,
-        &common_state, &user_state, &rel_paths,
-        &common_display, &user_display, false,
+        &term,
+        n,
+        col_width,
+        gap,
+        max_name,
+        max_rule_lines,
+        &sep,
+        0,
+        0,
+        0,
+        &common_state,
+        &user_state,
+        &rel_paths,
+        &common_display,
+        &user_display,
+        false,
     );
 
     // --- Render thread ---
@@ -2360,10 +2543,22 @@ fn run_side_by_side_checks(
             let ud = r_ud.load(Ordering::Relaxed);
 
             render_table_frame(
-                &term, n, col_width, gap, max_name, max_rule_lines, &r_sep,
-                cd, ud, tick,
-                &r_common, &r_user, &r_paths,
-                &r_common_disp, &r_user_disp, false,
+                &term,
+                n,
+                col_width,
+                gap,
+                max_name,
+                max_rule_lines,
+                &r_sep,
+                cd,
+                ud,
+                tick,
+                &r_common,
+                &r_user,
+                &r_paths,
+                &r_common_disp,
+                &r_user_disp,
+                false,
             );
 
             if r_done.load(Ordering::Relaxed) {
@@ -2433,11 +2628,22 @@ fn run_side_by_side_checks(
 
     term.clear_last_lines(total_lines).ok();
     render_table_frame(
-        &term, n, col_width, gap, max_name, max_rule_lines, &sep,
+        &term,
+        n,
+        col_width,
+        gap,
+        max_name,
+        max_rule_lines,
+        &sep,
         common_done.load(Ordering::Relaxed),
         user_done.load(Ordering::Relaxed),
-        0, &common_state, &user_state, &rel_paths,
-        &common_display, &user_display, true,
+        0,
+        &common_state,
+        &user_state,
+        &rel_paths,
+        &common_display,
+        &user_display,
+        true,
     );
 
     // --- Step 1: Print violation details per failed file ---
@@ -2638,7 +2844,10 @@ fn run_review_plan_command(
         if review.used_fallback_rules {
             ui::print_info("Using fallback plan rules");
         } else {
-            ui::print_success(&format!("Loaded {} rules from Rippletide", review.rules.len()));
+            ui::print_success(&format!(
+                "Loaded {} rules from Rippletide",
+                review.rules.len()
+            ));
         }
 
         if review.pass {
@@ -2739,19 +2948,22 @@ fn main() -> io::Result<()> {
     // Phase 6a — Fetch inferred rules from graph (probe for graph existence)
     let sp = ui::start_spinner("Fetching inferred rules from graph…");
     let mut had_graph = true;
-    let mut inferred_rules: Vec<String> =
-        match config.user_id.as_deref().map(|uid| fetch_rules(uid, "Return all coding rules")) {
-            Some(FetchRulesResult::Rules(text)) => text
-                .lines()
-                .map(|l| l.trim().trim_start_matches('-').trim().to_string())
-                .filter(|l| !l.is_empty())
-                .collect(),
-            Some(FetchRulesResult::NoGraph) => {
-                had_graph = false;
-                Vec::new()
-            }
-            Some(FetchRulesResult::Error(_)) | None => Vec::new(),
-        };
+    let mut inferred_rules: Vec<String> = match config
+        .user_id
+        .as_deref()
+        .map(|uid| fetch_rules(uid, "Return all coding rules"))
+    {
+        Some(FetchRulesResult::Rules(text)) => text
+            .lines()
+            .map(|l| l.trim().trim_start_matches('-').trim().to_string())
+            .filter(|l| !l.is_empty())
+            .collect(),
+        Some(FetchRulesResult::NoGraph) => {
+            had_graph = false;
+            Vec::new()
+        }
+        Some(FetchRulesResult::Error(_)) | None => Vec::new(),
+    };
     ui::finish_spinner(&sp, "Inferred rules loaded");
 
     // Phase 6b — Upload sessions to build graph if none exists, then re-fetch inferred rules
@@ -2767,7 +2979,11 @@ fn main() -> io::Result<()> {
 
     if !had_graph {
         let sp = ui::start_spinner("Loading inferred rules from new graph…");
-        inferred_rules = match config.user_id.as_deref().map(|uid| fetch_rules(uid, "Return all coding rules")) {
+        inferred_rules = match config
+            .user_id
+            .as_deref()
+            .map(|uid| fetch_rules(uid, "Return all coding rules"))
+        {
             Some(FetchRulesResult::Rules(text)) => {
                 had_graph = true;
                 text.lines()
@@ -2794,11 +3010,17 @@ fn main() -> io::Result<()> {
     let candidate_rules = build_rule_candidates(
         &inferred_rules,
         &generic_rules,
-        &DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
+        &DEFAULT_USER_RULES
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>(),
     );
 
     let current_rules = if inferred_rules.is_empty() {
-        DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect::<Vec<_>>()
+        DEFAULT_USER_RULES
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>()
     } else {
         inferred_rules.clone()
     };
@@ -2809,13 +3031,19 @@ fn main() -> io::Result<()> {
         let selected = prompt_rule_selection(&candidate_rules, &current_rules)?;
         let selected = if selected.is_empty() {
             ui::print_info("No rules selected — falling back to default rules for this run");
-            DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect::<Vec<_>>()
+            DEFAULT_USER_RULES
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
         } else {
             selected
         };
 
         match persist_selected_rules_local(&cwd, &selected) {
-            Ok(path) => ui::print_success(&format!("Saved selected rules locally to {}", path.display())),
+            Ok(path) => ui::print_success(&format!(
+                "Saved selected rules locally to {}",
+                path.display()
+            )),
             Err(err) => ui::print_error(&format!("Failed to save selected rules locally: {err}")),
         }
 
@@ -2876,48 +3104,70 @@ fn main() -> io::Result<()> {
 
                 // Fetch fix from LLM FIRST (before prompting)
                 let sp = ui::start_spinner(&format!("Fetching fix for {}", rel));
-                let fix_result: Option<(String, String, Vec<String>)> = match std::fs::read_to_string(&abs_path) {
-                    Ok(original_code) => {
-                        let payload = serde_json::json!({
-                            "code": original_code,
-                            "context": rel,
-                        });
-                        match ureq::post(&fix_endpoint)
-                            .set("Content-Type", "application/json")
-                            .set("X-User-Id", user_id)
-                            .send_string(&payload.to_string())
-                        {
-                            Ok(resp) => {
-                                if let Ok(body) = resp.into_json::<serde_json::Value>() {
-                                    if let Some(fixed) = body.get("fixed_code").and_then(|v| v.as_str()) {
-                                        let changes: Vec<String> = body.get("changes_applied")
-                                            .and_then(|v| v.as_array())
-                                            .map(|arr| arr.iter().filter_map(|c| {
-                                                c.get("change_description").and_then(|d| d.as_str()).map(|s| s.to_string())
-                                            }).collect())
-                                            .unwrap_or_default();
-                                        ui::finish_spinner(&sp, &format!("Fix ready for {}", rel));
-                                        Some((original_code, fixed.to_string(), changes))
+                let fix_result: Option<(String, String, Vec<String>)> =
+                    match std::fs::read_to_string(&abs_path) {
+                        Ok(original_code) => {
+                            let payload = serde_json::json!({
+                                "code": original_code,
+                                "context": rel,
+                            });
+                            match ureq::post(&fix_endpoint)
+                                .set("Content-Type", "application/json")
+                                .set("X-User-Id", user_id)
+                                .send_string(&payload.to_string())
+                            {
+                                Ok(resp) => {
+                                    if let Ok(body) = resp.into_json::<serde_json::Value>() {
+                                        if let Some(fixed) =
+                                            body.get("fixed_code").and_then(|v| v.as_str())
+                                        {
+                                            let changes: Vec<String> = body
+                                                .get("changes_applied")
+                                                .and_then(|v| v.as_array())
+                                                .map(|arr| {
+                                                    arr.iter()
+                                                        .filter_map(|c| {
+                                                            c.get("change_description")
+                                                                .and_then(|d| d.as_str())
+                                                                .map(|s| s.to_string())
+                                                        })
+                                                        .collect()
+                                                })
+                                                .unwrap_or_default();
+                                            ui::finish_spinner(
+                                                &sp,
+                                                &format!("Fix ready for {}", rel),
+                                            );
+                                            Some((original_code, fixed.to_string(), changes))
+                                        } else {
+                                            ui::finish_spinner(
+                                                &sp,
+                                                &format!("No fix returned for {}", rel),
+                                            );
+                                            None
+                                        }
                                     } else {
-                                        ui::finish_spinner(&sp, &format!("No fix returned for {}", rel));
+                                        ui::finish_spinner(
+                                            &sp,
+                                            &format!("Could not parse fix response for {}", rel),
+                                        );
                                         None
                                     }
-                                } else {
-                                    ui::finish_spinner(&sp, &format!("Could not parse fix response for {}", rel));
+                                }
+                                Err(e) => {
+                                    ui::finish_spinner(
+                                        &sp,
+                                        &format!("Fix request failed for {}: {}", rel, e),
+                                    );
                                     None
                                 }
                             }
-                            Err(e) => {
-                                ui::finish_spinner(&sp, &format!("Fix request failed for {}: {}", rel, e));
-                                None
-                            }
                         }
-                    }
-                    Err(e) => {
-                        ui::finish_spinner(&sp, &format!("Could not read {}: {}", rel, e));
-                        None
-                    }
-                };
+                        Err(e) => {
+                            ui::finish_spinner(&sp, &format!("Could not read {}: {}", rel, e));
+                            None
+                        }
+                    };
 
                 // Show diff and prompt AFTER fetching fix
                 if let Some((original_code, fixed_code, changes)) = fix_result {
@@ -2926,8 +3176,7 @@ fn main() -> io::Result<()> {
                     // Prompt user (or use bulk action)
                     let action = match &bulk_action {
                         Some(ui::FixAction::All) => ui::FixAction::Fix,
-                        _ => ui::prompt_apply_action(rel)
-                            .unwrap_or(ui::FixAction::Skip),
+                        _ => ui::prompt_apply_action(rel).unwrap_or(ui::FixAction::Skip),
                     };
 
                     match action {
@@ -2964,10 +3213,7 @@ fn main() -> io::Result<()> {
     // Show dashboard URL — always, from stored token or fresh login
     let final_url = dashboard_url.or_else(|| {
         config.session_token.as_ref().map(|token| {
-            let mut url = format!(
-                "https://app.rippletide.com/code?token={}",
-                token
-            );
+            let mut url = format!("https://app.rippletide.com/code?token={}", token);
             if let Some(ref uid) = config.user_id {
                 url.push_str("&user_id=");
                 url.push_str(uid);
@@ -2978,6 +3224,14 @@ fn main() -> io::Result<()> {
     if let Some(url) = final_url {
         println!();
         ui::print_sub(&format!("Dashboard: {url}"));
+    }
+
+    if should_launch_interactive_claude() {
+        println!();
+        ui::print_success("Launching Claude Code");
+        if let Err(e) = launch_interactive_claude(&cwd) {
+            ui::print_error(&format!("Could not launch Claude Code: {e}"));
+        }
     }
 
     println!();
@@ -3022,8 +3276,14 @@ mod tests {
 
     #[test]
     fn build_rule_candidates_dedupes_and_prioritizes_inferred_rules() {
-        let inferred = vec!["Use typed errors".to_string(), "Keep handlers small".to_string()];
-        let generic = vec!["Keep handlers small".to_string(), "Write focused tests".to_string()];
+        let inferred = vec![
+            "Use typed errors".to_string(),
+            "Keep handlers small".to_string(),
+        ];
+        let generic = vec![
+            "Keep handlers small".to_string(),
+            "Write focused tests".to_string(),
+        ];
         let fallback = vec!["Fallback rule".to_string()];
 
         let candidates = build_rule_candidates(&inferred, &generic, &fallback);
@@ -3113,6 +3373,91 @@ mod tests {
         }
 
         let _ = fs::remove_file(stub);
+        let _ = fs::remove_dir(dir);
+    }
+
+    #[test]
+    fn claude_project_dir_matches_paths_with_spaces() {
+        let base = temp_dir("rippletide-claude-projects");
+        let cwd = PathBuf::from(
+            "/Users/thomasmolinier/Documents/RIPPLETIDE/Automatic ontologies/experiments/exp2",
+        );
+        let project_dir = base.join(
+            "-Users-thomasmolinier-Documents-RIPPLETIDE-Automatic-ontologies-experiments-exp2",
+        );
+        fs::create_dir_all(&project_dir).unwrap();
+
+        let resolved = claude_project_dir_for_cwd(&base, &cwd).unwrap();
+        assert_eq!(resolved, project_dir);
+
+        let _ = fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn list_claude_projects_uses_logged_cwd_for_display_name() {
+        let base = temp_dir("rippletide-claude-project-list");
+        let project_dir = base.join(
+            "-Users-thomasmolinier-Documents-RIPPLETIDE-Automatic-ontologies-experiments-exp2",
+        );
+        fs::create_dir_all(&project_dir).unwrap();
+        fs::write(
+            project_dir.join("session.jsonl"),
+            "{\"cwd\":\"/Users/thomasmolinier/Documents/RIPPLETIDE/Automatic ontologies/experiments/exp2\"}\n",
+        )
+        .unwrap();
+
+        let projects = list_claude_projects_from_base(&base).unwrap();
+        assert_eq!(projects.len(), 1);
+        assert_eq!(
+            projects[0].0,
+            "/Users/thomasmolinier/Documents/RIPPLETIDE/Automatic ontologies/experiments/exp2"
+        );
+        assert_eq!(projects[0].1, project_dir);
+
+        let _ = fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn launch_interactive_claude_uses_repo_cwd() {
+        let _guard = env_lock();
+        let dir = temp_dir("rippletide-launch-claude");
+        let stub = dir.join("claude-stub.sh");
+        let pwd_file = dir.join("pwd.txt");
+
+        fs::write(
+            &stub,
+            format!(
+                "#!/bin/bash\nif [[ -n \"${{CLAUDECODE:-}}\" ]]; then\n  echo nested >&2\n  exit 42\nfi\npwd > \"{}\"\n",
+                pwd_file.display()
+            ),
+        )
+        .unwrap();
+        #[cfg(unix)]
+        fs::set_permissions(&stub, fs::Permissions::from_mode(0o755)).unwrap();
+
+        let old_bin = std::env::var_os("RIPPLETIDE_CLAUDE_BIN");
+        let old_code = std::env::var_os("CLAUDECODE");
+        std::env::set_var("RIPPLETIDE_CLAUDE_BIN", &stub);
+        std::env::set_var("CLAUDECODE", "1");
+
+        launch_interactive_claude(&dir).unwrap();
+
+        let launched_pwd = fs::read_to_string(&pwd_file).unwrap();
+        let launched_canonical = PathBuf::from(launched_pwd.trim()).canonicalize().unwrap();
+        let expected_canonical = dir.canonicalize().unwrap();
+        assert_eq!(launched_canonical, expected_canonical);
+
+        match old_bin {
+            Some(value) => std::env::set_var("RIPPLETIDE_CLAUDE_BIN", value),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_BIN"),
+        }
+        match old_code {
+            Some(value) => std::env::set_var("CLAUDECODE", value),
+            None => std::env::remove_var("CLAUDECODE"),
+        }
+
+        let _ = fs::remove_file(stub);
+        let _ = fs::remove_file(pwd_file);
         let _ = fs::remove_dir(dir);
     }
 
