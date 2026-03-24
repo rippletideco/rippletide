@@ -401,7 +401,7 @@ fi
 
 # Skip commands handled by dedicated hooks
 case "$hook_input" in
-  /invite-rules*|/receive-rules*) exit 0 ;;
+  invite-rules*|receive-rules*) exit 0 ;;
 esac
 
 # Read user_id from Rippletide config (macOS or Linux)
@@ -584,14 +584,14 @@ if [[ -z "${hook_input//[[:space:]]/}" ]]; then
   exit 0
 fi
 
-# Only trigger on /invite-rules command
+# Only trigger on invite-rules command (no slash — Claude Code intercepts /commands)
 case "$hook_input" in
-  /invite-rules*) ;;
+  invite-rules*) ;;
   *) exit 0 ;;
 esac
 
-# Extract receiver email from the command (e.g., "/invite-rules bob@co.com")
-RECEIVER_EMAIL=$(echo "$hook_input" | sed 's|^/invite-rules[[:space:]]*||' | tr -d '[:space:]')
+# Extract receiver email from the command (e.g., "invite-rules bob@co.com")
+RECEIVER_EMAIL=$(echo "$hook_input" | sed 's|^invite-rules[[:space:]]*||' | tr -d '[:space:]')
 
 # Read user config
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
@@ -631,7 +631,7 @@ To share your coding rules, I need the recipient's email address.
 Please ask the user: "What email address should I send the rules to?"
 
 Once the user provides an email, run this command via the Bash tool:
-  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/invite-rules.sh" <<< "/invite-rules <email>"
+  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/invite-rules.sh" <<< "invite-rules <email>"
 
 Replace <email> with the actual email address provided by the user.
 </user-prompt-submit-hook>
@@ -661,7 +661,7 @@ if [[ "$SUCCESS" == "true" ]]; then
 Invite sent to $RECEIVER_EMAIL ($FILES_COUNT rule file(s)).
 The recipient has 24 hours to enter the OTP code from their email.
 
-Tell the recipient to run /receive-rules in their Claude session and enter the code.
+Tell the recipient to type "receive-rules" in their Claude session and enter the code.
 </user-prompt-submit-hook>
 HOOK_EOF
 else
@@ -688,14 +688,14 @@ if [[ -z "${hook_input//[[:space:]]/}" ]]; then
   exit 0
 fi
 
-# Only trigger on /receive-rules command
+# Only trigger on receive-rules command (no slash — Claude Code intercepts /commands)
 case "$hook_input" in
-  /receive-rules*) ;;
+  receive-rules*) ;;
   *) exit 0 ;;
 esac
 
-# Extract OTP from the command (e.g., "/receive-rules 123456")
-OTP_CODE=$(echo "$hook_input" | sed 's|^/receive-rules[[:space:]]*||' | tr -d '[:space:]')
+# Extract OTP from the command (e.g., "receive-rules 123456")
+OTP_CODE=$(echo "$hook_input" | sed 's|^receive-rules[[:space:]]*||' | tr -d '[:space:]')
 
 # Read user config
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
@@ -734,7 +734,7 @@ To import shared coding rules, I need the OTP code from the email you received.
 Please ask the user: "What is the OTP code from the share invite email?"
 
 Once the user provides the OTP, run this command via the Bash tool:
-  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/receive-rules.sh" <<< "/receive-rules <otp>"
+  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/receive-rules.sh" <<< "receive-rules <otp>"
 
 Replace <otp> with the actual code provided by the user.
 </user-prompt-submit-hook>

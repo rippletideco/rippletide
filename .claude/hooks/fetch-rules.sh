@@ -8,7 +8,7 @@ fi
 
 # Skip commands handled by dedicated hooks
 case "$hook_input" in
-  /invite-rules*|/receive-rules*) exit 0 ;;
+  invite-rules*|receive-rules*) exit 0 ;;
 esac
 
 # Read user_id from Rippletide config (macOS or Linux)

@@ -9,14 +9,14 @@ if [[ -z "${hook_input//[[:space:]]/}" ]]; then
   exit 0
 fi
 
-# Only trigger on /receive-rules command
+# Only trigger on receive-rules command (no slash — Claude Code intercepts /commands)
 case "$hook_input" in
-  /receive-rules*) ;;
+  receive-rules*) ;;
   *) exit 0 ;;
 esac
 
-# Extract OTP from the command (e.g., "/receive-rules 123456")
-OTP_CODE=$(echo "$hook_input" | sed 's|^/receive-rules[[:space:]]*||' | tr -d '[:space:]')
+# Extract OTP from the command (e.g., "receive-rules 123456")
+OTP_CODE=$(echo "$hook_input" | sed 's|^receive-rules[[:space:]]*||' | tr -d '[:space:]')
 
 # Read user config
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
@@ -55,7 +55,7 @@ To import shared coding rules, I need the OTP code from the email you received.
 Please ask the user: "What is the OTP code from the share invite email?"
 
 Once the user provides the OTP, run this command via the Bash tool:
-  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/receive-rules.sh" <<< "/receive-rules <otp>"
+  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/receive-rules.sh" <<< "receive-rules <otp>"
 
 Replace <otp> with the actual code provided by the user.
 </user-prompt-submit-hook>
