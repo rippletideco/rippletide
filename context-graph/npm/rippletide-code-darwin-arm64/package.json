@@ -1,6 +1,6 @@
 {
   "name": "rippletide-code-darwin-arm64",
-  "version": "0.5.29",
+  "version": "0.5.30",
   "description": "Rippletide Code binary for macOS Apple Silicon",
   "os": [
     "darwin"
