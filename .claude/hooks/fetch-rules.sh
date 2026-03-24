@@ -1,9 +1,15 @@
 #!/bin/bash
 
 # Read hook input from stdin
-hook_input=$(cat)
-if [[ -z "${hook_input//[[:space:]]/}" ]]; then
+raw_input=$(cat)
+if [[ -z "${raw_input//[[:space:]]/}" ]]; then
   exit 0
+fi
+
+# Claude Code passes JSON with a "prompt" field to UserPromptSubmit hooks
+hook_input=$(echo "$raw_input" | jq -r '.prompt // empty' 2>/dev/null)
+if [[ -z "$hook_input" ]]; then
+  hook_input="$raw_input"
 fi
 
 # Skip commands handled by dedicated hooks

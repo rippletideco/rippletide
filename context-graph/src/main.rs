@@ -394,9 +394,15 @@ fn ensure_agent_files() -> io::Result<bool> {
 const HOOK_SCRIPT: &str = r#"#!/bin/bash
 
 # Read hook input from stdin
-hook_input=$(cat)
-if [[ -z "${hook_input//[[:space:]]/}" ]]; then
+raw_input=$(cat)
+if [[ -z "${raw_input//[[:space:]]/}" ]]; then
   exit 0
+fi
+
+# Claude Code passes JSON with a "prompt" field to UserPromptSubmit hooks
+hook_input=$(echo "$raw_input" | jq -r '.prompt // empty' 2>/dev/null)
+if [[ -z "$hook_input" ]]; then
+  hook_input="$raw_input"
 fi
 
 # Skip commands handled by dedicated hooks
@@ -579,19 +585,25 @@ const INVITE_RULES_SCRIPT: &str = r##"#!/bin/bash
 # UserPromptSubmit hook — handles /invite-rules command.
 # Collects receiver email from hook input, sends share invite via backend.
 
-hook_input=$(cat)
-if [[ -z "${hook_input//[[:space:]]/}" ]]; then
+raw_input=$(cat)
+if [[ -z "${raw_input//[[:space:]]/}" ]]; then
   exit 0
 fi
 
-# Only trigger on invite-rules command (no slash — Claude Code intercepts /commands)
-case "$hook_input" in
+# Claude Code passes JSON with a "prompt" field to UserPromptSubmit hooks
+prompt=$(echo "$raw_input" | jq -r '.prompt // empty' 2>/dev/null)
+if [[ -z "$prompt" ]]; then
+  prompt="$raw_input"
+fi
+
+# Only trigger on invite-rules command
+case "$prompt" in
   invite-rules*) ;;
   *) exit 0 ;;
 esac
 
-# Extract receiver email from the command (e.g., "invite-rules bob@co.com")
-RECEIVER_EMAIL=$(echo "$hook_input" | sed 's|^invite-rules[[:space:]]*||' | tr -d '[:space:]')
+# Extract receiver email from the prompt (e.g., "invite-rules bob@co.com")
+RECEIVER_EMAIL=$(echo "$prompt" | sed 's|^invite-rules[[:space:]]*||' | tr -d '[:space:]')
 
 # Read user config
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
@@ -683,19 +695,25 @@ const RECEIVE_RULES_SCRIPT: &str = r##"#!/bin/bash
 # Receiver enters OTP, backend stages files, returns conflict report.
 # Then receiver chooses to activate or reject.
 
-hook_input=$(cat)
-if [[ -z "${hook_input//[[:space:]]/}" ]]; then
+raw_input=$(cat)
+if [[ -z "${raw_input//[[:space:]]/}" ]]; then
   exit 0
 fi
 
-# Only trigger on receive-rules command (no slash — Claude Code intercepts /commands)
-case "$hook_input" in
+# Claude Code passes JSON with a "prompt" field to UserPromptSubmit hooks
+prompt=$(echo "$raw_input" | jq -r '.prompt // empty' 2>/dev/null)
+if [[ -z "$prompt" ]]; then
+  prompt="$raw_input"
+fi
+
+# Only trigger on receive-rules command
+case "$prompt" in
   receive-rules*) ;;
   *) exit 0 ;;
 esac
 
-# Extract OTP from the command (e.g., "receive-rules 123456")
-OTP_CODE=$(echo "$hook_input" | sed 's|^receive-rules[[:space:]]*||' | tr -d '[:space:]')
+# Extract OTP from the prompt (e.g., "receive-rules 123456")
+OTP_CODE=$(echo "$prompt" | sed 's|^receive-rules[[:space:]]*||' | tr -d '[:space:]')
 
 # Read user config
 CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
