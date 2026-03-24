@@ -1,7 +1,8 @@
+use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
 
@@ -1280,7 +1281,7 @@ fn upload_zip(zip_data: &[u8], user_id: &str, claude_md: Option<&str>) -> Result
     body.extend_from_slice(format!("\r\n--{}--\r\n", boundary).as_bytes());
 
     let content_type = format!("multipart/form-data; boundary={}", boundary);
-    let resp = ureq::post(UPLOAD_URL)
+    let resp = ureq::post(&upload_url())
         .set("Content-Type", &content_type)
         .set("X-User-Id", user_id)
         .send_bytes(&body)
@@ -1388,7 +1389,7 @@ fn claude_md_contradictions_url() -> String {
     std::env::var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL").unwrap_or_else(|_| {
         format!(
             "{}{}",
-            UPLOAD_URL.trim_end_matches("/upload"),
+            upload_url().trim_end_matches("/upload"),
             CLAUDE_MD_CONTRADICTIONS_PATH
         )
     })
@@ -1450,16 +1451,16 @@ fn run_conventions_phase() {
     ui::print_result("Detected patterns");
 }
 
-fn run_benchmark_phase(cwd: &std::path::Path, stacks: &[scan::TechStack]) {
+fn run_benchmark_phase(cwd: &std::path::Path, stacks: &[scan::TechStack]) -> Vec<String> {
     // rippletide-override: user approved
     if stacks.is_empty() {
-        ui::print_sub("No tech stack detected — skipping benchmark");
-        return;
+        ui::print_sub("No tech stack detected — skipping generic rule suggestions");
+        return Vec::new();
     }
 
     let stack_labels: Vec<&str> = stacks.iter().map(|s| s.label()).collect();
     let sp = ui::start_spinner(&format!(
-        "Benchmarking rules for {}…",
+        "Finding generic rule candidates for {}…",
         stack_labels.join(", ")
     ));
 
@@ -1467,22 +1468,8 @@ fn run_benchmark_phase(cwd: &std::path::Path, stacks: &[scan::TechStack]) {
         call_claude(path, prompt)
     });
 
-    ui::finish_spinner(&sp, "Missing rules benchmark complete");
-    println!();
-
-    if missing.is_empty() {
-        ui::print_success("Your CLAUDE.md covers all common rules for your stack");
-    } else {
-        ui::print_info(&format!(
-            "Top {} rules commonly found in similar repos but missing from your CLAUDE.md:",
-            missing.len()
-        ));
-        println!();
-        // rippletide-override: user approved
-        for (i, rule) in missing.iter().enumerate() {
-            ui::print_sub(&format!("{}. {}", i + 1, rule.rule));
-        }
-    }
+    ui::finish_spinner(&sp, "Generic rule candidates ready");
+    missing.into_iter().map(|rule| rule.rule).collect()
 }
 
 // --- Post-analysis via claude CLI ---
@@ -1508,6 +1495,32 @@ const DEFAULT_USER_RULES: &[&str] = &[
 ];
 
 const QUERY_RULES_PATH: &str = "/query-rules";
+const SELECTED_RULES_FILE_ID: &str = "SelectedRules.md";
+const LOCAL_SELECTED_RULES_DIR: &str = ".rippletide";
+const LOCAL_SELECTED_RULES_PATH: &str = ".rippletide/selected-rules.md";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum CandidateSource {
+    Inferred,
+    Generic,
+    Default,
+}
+
+impl CandidateSource {
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Inferred => "Inferred",
+            Self::Generic => "Generic",
+            Self::Default => "Default",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct RuleCandidate {
+    rule: String,
+    source: CandidateSource,
+}
 
 enum FetchRulesResult {
     Rules(String),
@@ -1515,11 +1528,15 @@ enum FetchRulesResult {
     Error(String),
 }
 
+fn upload_url() -> String {
+    std::env::var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL").unwrap_or_else(|_| UPLOAD_URL.to_string())
+}
+
 fn query_rules_url() -> String {
     std::env::var("RIPPLETIDE_QUERY_RULES_URL").unwrap_or_else(|_| {
         format!(
             "{}{}",
-            UPLOAD_URL.trim_end_matches("/upload"),
+            upload_url().trim_end_matches("/upload"),
             QUERY_RULES_PATH
         )
     })
@@ -1527,7 +1544,7 @@ fn query_rules_url() -> String {
 
 fn fix_url() -> String {
     std::env::var("RIPPLETIDE_FIX_URL").unwrap_or_else(|_| {
-        format!("{}/fix", UPLOAD_URL.trim_end_matches("/upload"))
+        format!("{}/fix", upload_url().trim_end_matches("/upload"))
     })
 }
 
@@ -1575,6 +1592,198 @@ fn fetch_rules(user_id: &str, query: &str) -> FetchRulesResult {
     {
         Some(s) => FetchRulesResult::Rules(s.to_string()),
         None => FetchRulesResult::NoGraph,
+    }
+}
+
+fn selected_rules_local_path(cwd: &Path) -> PathBuf {
+    cwd.join(LOCAL_SELECTED_RULES_PATH)
+}
+
+fn selected_rules_markdown(rules: &[String]) -> String {
+    let mut content = String::from(
+        "# Selected Rules\n\nThese are the final user-approved rules for this repository. Rippletide should use this set as the source of truth.\n\n",
+    );
+    for rule in rules {
+        content.push_str("- ");
+        content.push_str(rule);
+        content.push('\n');
+    }
+    content
+}
+
+fn normalize_rule(rule: &str) -> String {
+    rule.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .trim()
+        .to_lowercase()
+}
+
+fn build_rule_candidates(inferred_rules: &[String], generic_rules: &[String], fallback_rules: &[String]) -> Vec<RuleCandidate> {
+    let mut seen = HashSet::new();
+    let mut out = Vec::new();
+
+    for rule in inferred_rules {
+        let normalized = normalize_rule(rule);
+        if !normalized.is_empty() && seen.insert(normalized) {
+            out.push(RuleCandidate {
+                rule: rule.trim().to_string(),
+                source: CandidateSource::Inferred,
+            });
+        }
+    }
+
+    for rule in generic_rules {
+        let normalized = normalize_rule(rule);
+        if !normalized.is_empty() && seen.insert(normalized) {
+            out.push(RuleCandidate {
+                rule: rule.trim().to_string(),
+                source: CandidateSource::Generic,
+            });
+        }
+    }
+
+    if out.is_empty() {
+        for rule in fallback_rules {
+            let normalized = normalize_rule(rule);
+            if !normalized.is_empty() && seen.insert(normalized) {
+                out.push(RuleCandidate {
+                    rule: rule.trim().to_string(),
+                    source: CandidateSource::Default,
+                });
+            }
+        }
+    }
+
+    out
+}
+
+fn parse_rule_selection(input: &str, max_index: usize) -> Result<Vec<usize>, String> {
+    let trimmed = input.trim();
+    if trimmed.is_empty() {
+        return Ok(Vec::new());
+    }
+    if trimmed.eq_ignore_ascii_case("a") || trimmed.eq_ignore_ascii_case("all") {
+        return Ok((1..=max_index).collect());
+    }
+
+    let mut selected = HashSet::new();
+    for token in trimmed.split(|c: char| c == ',' || c.is_whitespace()) {
+        let token = token.trim();
+        if token.is_empty() {
+            continue;
+        }
+        if let Some((start, end)) = token.split_once('-') {
+            let start_num = start.trim().parse::<usize>().map_err(|_| format!("Invalid selection token: {token}"))?;
+            let end_num = end.trim().parse::<usize>().map_err(|_| format!("Invalid selection token: {token}"))?;
+            if start_num == 0 || end_num == 0 || start_num > max_index || end_num > max_index || start_num > end_num {
+                return Err(format!("Selection out of range: {token}"));
+            }
+            for idx in start_num..=end_num {
+                selected.insert(idx);
+            }
+        } else {
+            let idx = token.parse::<usize>().map_err(|_| format!("Invalid selection token: {token}"))?;
+            if idx == 0 || idx > max_index {
+                return Err(format!("Selection out of range: {token}"));
+            }
+            selected.insert(idx);
+        }
+    }
+
+    let mut values: Vec<usize> = selected.into_iter().collect();
+    values.sort_unstable();
+    Ok(values)
+}
+
+fn prompt_rule_selection(candidates: &[RuleCandidate], current_rules: &[String]) -> io::Result<Vec<String>> {
+    let review = ui::styled_prompt("Would you like to review your Rippletide rules? (y/n)")?;
+    if !matches!(review.trim().to_lowercase().as_str(), "y" | "yes") {
+        return Ok(current_rules.to_vec());
+    }
+
+    println!();
+    ui::print_header("Pick the rules you'd like your coding agent to follow");
+    ui::print_sub("Select the rules to keep. These become the final Rippletide rule set for this repo.");
+    ui::print_sub("Enter numbers separated by spaces, commas, or ranges like 1-3. Type 'a' to keep all shown rules.");
+    println!();
+
+    for (index, candidate) in candidates.iter().enumerate() {
+        println!(
+            "  [ ] {:>2}. {} {}",
+            index + 1,
+            candidate.rule,
+            format!("({})", candidate.source.label()).to_lowercase()
+        );
+    }
+    println!();
+    println!("  [ ] Type your own rule after the selection");
+    println!();
+
+    let selected_rules = loop {
+        let input = ui::styled_prompt("Select rules to keep")?;
+        match parse_rule_selection(&input, candidates.len()) {
+            Ok(indices) => {
+                let selected: Vec<String> = indices
+                    .into_iter()
+                    .filter_map(|idx| candidates.get(idx - 1))
+                    .map(|candidate| candidate.rule.clone())
+                    .collect();
+                println!();
+                break selected;
+            }
+            Err(err) => ui::print_error(&err),
+        }
+    };
+
+    let mut final_rules = selected_rules;
+    loop {
+        let custom_rule = ui::styled_prompt("Type to add your rule (or press Enter to finish)")?;
+        let custom_rule = custom_rule.trim();
+        if custom_rule.is_empty() {
+            println!();
+            break;
+        }
+        final_rules.push(custom_rule.to_string());
+    }
+
+    Ok(final_rules)
+}
+
+fn persist_selected_rules_local(cwd: &Path, rules: &[String]) -> io::Result<PathBuf> {
+    let dir = cwd.join(LOCAL_SELECTED_RULES_DIR);
+    fs::create_dir_all(&dir)?;
+    let path = selected_rules_local_path(cwd);
+    fs::write(&path, selected_rules_markdown(rules))?;
+    Ok(path)
+}
+
+fn persist_selected_rules_remote(user_id: &str, rules: &[String]) -> Result<(), String> {
+    let url = format!("{}/files/{}", upload_url().trim_end_matches("/upload"), SELECTED_RULES_FILE_ID);
+    let payload = serde_json::json!({
+        "content": selected_rules_markdown(rules),
+    });
+
+    match ureq::put(&url)
+        .set("Content-Type", "application/json")
+        .set("X-User-Id", user_id)
+        .send_string(&payload.to_string())
+    {
+        Ok(_) => Ok(()),
+        Err(ureq::Error::Status(404, _)) => {
+            let create_url = format!("{}/files", upload_url().trim_end_matches("/upload"));
+            let create_payload = serde_json::json!({
+                "id": SELECTED_RULES_FILE_ID,
+                "content": selected_rules_markdown(rules),
+            });
+            ureq::post(&create_url)
+                .set("Content-Type", "application/json")
+                .set("X-User-Id", user_id)
+                .send_string(&create_payload.to_string())
+                .map_err(|e| format!("Failed to create selected rules remotely: {e}"))?;
+            Ok(())
+        }
+        Err(e) => Err(format!("Failed to persist selected rules remotely: {e}")),
     }
 }
 
@@ -1999,14 +2208,14 @@ fn render_table_frame(
             cf.to_string().red().bold()
         );
         right_hdr = format!(
-            "User Inferred Rules  {} passed, {} failed",
+            "Selected Rules  {} passed, {} failed",
             up.to_string().green().bold(),
             uf.to_string().red().bold()
         );
         left_hdr_plain = format!("Common Rules  {} passed, {} failed", cp, cf);
     } else {
         left_hdr = format!("{}", format!("Common Rules ({}/{})", cd, n).yellow().bold());
-        right_hdr = format!("{}", format!("User Inferred Rules ({}/{})", ud, n).green().bold());
+        right_hdr = format!("{}", format!("Selected Rules ({}/{})", ud, n).green().bold());
         left_hdr_plain = format!("Common Rules ({}/{})", cd, n);
     }
 
@@ -2527,10 +2736,10 @@ fn main() -> io::Result<()> {
     println!();
 
     // rippletide-override: user approved
-    // Phase 6a — Fetch user rules from graph (probe for graph existence)
-    let sp = ui::start_spinner("Fetching user rules from graph…");
+    // Phase 6a — Fetch inferred rules from graph (probe for graph existence)
+    let sp = ui::start_spinner("Fetching inferred rules from graph…");
     let mut had_graph = true;
-    let user_rules: Vec<String> =
+    let mut inferred_rules: Vec<String> =
         match config.user_id.as_deref().map(|uid| fetch_rules(uid, "Return all coding rules")) {
             Some(FetchRulesResult::Rules(text)) => text
                 .lines()
@@ -2539,15 +2748,13 @@ fn main() -> io::Result<()> {
                 .collect(),
             Some(FetchRulesResult::NoGraph) => {
                 had_graph = false;
-                DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
+                Vec::new()
             }
-            Some(FetchRulesResult::Error(_)) | None => {
-                DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect()
-            }
+            Some(FetchRulesResult::Error(_)) | None => Vec::new(),
         };
-    ui::finish_spinner(&sp, "User rules loaded");
+    ui::finish_spinner(&sp, "Inferred rules loaded");
 
-    // Phase 6b — Upload sessions to build graph if none exists, then re-fetch real rules
+    // Phase 6b — Upload sessions to build graph if none exists, then re-fetch inferred rules
     if !had_graph || !is_logged_in {
         if let Some(ref uid) = config.user_id {
             println!();
@@ -2558,10 +2765,9 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let user_rules = if !had_graph {
-        // Graph was just built from uploaded sessions — fetch real rules
-        let sp = ui::start_spinner("Loading rules from new graph…");
-        let rules = match config.user_id.as_deref().map(|uid| fetch_rules(uid, "Return all coding rules")) {
+    if !had_graph {
+        let sp = ui::start_spinner("Loading inferred rules from new graph…");
+        inferred_rules = match config.user_id.as_deref().map(|uid| fetch_rules(uid, "Return all coding rules")) {
             Some(FetchRulesResult::Rules(text)) => {
                 had_graph = true;
                 text.lines()
@@ -2569,13 +2775,10 @@ fn main() -> io::Result<()> {
                     .filter(|l| !l.is_empty())
                     .collect()
             }
-            _ => user_rules, // keep defaults if re-fetch fails
+            _ => inferred_rules,
         };
         ui::finish_spinner(&sp, "Rules loaded from graph");
-        rules
-    } else {
-        user_rules
-    };
+    }
 
     {
         let sp = ui::start_spinner("Building Rippletide Context Graph");
@@ -2584,12 +2787,47 @@ fn main() -> io::Result<()> {
         ui::print_success("Context Graph built.");
     }
 
-    // rippletide-override: user approved
-    // Phase 6c — Missing rules benchmark (before file checks)
-    if scan_result.has_claude_md {
-        run_benchmark_phase(&cwd, &scan_result.tech_stacks);
+    println!();
+    let generic_rules = run_benchmark_phase(&cwd, &scan_result.tech_stacks);
+    println!();
+
+    let candidate_rules = build_rule_candidates(
+        &inferred_rules,
+        &generic_rules,
+        &DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
+    );
+
+    let current_rules = if inferred_rules.is_empty() {
+        DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect::<Vec<_>>()
+    } else {
+        inferred_rules.clone()
+    };
+
+    let user_rules = if candidate_rules.is_empty() {
+        current_rules.clone()
+    } else {
+        let selected = prompt_rule_selection(&candidate_rules, &current_rules)?;
+        let selected = if selected.is_empty() {
+            ui::print_info("No rules selected — falling back to default rules for this run");
+            DEFAULT_USER_RULES.iter().map(|s| s.to_string()).collect::<Vec<_>>()
+        } else {
+            selected
+        };
+
+        match persist_selected_rules_local(&cwd, &selected) {
+            Ok(path) => ui::print_success(&format!("Saved selected rules locally to {}", path.display())),
+            Err(err) => ui::print_error(&format!("Failed to save selected rules locally: {err}")),
+        }
+
+        if let Some(ref user_id) = config.user_id {
+            match persist_selected_rules_remote(user_id, &selected) {
+                Ok(()) => ui::print_success("Saved selected rules to Rippletide backend"),
+                Err(err) => ui::print_error(&err),
+            }
+        }
         println!();
-    }
+        selected
+    };
 
     // Phase 6d — Side-by-side rule checks (first 5 files)
     let failed_files = {
@@ -2774,6 +3012,37 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("{prefix}-{}-{nanos}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    #[test]
+    fn parse_rule_selection_supports_ranges_and_commas() {
+        let selected = parse_rule_selection("1,3-5 7", 8).unwrap();
+        assert_eq!(selected, vec![1, 3, 4, 5, 7]);
+    }
+
+    #[test]
+    fn build_rule_candidates_dedupes_and_prioritizes_inferred_rules() {
+        let inferred = vec!["Use typed errors".to_string(), "Keep handlers small".to_string()];
+        let generic = vec!["Keep handlers small".to_string(), "Write focused tests".to_string()];
+        let fallback = vec!["Fallback rule".to_string()];
+
+        let candidates = build_rule_candidates(&inferred, &generic, &fallback);
+        assert_eq!(candidates.len(), 3);
+        assert_eq!(candidates[0].source, CandidateSource::Inferred);
+        assert_eq!(candidates[1].source, CandidateSource::Inferred);
+        assert_eq!(candidates[2].source, CandidateSource::Generic);
+        assert_eq!(candidates[2].rule, "Write focused tests");
+    }
+
+    #[test]
+    fn selected_rules_markdown_contains_all_rules() {
+        let markdown = selected_rules_markdown(&vec![
+            "Keep handlers small".to_string(),
+            "Write focused tests".to_string(),
+        ]);
+        assert!(markdown.contains("# Selected Rules"));
+        assert!(markdown.contains("- Keep handlers small"));
+        assert!(markdown.contains("- Write focused tests"));
     }
 
     #[test]
