@@ -69,6 +69,46 @@ fn truncate_single_line(text: &str, max_chars: usize) -> String {
     }
 }
 
+fn wrap_for_preview(text: &str, width: usize, max_lines: usize) -> Vec<String> {
+    let clean = text.replace(['\r', '\n'], " ");
+    let words: Vec<&str> = clean.split_whitespace().collect();
+    if words.is_empty() {
+        return vec![String::new()];
+    }
+    let mut lines = Vec::new();
+    let mut current = String::new();
+    for word in words {
+        let candidate = if current.is_empty() {
+            word.to_string()
+        } else {
+            format!("{} {}", current, word)
+        };
+        if candidate.chars().count() > width && !current.is_empty() {
+            lines.push(current);
+            current = word.to_string();
+            if lines.len() == max_lines {
+                break;
+            }
+        } else {
+            current = candidate;
+        }
+    }
+    if lines.len() < max_lines && !current.is_empty() {
+        lines.push(current);
+    }
+    if lines.len() == max_lines {
+        let consumed = lines.join(" ");
+        if consumed.chars().count() < clean.chars().count() {
+            if let Some(last) = lines.last_mut() {
+                if !last.ends_with('…') {
+                    last.push('…');
+                }
+            }
+        }
+    }
+    lines
+}
+
 pub fn prompt_multi_select(
     title: &str,
     subtitle: &[&str],
@@ -88,7 +128,9 @@ pub fn prompt_multi_select(
 
     let help_line = "  ↑/↓ move • space toggle • enter confirm";
     let item_width = 92usize;
-    let total_lines = items.len() + 2;
+    let preview_width = 96usize;
+    let preview_max_lines = 4usize;
+    let total_lines = items.len() + preview_max_lines + 4;
 
     loop {
         for (idx, item) in items.iter().enumerate() {
@@ -110,6 +152,17 @@ pub fn prompt_multi_select(
             } else {
                 term.write_line(&line)?;
             }
+        }
+        term.write_line("")?;
+        term.write_line(&format!("  {}", "Selected rule preview".dimmed()))?;
+        let preview_lines = if items.is_empty() {
+            vec![String::new()]
+        } else {
+            wrap_for_preview(&items[cursor], preview_width, preview_max_lines)
+        };
+        for i in 0..preview_max_lines {
+            let line = preview_lines.get(i).cloned().unwrap_or_default();
+            term.write_line(&format!("    {}", line.dimmed()))?;
         }
         term.write_line("")?;
         term.write_line(help_line)?;

@@ -1,6 +1,5 @@
 {
   "name": "rippletide-code-darwin-x64",
-  "version": "0.5.31",
   "description": "Rippletide Code binary for macOS Intel",
   "os": [
     "darwin"
@@ -11,6 +10,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Rippletide/setup_MCP"
-  }
+    "url": "https://github.com/rippletideco/rippletide"
+  },
+  "version": "0.5.31"
 }
