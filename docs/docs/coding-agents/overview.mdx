@@ -1,38 +1,51 @@
 ---
 title: Overview
-description: Give Claude Code persistent memory for consistent conventions across sessions
+description: Give Claude Code persistent memory, real-time rule enforcement, and team-wide governance
 ---
 
 ## The problem
 
 Claude Code persists context via `CLAUDE.md` files. But this mechanism has two limits:
 
-1. **It doesn't scale in size.** `CLAUDE.md` is injected into the system prompt, which means it eats into the context window. The more rules you add, the less room the agent has to work. The Context Graph stores knowledge externally and the agent queries only what it needs via `recall` and `get_context`.
+1. **It doesn't scale in size.** `CLAUDE.md` is injected into the system prompt, which means it eats into the context window. The more rules you add, the less room the agent has to work. The Context Graph stores knowledge externally and the agent queries only what it needs.
 
 2. **It's siloed per engineer.** When one engineer defines coding rules in their agent, the rest of the team never sees them. Scale that to 10 engineers running parallel agents, and you get 10 diverging sets of conventions. Each agent "remembers," but none of them share.
 
-## How the Context Graph fixes this
+## How Rippletide Code fixes this
 
-The Context Graph gives Claude Code persistent, structured memory. Instead of re-explaining your conventions every session, you store them once in the graph. Every agent session reads from the same source of truth.
+Rippletide Code gives Claude Code persistent, structured memory backed by a Context Graph. Instead of re-explaining your conventions every session, you store them once. Every agent session reads from the same source of truth.
 
-The graph stores your engineering standards as entities and relations:
+The graph stores your engineering standards:
 
 - **Naming conventions** — `camelCase` for variables, `PascalCase` for components, `UPPER_SNAKE_CASE` for constants
 - **Architectural patterns** — where to put hooks, how to structure API routes, which state management to use
 - **Design system rules** — approved components, spacing tokens, color usage
 - **Error handling policies** — how to handle API failures, logging standards, retry strategies
 
-When Claude Code starts a session, it pulls this context automatically via Claude Code hooks. No copy-pasting. No "remember to add this to the system prompt."
+## What you get
+
+Rippletide Code covers five areas:
+
+| Capability | How it works |
+|---|---|
+| [**Setup**](/docs/coding-agents/connect) | One command to authenticate, scan your repo, select rules, and install hooks |
+| [**Rule-guided coding**](/docs/coding-agents/coding-session) | Rules are injected into every Claude session automatically. Violations are blocked before code is written. |
+| [**Rule management**](/docs/coding-agents/rule-management) | Add, edit, or delete rules using natural language — no config files to maintain |
+| [**Rule sharing**](/docs/coding-agents/rule-sharing) | Share your rule set with teammates via email and OTP |
+| [**Planning**](/docs/coding-agents/planning) | Generate implementation plans that are automatically reviewed against your rules |
 
 ## Integration
 
 Rippletide integrates with Claude Code through [hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) — shell commands that run automatically at key points during the agent session. The `connect` command sets up these hooks so the Context Graph is queried seamlessly, without any manual intervention.
 
+Two hooks run during every coding session:
+
+- **`fetch-rules.sh`** (UserPromptSubmit) — fires on every prompt, queries the backend with the user's request, and injects relevant rules into Claude's context
+- **`check-code.sh`** (PreToolUse) — fires before every Edit/Write, sends the proposed code to the backend for violation checking, and blocks the tool call if violations are found
+
 ## Data privacy
 
-A common question is what Rippletide actually sees when used with Coding Agents.
-
-For Coding Agents, Rippletide only relies on the context available inside your local Claude Code workflow:
+Rippletide only relies on the context available inside your local Claude Code workflow:
 
 - the current Claude Code chat session for the active project
 - your `CLAUDE.md`
@@ -41,22 +54,27 @@ Your codebase is not centrally analyzed outside of your local Claude Code enviro
 
 Rippletide only stores the rules extracted from that context, not the rest of the project content. In practice, this means Rippletide keeps reusable conventions and policies, not your full codebase or unrelated session content.
 
-## Demo
-
-<video
-  autoPlay
-  muted
-  loop
-  playsInline
-  style={{ width: '100%', borderRadius: '10px' }}
-  src="/img/coding-agents-demo.mp4"
-/>
-
 ## Next steps
 
 <CardGroup cols={2}>
   <Card title="Connect" icon="plug" href="/docs/coding-agents/connect">
-    Wire up your coding agent to a Context Graph in one command
+    Set up Rippletide Code in your project
+  </Card>
+
+  <Card title="Coding Session" icon="code" href="/docs/coding-agents/coding-session">
+    How rules are enforced while you code
+  </Card>
+
+  <Card title="Rule Management" icon="pen-to-square" href="/docs/coding-agents/rule-management">
+    Add, edit, and delete rules with natural language
+  </Card>
+
+  <Card title="Rule Sharing" icon="share-nodes" href="/docs/coding-agents/rule-sharing">
+    Share rules with teammates
+  </Card>
+
+  <Card title="Planning" icon="list-check" href="/docs/coding-agents/planning">
+    Generate rule-compliant implementation plans
   </Card>
 
   <Card title="Team Governance" icon="users" href="/docs/coding-agents/team-governance">

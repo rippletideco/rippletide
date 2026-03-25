@@ -1,0 +1,93 @@
+---
+title: Rule Sharing
+description: Share your coding rules with teammates via email
+---
+
+You can share your entire rule set with a teammate using two keywords: `invite-rules` and `receive-rules`. These are typed directly in your Claude Code session — they are not slash commands.
+
+## Send rules
+
+Type `invite-rules` followed by the recipient's email:
+
+```
+You: invite-rules bob@company.com
+```
+
+The hook sends a share invite to the recipient. You'll see a confirmation:
+
+```
+Invite sent to bob@company.com (12 rule files).
+Tell the recipient to type receive-rules and enter the code.
+```
+
+The recipient receives an email with a 6-digit OTP code. The code expires after 24 hours.
+
+If you forget to include the email, Claude will ask for it:
+
+```
+You: invite-rules
+
+Claude: What email address should I send the rules to?
+
+You: bob@company.com
+```
+
+## Receive rules
+
+The recipient types `receive-rules` followed by the OTP from the email:
+
+```
+You: receive-rules 123456
+```
+
+The hook stages the shared files and Claude presents a conflict report:
+
+```
+Received 12 rule files from alice@company.com
+
+  New rules:      8  (rules you don't have)
+  Duplicates:     3  (rules you already have — will be skipped)
+  Conflicts:      1  (rules that contradict yours)
+
+Conflict details:
+  Your rule:   "Use snake_case for all variables"
+  Their rule:  "Use camelCase for all variables"
+```
+
+## Resolve conflicts
+
+After reviewing the report, Claude presents four options:
+
+| Option | What happens |
+|---|---|
+| **(A) Accept — keep mine on conflicts** | Imports all new rules, skips duplicates, keeps your version where there are conflicts |
+| **(B) Accept — keep theirs on conflicts** | Imports all new rules, skips duplicates, keeps the sender's version on conflicts |
+| **(C) Keep staged for later** | Rules stay staged, no merge — you can revisit later |
+| **(D) Reject** | All staged shared files are deleted |
+
+## Example workflow
+
+**Alice (sender):**
+```
+Alice: invite-rules bob@company.com
+
+       Invite sent to bob@company.com (15 rule files).
+       Tell the recipient to type receive-rules and enter the code.
+```
+
+**Bob (recipient):**
+```
+Bob:   receive-rules 847291
+
+       Received 15 rule files from alice@company.com
+       New rules: 12 | Duplicates: 2 | Conflicts: 1
+
+       (A) Accept — keep mine on conflicts
+       (B) Accept — keep theirs on conflicts
+       (C) Keep staged for later
+       (D) Reject
+
+Bob:   A
+
+       Merged 12 new rules. Skipped 2 duplicates. Kept your version for 1 conflict.
+```

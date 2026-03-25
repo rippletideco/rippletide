@@ -1,0 +1,111 @@
+---
+title: Planning
+description: Generate implementation plans that are automatically reviewed against your rules
+---
+
+Rippletide Code includes a planning mode that generates implementation plans and automatically reviews them against your coding rules. Plans that violate rules are revised until they pass.
+
+## Generate a plan
+
+Use the `/plan` command followed by your request:
+
+```
+You: /plan add OAuth support to the API
+```
+
+Claude generates a numbered implementation plan, then automatically reviews it against your active rules.
+
+## How the review loop works
+
+The plan goes through an iterative draft-review cycle:
+
+<Steps>
+  <Step title="Draft">
+    Claude generates an implementation plan based on your request and your active rules.
+  </Step>
+
+  <Step title="Review">
+    The plan is checked against your rules. Each rule is evaluated for compliance. The review returns either **pass** or a list of specific violations.
+  </Step>
+
+  <Step title="Revise (if needed)">
+    If violations are found, Claude revises only the parts of the plan that failed. The revised plan goes back to the review step.
+  </Step>
+
+  <Step title="Final plan">
+    The cycle repeats up to 3 iterations. Once the plan passes review — or the maximum iterations are reached — the final plan is presented.
+  </Step>
+</Steps>
+
+You'll see the progression in the output:
+
+```
+Draft 1 → Review 1 (2 violations) → Draft 2 → Review 2 passed → Final plan
+```
+
+## What gets checked
+
+The review evaluates each step of the plan against your rules. Violations include:
+
+- Steps that contradict architectural patterns you've defined
+- Missing error handling where your rules require it
+- Naming or structure choices that don't match your conventions
+- Scope creep beyond what was requested
+
+Each violation includes:
+
+| Field | Description |
+|---|---|
+| **rule** | The rule that was violated |
+| **issue** | Why the plan step violates it |
+| **fix** | How to revise the step to comply |
+
+## Default planning rules
+
+If you haven't defined custom rules yet, Rippletide applies these defaults:
+
+- Keep the plan strictly within the user's requested scope
+- Use the existing repository structure and conventions
+- Sequence the work in a concrete order that can be implemented incrementally
+- Include a validation step that checks the change locally before shipping
+
+## Review an existing plan
+
+The `/review-plan` command checks an existing plan against your rules without generating a new one. This is used internally by `/plan` but can also be invoked directly:
+
+```
+You: /review-plan
+```
+
+It reads the plan from context and returns a pass/fail result with specific violations if any are found.
+
+## Example
+
+```
+You: /plan add rate limiting to the API endpoints
+
+Claude: Applying rules: error handling policy, API conventions, naming conventions
+
+Draft 1:
+  1. Add rate-limit middleware in src/middleware/
+  2. Configure per-route limits in src/config/
+  3. Add Redis connection for distributed counting
+  4. Return 429 responses with Retry-After header
+  5. Add unit tests
+
+Review 1:
+  Violation: Step 3 introduces Redis without checking existing infrastructure
+  Fix: Use existing caching layer or document why Redis is needed
+
+Draft 2:
+  1. Add rate-limit middleware in src/middleware/
+  2. Configure per-route limits in src/config/
+  3. Use existing cache service for distributed counting
+  4. Return 429 responses with Retry-After header
+  5. Add unit tests
+  6. Verify locally with curl
+
+Review 2: Passed
+
+Final plan presented.
+```

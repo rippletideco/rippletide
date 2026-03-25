@@ -1,0 +1,91 @@
+---
+title: Coding Session
+description: How rules are enforced automatically while you code
+---
+
+Once Rippletide Code is connected, everything happens automatically. You don't need to run special commands or remember to check rules. Two hooks work in the background during every Claude Code session.
+
+## Rule-guided coding
+
+When you type any prompt — for example, "add a login form" — the `fetch-rules.sh` hook fires automatically. It queries the Rippletide backend with your prompt text and injects the most relevant rules into Claude's context.
+
+Claude states which rules it's applying before responding:
+
+```
+Applying rules: error handling policy, naming conventions, component structure
+```
+
+You don't need to do anything special. Just code normally.
+
+## Violation detection
+
+When Claude attempts to write or edit code (via the Edit, Write, or MultiEdit tools), the `check-code.sh` hook intercepts the tool call before it executes. It sends the proposed code to the Rippletide backend, which checks it against your active rules.
+
+If no violations are found, the code is written normally.
+
+If violations are found, **the tool call is blocked** and Claude is told what went wrong.
+
+## Auto-rewrite on violation
+
+When a violation is detected, Claude automatically rewrites the code to fix it. This happens silently — you don't need to intervene.
+
+The auto-fix loop works like this:
+
+<Steps>
+  <Step title="First attempt">
+    Claude rewrites the code to address the violations and retries the tool call.
+  </Step>
+
+  <Step title="Second and third attempts">
+    If the rewrite still violates rules, Claude tries again — up to 3 automatic attempts total. Each attempt shows a diff of the changes.
+  </Step>
+
+  <Step title="User decision (after 3 failures)">
+    If all 3 automatic attempts fail, Claude asks you to choose:
+
+    - **(A) Try one more rewrite** — Claude makes a 4th attempt
+    - **(B) Override and keep original code** — Claude uses the original code as-is
+  </Step>
+</Steps>
+
+## Override
+
+If you choose to override (option B), Claude adds an override comment to the code:
+
+```javascript
+// rippletide-override: user approved
+function example() { ... }
+```
+
+```python
+# rippletide-override: user approved
+def example():
+    ...
+```
+
+This comment tells the `check-code.sh` hook to skip violation checking for that block on future edits.
+
+## What gets checked
+
+The hook checks code in source files only. These file types are skipped:
+
+- `.md`, `.json`, `.yaml`, `.yml`, `.txt`
+- `.toml`, `.cfg`, `.ini`, `.csv`
+
+## Example flow
+
+```
+You:    "Add a function to validate email addresses"
+
+Claude: Applying rules: error handling policy, input validation, naming conventions
+
+        [Claude attempts to write code]
+
+Hook:   Violation: function missing error handling for invalid input
+
+        [Claude automatically rewrites with try/catch]
+
+Hook:   No violations found
+
+        [Code is written to file]
+```

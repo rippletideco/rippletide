@@ -1,27 +1,102 @@
 ---
 title: Connect
-description: Wire up Claude Code to a Context Graph in one command
+description: Set up Rippletide Code in your project with one command
 ---
 
 ## Setup
 
-The CLI tool `rippletide-code` handles all the wiring. One command connects Claude Code to a Context Graph:
+Run the CLI tool in your project directory:
 
 ```bash
-npx rippletide-code@latest connect
+npx rippletide-code
 ```
 
-This configures Claude Code hooks and generates the agent instruction files so Claude Code knows how to use the Context Graph.
+This walks you through authentication, rule selection, and hook installation. Once complete, every Claude Code session in this project will have access to your rules.
 
-### What gets generated
+<video
+  autoPlay
+  muted
+  loop
+  playsInline
+  style={{ width: "100%", borderRadius: "10px" }}
+  src="/img/coding-agent-set-up.mp4"
+/>
 
-After running `connect`, your project will contain:
+## What happens during setup
+
+### 1. Authentication
+
+If you're not logged in, the CLI prompts for your email and sends a one-time password (OTP). After verification, your credentials are stored locally at `~/.config/rippletide/config.json`.
+
+### 2. Repository scan
+
+The CLI scans your project to detect:
+
+- **Tech stacks** — TypeScript, Python, Rust, Go, Java, Ruby, and more
+- **Existing `CLAUDE.md`** — if present, existing rules are parsed and checked for contradictions
+- **Project structure** — source file count, test file count, MCP tools in `.mcp.json`
+
+### 3. Rule generation
+
+Based on your existing Claude Code sessions and `CLAUDE.md`, Rippletide generates rule candidates. Rules come from three sources:
+
+- **Inferred** — extracted from your past Claude Code sessions via the Context Graph
+- **Generic** — best practices for your detected tech stack
+- **Default** — general coding conventions
+
+### 4. Rule selection
+
+An interactive multi-select prompt lets you pick which rules to adopt. You can also type custom rules when prompted:
+
+```
+Type to add your rule (or press Enter to finish):
+> All API endpoints must return structured error responses
+```
+
+Selected rules are saved to the Rippletide backend and locally to `.rippletide/selected-rules.md`.
+
+### 5. Hook installation
+
+The CLI installs Claude Code hooks into your project:
 
 ```
 your-project/
-├── .claude/settings.json  # Claude Code hooks configuration
-└── CLAUDE.md              # Agent instructions (auto-generated)
+├── .claude/
+│   ├── hooks/
+│   │   ├── fetch-rules.sh      # Injects rules into every prompt
+│   │   ├── check-code.sh       # Blocks code that violates rules
+│   │   ├── manage-rule.sh      # Handles add/edit/delete operations
+│   │   ├── invite-rules.sh     # Sends rule shares to teammates
+│   │   └── receive-rules.sh    # Receives shared rules
+│   ├── settings.json           # Hook configuration
+│   ├── settings.local.json     # Command permissions
+│   └── commands/
+│       ├── plan.md             # /plan command definition
+│       └── review-plan-command.sh
+├── CLAUDE.md                   # Agent instructions (auto-generated)
+└── .rippletide/
+    └── selected-rules.md       # Your selected rules
 ```
+
+After installation, Claude Code launches automatically with the hooks active.
+
+## Logout
+
+To remove stored credentials:
+
+```bash
+npx rippletide-code logout
+```
+
+## Read-only mode
+
+To connect without write access to the rule set (useful for team members who should follow but not modify conventions):
+
+```bash
+npx rippletide-code --read-only
+```
+
+See [Team Governance](/docs/coding-agents/team-governance) for details.
 
 ## Data privacy
 
@@ -30,6 +105,4 @@ Rippletide only relies on the context available inside your local Claude Code wo
 - the current Claude Code chat session for the active project
 - your `CLAUDE.md`
 
-Your codebase is analyzed through your own local Claude Code environment, not centrally ingested as a full codebase.
-
-Rippletide only stores the extracted rules and conventions that should persist across sessions, not the rest of the project content or unrelated session context.
+Your codebase is analyzed through your own local Claude Code environment, not centrally ingested. Rippletide only stores the extracted rules and conventions, not project content or unrelated session context.

@@ -61,6 +61,10 @@
                 "pages": [
                   "docs/coding-agents/overview",
                   "docs/coding-agents/connect",
+                  "docs/coding-agents/coding-session",
+                  "docs/coding-agents/rule-management",
+                  "docs/coding-agents/rule-sharing",
+                  "docs/coding-agents/planning",
                   "docs/coding-agents/team-governance"
                 ]
               }

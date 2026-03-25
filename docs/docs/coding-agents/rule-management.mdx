@@ -1,0 +1,87 @@
+---
+title: Rule Management
+description: Add, edit, and delete coding rules using natural language
+---
+
+Rules are managed through natural language in your Claude Code session. There are no slash commands or config files to edit — just tell Claude what you want.
+
+The `fetch-rules.sh` hook detects rule management intent from your prompt and returns instructions for Claude to execute the change through the Rippletide backend.
+
+## Add a rule
+
+Tell Claude the rule you want to add:
+
+```
+You: "add a rule that all functions must have error handling"
+```
+
+Claude will:
+1. Present the proposed rule for your review
+2. Ask for confirmation
+3. Save it to the Rippletide backend
+
+The rule takes effect immediately in your next prompt.
+
+## Edit a rule
+
+Describe the change you want to make:
+
+```
+You: "change the naming convention rule to use camelCase instead of snake_case"
+```
+
+Claude identifies the matching rule, shows you the proposed edit, and asks for confirmation before saving.
+
+## Delete a rule
+
+Ask Claude to remove a rule:
+
+```
+You: "remove the rule about magic numbers"
+```
+
+Claude identifies the rule, asks for confirmation, and deletes it from the backend.
+
+## Double confirmation for generated files
+
+For auto-generated files like `Rules.md` or `work_rules_report.md`, Claude asks you to confirm **twice** before making changes. This prevents accidental modifications to files that were generated during setup.
+
+## Where rules are stored
+
+Rules are stored in the Rippletide backend, not in local files. The `manage-rule.sh` hook script handles all CRUD operations:
+
+| Operation | What happens |
+|---|---|
+| **Add** | Creates a new rule file in the backend with a timestamped ID |
+| **Edit** | Updates the content of an existing rule file |
+| **Delete** | Removes the rule file from the backend |
+
+After any change, the Context Graph is rebuilt automatically so the updated rules are used in future queries.
+
+## Examples
+
+```
+You: "add a rule: all React components must use TypeScript interfaces, not type aliases"
+
+Claude: I'll add this as a new coding rule:
+        "All React components must use TypeScript interfaces, not type aliases"
+        Shall I save this?
+
+You: yes
+
+Claude: Rule saved.
+```
+
+```
+You: "I want to update the error handling rule to also require logging"
+
+Claude: I found this rule:
+        "Error handling exists where failures are possible"
+        I'll update it to:
+        "Error handling exists where failures are possible, and all caught errors must be logged"
+        Shall I save this change?
+
+You: yes
+
+Claude: Rule updated.
+```
