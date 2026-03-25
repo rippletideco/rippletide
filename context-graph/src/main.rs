@@ -2045,14 +2045,29 @@ fn parse_rules_markdown(markdown: &str) -> Vec<String> {
             continue;
         }
 
-        let bullet = trimmed
-            .strip_prefix("- ")
-            .or_else(|| trimmed.strip_prefix("* "));
-        let Some(rule) = bullet.map(str::trim) else {
+        let indent = line.chars().take_while(|ch| ch.is_whitespace()).count();
+        let is_top_level_bullet = indent == 0
+            && (line.starts_with("- ") || line.starts_with("* "));
+
+        if is_top_level_bullet {
+            let rule = line[2..].trim();
+            if !rule.is_empty() {
+                rules.push(rule.to_string());
+            }
             continue;
-        };
-        if !rule.is_empty() {
-            rules.push(rule.to_string());
+        }
+
+        let is_continuation = indent > 0
+            && !trimmed.is_empty()
+            && !trimmed.starts_with("- ")
+            && !trimmed.starts_with("* ")
+            && !trimmed.starts_with('#');
+
+        if is_continuation {
+            if let Some(last) = rules.last_mut() {
+                last.push(' ');
+                last.push_str(trimmed);
+            }
         }
     }
 
@@ -2976,6 +2991,96 @@ mod tests {
                 "Keep the code small and practical.".to_string(),
             ]
         );
+    }
+
+    #[test]
+    fn parse_rules_markdown_keeps_only_top_level_bullets_and_continuations() {
+        let markdown = r#"# Rules
+- Keep handlers small.
+  Continue only when the logic stays cohesive.
+- Prefer typed boundaries.
+  - Nested bullet that should not become a standalone rule.
+## Section
+- Write focused tests.
+"#;
+        let parsed = parse_rules_markdown(markdown);
+        assert_eq!(parsed.len(), 3);
+        assert_eq!(parsed[0], "Keep handlers small. Continue only when the logic stays cohesive.");
+        assert_eq!(parsed[1], "Prefer typed boundaries.");
+        assert_eq!(parsed[2], "Write focused tests.");
+    }
+
+    #[test]
+    fn parse_rules_markdown_ignores_nested_bullets_after_top_level_rule() {
+        let markdown = r#"# Rules
+- Prefer typed boundaries.
+  - Use zod at API boundaries.
+  - Reuse validators.
+- Keep handlers small.
+"#;
+        let parsed = parse_rules_markdown(markdown);
+        assert_eq!(parsed, vec![
+            "Prefer typed boundaries.".to_string(),
+            "Keep handlers small.".to_string(),
+        ]);
+    }
+
+    #[test]
+    fn parse_rules_markdown_keeps_mixed_top_level_bullets() {
+        let markdown = r#"# Rules
+- Keep handlers small.
+* Write focused tests.
+- Prefer explicit names.
+"#;
+        let parsed = parse_rules_markdown(markdown);
+        assert_eq!(parsed, vec![
+            "Keep handlers small.".to_string(),
+            "Write focused tests.".to_string(),
+            "Prefer explicit names.".to_string(),
+        ]);
+    }
+
+    #[test]
+    fn parse_rules_markdown_ignores_code_blocks_and_headings() {
+        let markdown = r#"# Rules
+- Keep handlers small.
+
+```md
+- This should not be parsed.
+```
+
+## Section
+- Prefer typed boundaries.
+"#;
+        let parsed = parse_rules_markdown(markdown);
+        assert_eq!(parsed, vec![
+            "Keep handlers small.".to_string(),
+            "Prefer typed boundaries.".to_string(),
+        ]);
+    }
+
+    #[test]
+    fn parse_rules_markdown_does_not_promote_indented_bullets_without_parent_context() {
+        let markdown = r#"  - Nested only bullet
+    - Deep nested bullet
+- Real top-level rule
+"#;
+        let parsed = parse_rules_markdown(markdown);
+        assert_eq!(parsed, vec!["Real top-level rule".to_string()]);
+    }
+
+    #[test]
+    fn parse_rules_markdown_keeps_long_continuation_as_same_rule() {
+        let markdown = r#"- Prefer explicit names for exported functions.
+  Continue the same rule with more explanation so the item stays coherent.
+  Another sentence that should remain attached to the same rule.
+- Write focused tests.
+"#;
+        let parsed = parse_rules_markdown(markdown);
+        assert_eq!(parsed, vec![
+            "Prefer explicit names for exported functions. Continue the same rule with more explanation so the item stays coherent. Another sentence that should remain attached to the same rule.".to_string(),
+            "Write focused tests.".to_string(),
+        ]);
     }
 
     #[test]
