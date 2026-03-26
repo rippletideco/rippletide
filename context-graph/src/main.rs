@@ -1290,45 +1290,15 @@ fn run_conventions_phase() {
     ui::print_result("Detected patterns");
 }
 
-fn run_benchmark_phase(cwd: &std::path::Path, stacks: &[scan::TechStack]) -> Vec<String> {
-    // rippletide-override: user approved
-    if stacks.is_empty() {
-        ui::print_sub("No tech stack detected — skipping generic rule suggestions");
-        return Vec::new();
-    }
-
-    let stack_labels: Vec<&str> = stacks.iter().map(|s| s.label()).collect();
-    let sp = ui::start_spinner(&format!(
-        "Finding generic rule candidates for {}…",
-        stack_labels.join(", ")
-    ));
-
-    let missing = benchmark::run_benchmark(cwd, stacks, &|path, prompt| call_claude(path, prompt));
-
-    ui::finish_spinner(&sp, "Generic rule candidates ready");
-    missing.into_iter().map(|rule| rule.rule).collect()
-}
-
 // --- Post-analysis via claude CLI ---
-
-const DEFAULT_USER_RULES: &[&str] = &[
-    "The file name matches what the file actually does.",
-    "The file is not excessively long (large files usually hide multiple responsibilities).",
-    "Functions are small and focused (no large multi-purpose functions).",
-    "There are no obvious dead functions, variables, or unused imports.",
-    "Magic numbers or hardcoded values are avoided or clearly explained.",
-    "Error handling exists where failures are possible.",
-    "Public interfaces (functions/classes) are easy to understand from their names.",
-    "The file does not contain debugging code (logs, prints, temporary hacks).",
-    "Comments explain why, not what the code already says.",
-    "The file does not introduce unnecessary new patterns or structures.",
-];
 
 const QUERY_RULES_PATH: &str = "/query-rules";
 const GENERATED_RULES_FILE_ID: &str = "Rules.md";
-const SELECTED_RULES_FILE_ID: &str = "SelectedRules.md";
-const LOCAL_SELECTED_RULES_DIR: &str = ".rippletide";
-const LOCAL_SELECTED_RULES_PATH: &str = ".rippletide/selected-rules.md";
+const GOLD_RULES_FILE_ID: &str = "GoldRules.md";
+const LEGACY_SELECTED_RULES_FILE_ID: &str = "SelectedRules.md";
+const LOCAL_GOLD_RULES_DIR: &str = ".rippletide";
+const LOCAL_GOLD_RULES_PATH: &str = ".rippletide/gold-rules.md";
+const LEGACY_LOCAL_SELECTED_RULES_PATH: &str = ".rippletide/selected-rules.md";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum CandidateSource {
@@ -1475,9 +1445,71 @@ fn fetch_markdown_file(user_id: &str, file_id: &str) -> Result<Option<String>, S
         .map(|value| value.to_string()))
 }
 
+fn parse_list_item(line: &str) -> Option<(usize, String)> {
+    let indent = line.chars().take_while(|ch| ch.is_whitespace()).count();
+    let trimmed = line[indent..].trim_end();
+    let mut chars = trimmed.chars().peekable();
+    let marker_len = match chars.peek().copied() {
+        Some('-' | '*' | '+') => {
+            chars.next();
+            if chars.peek().copied().map(|ch| ch.is_whitespace()).unwrap_or(false) {
+                1
+            } else {
+                return None;
+            }
+        }
+        Some(ch) if ch.is_ascii_digit() => {
+            let mut digits = 0usize;
+            while chars.peek().copied().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                chars.next();
+                digits += 1;
+            }
+            match chars.peek().copied() {
+                Some('.') | Some(')') => {
+                    chars.next();
+                    if chars.peek().copied().map(|ch| ch.is_whitespace()).unwrap_or(false) {
+                        digits + 1
+                    } else {
+                        return None;
+                    }
+                }
+                _ => return None,
+            }
+        }
+        _ => return None,
+    };
+    let text = trimmed[marker_len..].trim();
+    if text.is_empty() {
+        return None;
+    }
+    Some((indent, text.to_string()))
+}
+
 fn parse_rules_markdown(markdown: &str) -> Vec<String> {
     let mut rules = Vec::new();
     let mut in_code_block = false;
+    let mut current_parent: Option<String> = None;
+    let mut parent_indent: usize = 0;
+    let mut children: Vec<String> = Vec::new();
+
+    let flush = |rules: &mut Vec<String>, current_parent: &mut Option<String>, children: &mut Vec<String>| {
+        if let Some(parent) = current_parent.take() {
+            if children.is_empty() {
+                rules.push(parent);
+            } else {
+                let joined = children.join(", ");
+                let base = parent.trim_end().to_string();
+                if base.ends_with(':') {
+                    rules.push(format!("{base} {joined}"));
+                } else if base.ends_with('.') || base.ends_with('!') || base.ends_with('?') {
+                    rules.push(format!("{base} {joined}"));
+                } else {
+                    rules.push(format!("{base}. {joined}"));
+                }
+            }
+        }
+        children.clear();
+    };
 
     for line in markdown.lines() {
         let trimmed = line.trim();
@@ -1490,31 +1522,46 @@ fn parse_rules_markdown(markdown: &str) -> Vec<String> {
         }
 
         let indent = line.chars().take_while(|ch| ch.is_whitespace()).count();
-        let is_top_level_bullet = indent == 0
-            && (line.starts_with("- ") || line.starts_with("* "));
+        if let Some((item_indent, text)) = parse_list_item(line) {
+            if current_parent.is_none() {
+                if item_indent > 0 {
+                    continue;
+                }
+                current_parent = Some(text);
+                parent_indent = item_indent;
+                continue;
+            }
 
-        if is_top_level_bullet {
-            let rule = line[2..].trim();
-            if !rule.is_empty() {
-                rules.push(rule.to_string());
+            if item_indent <= parent_indent {
+                flush(&mut rules, &mut current_parent, &mut children);
+                if item_indent > 0 {
+                    continue;
+                }
+                current_parent = Some(text);
+                parent_indent = item_indent;
+            } else {
+                children.push(text);
             }
             continue;
         }
 
         let is_continuation = indent > 0
             && !trimmed.is_empty()
-            && !trimmed.starts_with("- ")
-            && !trimmed.starts_with("* ")
+            && parse_list_item(line).is_none()
             && !trimmed.starts_with('#');
 
         if is_continuation {
-            if let Some(last) = rules.last_mut() {
-                last.push(' ');
-                last.push_str(trimmed);
+            if let Some(last_child) = children.last_mut() {
+                last_child.push(' ');
+                last_child.push_str(trimmed);
+            } else if let Some(parent) = current_parent.as_mut() {
+                parent.push(' ');
+                parent.push_str(trimmed);
             }
         }
     }
 
+    flush(&mut rules, &mut current_parent, &mut children);
     rules
 }
 
@@ -1523,13 +1570,13 @@ fn fetch_generated_rules(user_id: &str) -> Result<Option<Vec<String>>, String> {
         .map(|content| content.map(|markdown| parse_rules_markdown(&markdown)))
 }
 
-fn selected_rules_local_path(cwd: &Path) -> PathBuf {
-    cwd.join(LOCAL_SELECTED_RULES_PATH)
+fn gold_rules_local_path(cwd: &Path) -> PathBuf {
+    cwd.join(LOCAL_GOLD_RULES_PATH)
 }
 
-fn selected_rules_markdown(rules: &[String]) -> String {
+fn gold_rules_markdown(rules: &[String]) -> String {
     let mut content = String::from(
-        "# Selected Rules\n\nThese are the final user-approved rules for this repository. Rippletide should use this set as the source of truth.\n\n",
+        "# Gold Rules\n\nThese are the final user-approved rules for this repository. Rippletide should use this set as the source of truth.\n\n",
     );
     for rule in rules {
         content.push_str("- ");
@@ -1634,32 +1681,38 @@ fn prompt_rule_selection(
         return Ok(current_rules.to_vec());
     }
 
-    let items: Vec<String> = candidates
-        .iter()
-        .map(|candidate| {
-            format!(
-                "{} {}",
-                candidate.rule,
-                format!("({})", candidate.source.label()).to_lowercase()
-            )
-        })
-        .collect();
-    let indices = ui::prompt_multi_select(
-        "Pick the rules you'd like your coding agent to follow",
-        &[
-            "Select the rules to keep. These become the final Rippletide rule set for this repo.",
-            "Use ↑/↓ to move, space to toggle, enter to confirm, and 'a' to toggle all.",
-        ],
-        &items,
-    )?;
+    let mut final_rules = if candidates.is_empty() {
+        if current_rules.is_empty() {
+            ui::print_info("No candidate rules were generated automatically. You can add custom rules now.");
+        }
+        current_rules.to_vec()
+    } else {
+        let items: Vec<String> = candidates
+            .iter()
+            .map(|candidate| {
+                format!(
+                    "{} {}",
+                    candidate.rule,
+                    format!("({})", candidate.source.label()).to_lowercase()
+                )
+            })
+            .collect();
+        let indices = ui::prompt_multi_select(
+            "Pick the rules you'd like your coding agent to follow",
+            &[
+                "Select the rules to keep. These become the final Rippletide rule set for this repo.",
+                "Use ↑/↓ to move, space to toggle, enter to confirm, and 'a' to toggle all.",
+            ],
+            &items,
+        )?;
 
-    let selected_rules: Vec<String> = indices
-        .into_iter()
-        .filter_map(|idx| candidates.get(idx))
-        .map(|candidate| candidate.rule.clone())
-        .collect();
+        indices
+            .into_iter()
+            .filter_map(|idx| candidates.get(idx))
+            .map(|candidate| candidate.rule.clone())
+            .collect()
+    };
 
-    let mut final_rules = selected_rules;
     loop {
         let custom_rule = ui::styled_prompt("Type to add your rule (or press Enter to finish)")?;
         let custom_rule = custom_rule.trim();
@@ -1673,22 +1726,41 @@ fn prompt_rule_selection(
     Ok(final_rules)
 }
 
-fn persist_selected_rules_local(cwd: &Path, rules: &[String]) -> io::Result<PathBuf> {
-    let dir = cwd.join(LOCAL_SELECTED_RULES_DIR);
+fn remove_legacy_local_selected_rules(cwd: &Path) {
+    let legacy_path = cwd.join(LEGACY_LOCAL_SELECTED_RULES_PATH);
+    if legacy_path.exists() {
+        let _ = fs::remove_file(legacy_path);
+    }
+}
+
+fn persist_gold_rules_local(cwd: &Path, rules: &[String]) -> io::Result<PathBuf> {
+    let dir = cwd.join(LOCAL_GOLD_RULES_DIR);
     fs::create_dir_all(&dir)?;
-    let path = selected_rules_local_path(cwd);
-    fs::write(&path, selected_rules_markdown(rules))?;
+    let path = gold_rules_local_path(cwd);
+    fs::write(&path, gold_rules_markdown(rules))?;
+    remove_legacy_local_selected_rules(cwd);
     Ok(path)
 }
 
-fn persist_selected_rules_remote(user_id: &str, rules: &[String]) -> Result<(), String> {
+fn remove_legacy_selected_rules_remote(user_id: &str) {
+    let legacy_url = format!(
+        "{}/files/{}",
+        upload_url().trim_end_matches("/upload"),
+        LEGACY_SELECTED_RULES_FILE_ID
+    );
+    let _ = ureq::delete(&legacy_url)
+        .set("X-User-Id", user_id)
+        .call();
+}
+
+fn persist_gold_rules_remote(user_id: &str, rules: &[String]) -> Result<(), String> {
     let url = format!(
         "{}/files/{}",
         upload_url().trim_end_matches("/upload"),
-        SELECTED_RULES_FILE_ID
+        GOLD_RULES_FILE_ID
     );
     let payload = serde_json::json!({
-        "content": selected_rules_markdown(rules),
+        "content": gold_rules_markdown(rules),
     });
 
     match ureq::put(&url)
@@ -1696,21 +1768,25 @@ fn persist_selected_rules_remote(user_id: &str, rules: &[String]) -> Result<(), 
         .set("X-User-Id", user_id)
         .send_string(&payload.to_string())
     {
-        Ok(_) => Ok(()),
+        Ok(_) => {
+            remove_legacy_selected_rules_remote(user_id);
+            Ok(())
+        }
         Err(ureq::Error::Status(404, _)) => {
             let create_url = format!("{}/files", upload_url().trim_end_matches("/upload"));
             let create_payload = serde_json::json!({
-                "id": SELECTED_RULES_FILE_ID,
-                "content": selected_rules_markdown(rules),
+                "id": GOLD_RULES_FILE_ID,
+                "content": gold_rules_markdown(rules),
             });
             ureq::post(&create_url)
                 .set("Content-Type", "application/json")
                 .set("X-User-Id", user_id)
                 .send_string(&create_payload.to_string())
-                .map_err(|e| format!("Failed to create selected rules remotely: {e}"))?;
+                .map_err(|e| format!("Failed to create gold rules remotely: {e}"))?;
+            remove_legacy_selected_rules_remote(user_id);
             Ok(())
         }
-        Err(e) => Err(format!("Failed to persist selected rules remotely: {e}")),
+        Err(e) => Err(format!("Failed to persist gold rules remotely: {e}")),
     }
 }
 
@@ -2211,58 +2287,26 @@ fn main() -> io::Result<()> {
     }
 
     println!();
-    let generic_rules = run_benchmark_phase(&cwd, &scan_result.tech_stacks);
+
+    let candidate_rules = build_rule_candidates(&generated_rules, &[], &[]);
+    let current_rules = generated_rules.clone();
+    let gold_rules = prompt_rule_selection(&candidate_rules, &current_rules)?;
+
+    match persist_gold_rules_local(&cwd, &gold_rules) {
+        Ok(path) => ui::print_success(&format!(
+            "Saved gold rules locally to {}",
+            path.display()
+        )),
+        Err(err) => ui::print_error(&format!("Failed to save gold rules locally: {err}")),
+    }
+
+    if let Some(ref user_id) = config.user_id {
+        match persist_gold_rules_remote(user_id, &gold_rules) {
+            Ok(()) => ui::print_success("Saved gold rules to Rippletide backend"),
+            Err(err) => ui::print_error(&err),
+        }
+    }
     println!();
-
-    let candidate_rules = build_rule_candidates(
-        &generated_rules,
-        &generic_rules,
-        &DEFAULT_USER_RULES
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>(),
-    );
-
-    let current_rules = if generated_rules.is_empty() {
-        DEFAULT_USER_RULES
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-    } else {
-        generated_rules.clone()
-    };
-
-    let _selected_rules = if candidate_rules.is_empty() {
-        current_rules.clone()
-    } else {
-        let selected = prompt_rule_selection(&candidate_rules, &current_rules)?;
-        let selected = if selected.is_empty() {
-            ui::print_info("No rules selected — falling back to default rules for this run");
-            DEFAULT_USER_RULES
-                .iter()
-                .map(|s| s.to_string())
-                .collect::<Vec<_>>()
-        } else {
-            selected
-        };
-
-        match persist_selected_rules_local(&cwd, &selected) {
-            Ok(path) => ui::print_success(&format!(
-                "Saved selected rules locally to {}",
-                path.display()
-            )),
-            Err(err) => ui::print_error(&format!("Failed to save selected rules locally: {err}")),
-        }
-
-        if let Some(ref user_id) = config.user_id {
-            match persist_selected_rules_remote(user_id, &selected) {
-                Ok(()) => ui::print_success("Saved selected rules to Rippletide backend"),
-                Err(err) => ui::print_error(&err),
-            }
-        }
-        println!();
-        selected
-    };
 
     // Phase 7 — Configure files
     run_configure_phase();
@@ -2384,12 +2428,12 @@ mod tests {
     }
 
     #[test]
-    fn selected_rules_markdown_contains_all_rules() {
-        let markdown = selected_rules_markdown(&vec![
+    fn gold_rules_markdown_contains_all_rules() {
+        let markdown = gold_rules_markdown(&vec![
             "Keep handlers small".to_string(),
             "Write focused tests".to_string(),
         ]);
-        assert!(markdown.contains("# Selected Rules"));
+        assert!(markdown.contains("# Gold Rules"));
         assert!(markdown.contains("- Keep handlers small"));
         assert!(markdown.contains("- Write focused tests"));
     }
@@ -2438,7 +2482,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_rules_markdown_keeps_only_top_level_bullets_and_continuations() {
+    fn parse_rules_markdown_keeps_continuations_and_merges_nested_bullets() {
         let markdown = r#"# Rules
 - Keep handlers small.
   Continue only when the logic stays cohesive.
@@ -2450,12 +2494,12 @@ mod tests {
         let parsed = parse_rules_markdown(markdown);
         assert_eq!(parsed.len(), 3);
         assert_eq!(parsed[0], "Keep handlers small. Continue only when the logic stays cohesive.");
-        assert_eq!(parsed[1], "Prefer typed boundaries.");
+        assert_eq!(parsed[1], "Prefer typed boundaries. Nested bullet that should not become a standalone rule.");
         assert_eq!(parsed[2], "Write focused tests.");
     }
 
     #[test]
-    fn parse_rules_markdown_ignores_nested_bullets_after_top_level_rule() {
+    fn parse_rules_markdown_merges_nested_bullets_after_top_level_rule() {
         let markdown = r#"# Rules
 - Prefer typed boundaries.
   - Use zod at API boundaries.
@@ -2464,7 +2508,7 @@ mod tests {
 "#;
         let parsed = parse_rules_markdown(markdown);
         assert_eq!(parsed, vec![
-            "Prefer typed boundaries.".to_string(),
+            "Prefer typed boundaries. Use zod at API boundaries., Reuse validators.".to_string(),
             "Keep handlers small.".to_string(),
         ]);
     }
@@ -2525,6 +2569,18 @@ mod tests {
             "Prefer explicit names for exported functions. Continue the same rule with more explanation so the item stays coherent. Another sentence that should remain attached to the same rule.".to_string(),
             "Write focused tests.".to_string(),
         ]);
+    }
+
+    #[test]
+    fn parse_rules_markdown_keeps_hierarchical_rule_as_one_rule() {
+        let markdown = r#"# Rules
+- Always do in order:
+  - 1
+  - 2
+  - 3
+"#;
+        let parsed = parse_rules_markdown(markdown);
+        assert_eq!(parsed, vec!["Always do in order: 1, 2, 3".to_string()]);
     }
 
     #[test]

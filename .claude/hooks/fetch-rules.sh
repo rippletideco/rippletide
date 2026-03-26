@@ -37,7 +37,8 @@ fi
 # Query coding rules for the current user request
 PAYLOAD=$(jq -Rn \
   --arg query "$hook_input" \
-  '{query: $query, beam_width: 2, beam_max_depth: 8}' 2>/dev/null)
+  --arg query_source "user_prompt" \
+  '{query: $query, query_source: $query_source, beam_width: 2, beam_max_depth: 8}' 2>/dev/null)
 if [[ -z "$PAYLOAD" ]]; then
   exit 0
 fi
