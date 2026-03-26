@@ -403,7 +403,16 @@ const PUSH_RULES_SCRIPT: &str = include_str!("../../.claude/hooks/push-rules.sh"
 const SYNC_RULES_SCRIPT: &str = include_str!("../../.claude/hooks/sync-rules.sh");
 
 // rippletide-override: user approved
-const CLAUDE_LOCAL_SETTINGS: &str = include_str!("../../.claude/settings.local.json");
+const CLAUDE_LOCAL_SETTINGS: &str = r#"{
+  "permissions": {
+    "allow": [
+      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh\" *)",
+      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/review-plan-command.sh\" *)",
+      "Bash(bash \"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/review-plan-command.sh\" *)"
+    ]
+  }
+}
+"#;
 
 const PLAN_COMMAND_MARKDOWN: &str = r#"---
 description: Draft a repo-aware implementation plan and visibly review it against Rippletide rules
