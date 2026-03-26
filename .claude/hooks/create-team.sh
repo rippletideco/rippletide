@@ -39,8 +39,10 @@ HOOK_EOF
   exit 0
 fi
 
+# rippletide-override: user approved
 USER_ID=$(jq -r '.user_id // empty' "$CONFIG_FILE" 2>/dev/null)
-if [[ -z "$USER_ID" ]]; then
+USER_EMAIL=$(jq -r '.email // empty' "$CONFIG_FILE" 2>/dev/null)
+if [[ -z "$USER_ID" || -z "$USER_EMAIL" ]]; then
   cat <<'HOOK_EOF'
 <user-prompt-submit-hook>
 [Rippletide] Missing credentials. Run `npx rippletide-code@latest connect` first.
@@ -70,9 +72,11 @@ BASE_URL="${RIPPLETIDE_API_URL:-https://coding-agent.up.railway.app}"
 
 PAYLOAD=$(jq -n --arg name "$TEAM_NAME" '{name: $name}' 2>/dev/null)
 
+# rippletide-override: user approved
 RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/teams" \
   -H "Content-Type: application/json" \
   -H "X-User-Id: $USER_ID" \
+  -H "X-User-Email: $USER_EMAIL" \
   -d "$PAYLOAD" 2>/dev/null)
 
 TEAM_ID=$(echo "$RESPONSE" | jq -r '.team_id // empty' 2>/dev/null)
