@@ -47,16 +47,33 @@ case "$ACTION" in
       echo '{"error":"Missing rule text for add action."}'
       exit 1
     fi
-    FILE_ID="session-rule-$(date +%Y%m%d-%H%M%S).md"
-    CONTENT=$(printf "# Session Rule\n\n> Added from Claude Code session on %s\n\n- %s" "$(date +%Y-%m-%d)" "$RULE_TEXT")
-    PAYLOAD=$(jq -n \
-      --arg id "$FILE_ID" \
-      --arg content "$CONTENT" \
-      '{id: $id, content: $content}')
-    RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/files" \
-      -H "Content-Type: application/json" \
-      -H "X-User-Id: $USER_ID" \
-      -d "$PAYLOAD" 2>/dev/null)
+    FILE_ID="GoldRules.md"
+    ENCODED_ID=$(printf '%s' "$FILE_ID" | jq -sRr @uri)
+    EXISTING_RESPONSE=$(curl -s --max-time 30 -X GET "$BASE_URL/files/$ENCODED_ID" \
+      -H "X-User-Id: $USER_ID" 2>/dev/null)
+    EXISTING_CONTENT=$(echo "$EXISTING_RESPONSE" | jq -r '.file.content // empty' 2>/dev/null)
+
+    if [[ -n "$EXISTING_CONTENT" ]]; then
+      if [[ "$EXISTING_CONTENT" != *$'\n' ]]; then
+        EXISTING_CONTENT="${EXISTING_CONTENT}"$'\n'
+      fi
+      CONTENT="${EXISTING_CONTENT}- ${RULE_TEXT}"$'\n'
+      PAYLOAD=$(jq -n --arg content "$CONTENT" '{content: $content}')
+      RESPONSE=$(curl -s --max-time 30 -X PUT "$BASE_URL/files/$ENCODED_ID" \
+        -H "Content-Type: application/json" \
+        -H "X-User-Id: $USER_ID" \
+        -d "$PAYLOAD" 2>/dev/null)
+    else
+      CONTENT=$(printf "# Gold Rules\n\nThese are the final user-approved rules for this repository. Rippletide should use this set as the source of truth.\n\n- %s\n" "$RULE_TEXT")
+      PAYLOAD=$(jq -n \
+        --arg id "$FILE_ID" \
+        --arg content "$CONTENT" \
+        '{id: $id, content: $content}')
+      RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/files" \
+        -H "Content-Type: application/json" \
+        -H "X-User-Id: $USER_ID" \
+        -d "$PAYLOAD" 2>/dev/null)
+    fi
     echo "$RESPONSE"
     ;;
   edit)
