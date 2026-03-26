@@ -391,656 +391,19 @@ fn ensure_agent_files() -> io::Result<bool> {
     Ok(changed)
 }
 
-const HOOK_SCRIPT: &str = r#"#!/bin/bash
-
-# Read hook input from stdin
-raw_input=$(cat)
-if [[ -z "${raw_input//[[:space:]]/}" ]]; then
-  exit 0
-fi
-
-# Claude Code passes JSON with a "prompt" field to UserPromptSubmit hooks
-hook_input=$(echo "$raw_input" | jq -r '.prompt // empty' 2>/dev/null)
-if [[ -z "$hook_input" ]]; then
-  hook_input="$raw_input"
-fi
-
-# Skip commands handled by dedicated hooks
-case "$hook_input" in
-  invite-rules*|receive-rules*) exit 0 ;;
-esac
-
-# Read user_id from Rippletide config (macOS or Linux)
-CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/Rippletide/Rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  exit 0
-fi
-
-USER_ID=$(jq -r '.user_id // empty' "$CONFIG_FILE" 2>/dev/null)
-if [[ -z "$USER_ID" ]]; then
-  exit 0
-fi
-
-# Query coding rules for the current user request
-PAYLOAD=$(jq -Rn \
-  --arg query "$hook_input" \
-  --arg query_source "user_prompt" \
-  '{query: $query, query_source: $query_source, beam_width: 2, beam_max_depth: 8}' 2>/dev/null)
-if [[ -z "$PAYLOAD" ]]; then
-  exit 0
-fi
-
-RESPONSE=$(curl -s --max-time 180 -X POST "https://coding-agent.up.railway.app/query-rules" \
-  -H "Content-Type: application/json" \
-  -H "X-User-Id: $USER_ID" \
-  -d "$PAYLOAD" 2>/dev/null)
-
-ANSWER=$(echo "$RESPONSE" | jq -r '.answer // empty' 2>/dev/null)
-RULE_MGMT=$(echo "$RESPONSE" | jq -r '.rule_management // empty' 2>/dev/null)
-
-if [[ -z "$ANSWER" && -z "$RULE_MGMT" ]]; then
-  exit 0
-fi
-
-# If rule management detected, output it FIRST as a blocking directive
-if [[ -n "$RULE_MGMT" ]]; then
-  cat <<HOOK_EOF
-<user-prompt-submit-hook>
-[BLOCKING — Rule Management Request Detected]
-
-STOP. The user is asking to manage a coding rule (add, edit, or delete).
-Do NOT edit any local files (CLAUDE.md, settings, etc.) to fulfill this request.
-Rules are stored in the Rippletide backend, not in local files.
-You MUST follow the instructions below to manage rules through the backend.
-
-$RULE_MGMT
-
-REQUIRED STEPS:
-1. Present the proposed action and any conflicts to the user clearly.
-2. Ask for explicit confirmation before proceeding.
-3. For auto-generated files (Rules.md, work_rules_report.md), ask the user to confirm TWICE.
-4. ONLY after user confirms, run the manage-rule.sh command shown above via the Bash tool.
-5. Do NOT edit CLAUDE.md or any local file. The rule must be saved to the Rippletide backend.
-
----
-[Coding Rules from Rippletide]
-
-$ANSWER
-</user-prompt-submit-hook>
-HOOK_EOF
-else
-  # Normal flow — just rules, no management
-  cat <<HOOK_EOF
-<user-prompt-submit-hook>
-[Coding Rules from Rippletide]
-
-IMPORTANT: You MUST begin your response by listing which of these rules you are applying.
-Then ensure ALL generated code complies with these rules.
-
-$ANSWER
-</user-prompt-submit-hook>
-HOOK_EOF
-fi
-"#;
-
-const MANAGE_RULE_SCRIPT: &str = r##"#!/bin/bash
-
-# Helper script for managing Rippletide coding rules from a Claude Code session.
-# Called by Claude via Bash tool after user confirmation.
-#
-# Usage:
-#   manage-rule.sh add "rule text"
-#   manage-rule.sh edit "new content" "file-id.md"
-#   manage-rule.sh delete "" "file-id.md"
-
-ACTION="$1"
-RULE_TEXT="$2"
-FILE_ID="${3:-}"
-
-if [[ -z "$ACTION" ]]; then
-  echo '{"error":"Missing action. Usage: manage-rule.sh <add|edit|delete> <rule_text> [file_id]"}'
-  exit 1
-fi
-
-# Read user_id from Rippletide config (macOS or Linux)
-CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/Rippletide/Rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  echo '{"error":"Rippletide config not found. Run rippletide-code connect first."}'
-  exit 1
-fi
-
-USER_ID=$(jq -r '.user_id // empty' "$CONFIG_FILE" 2>/dev/null)
-if [[ -z "$USER_ID" ]]; then
-  echo '{"error":"No user_id in config. Run rippletide-code connect first."}'
-  exit 1
-fi
-
-BASE_URL="${RIPPLETIDE_API_URL:-https://coding-agent.up.railway.app}"
-
-case "$ACTION" in
-  add)
-    if [[ -z "$RULE_TEXT" ]]; then
-      echo '{"error":"Missing rule text for add action."}'
-      exit 1
-    fi
-    FILE_ID="session-rule-$(date +%Y%m%d-%H%M%S).md"
-    CONTENT=$(printf "# Session Rule\n\n> Added from Claude Code session on %s\n\n- %s" "$(date +%Y-%m-%d)" "$RULE_TEXT")
-    PAYLOAD=$(jq -n \
-      --arg id "$FILE_ID" \
-      --arg content "$CONTENT" \
-      '{id: $id, content: $content}')
-    RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/files" \
-      -H "Content-Type: application/json" \
-      -H "X-User-Id: $USER_ID" \
-      -d "$PAYLOAD" 2>/dev/null)
-    echo "$RESPONSE"
-    ;;
-  edit)
-    if [[ -z "$RULE_TEXT" ]]; then
-      echo '{"error":"Missing new content for edit action."}'
-      exit 1
-    fi
-    if [[ -z "$FILE_ID" ]]; then
-      echo '{"error":"Missing file_id for edit action."}'
-      exit 1
-    fi
-    ENCODED_ID=$(printf '%s' "$FILE_ID" | jq -sRr @uri)
-    PAYLOAD=$(jq -n --arg content "$RULE_TEXT" '{content: $content}')
-    RESPONSE=$(curl -s --max-time 30 -X PUT "$BASE_URL/files/$ENCODED_ID" \
-      -H "Content-Type: application/json" \
-      -H "X-User-Id: $USER_ID" \
-      -d "$PAYLOAD" 2>/dev/null)
-    echo "$RESPONSE"
-    ;;
-  delete)
-    if [[ -z "$FILE_ID" ]]; then
-      echo '{"error":"Missing file_id for delete action."}'
-      exit 1
-    fi
-    ENCODED_ID=$(printf '%s' "$FILE_ID" | jq -sRr @uri)
-    RESPONSE=$(curl -s --max-time 30 -X DELETE "$BASE_URL/files/$ENCODED_ID" \
-      -H "X-User-Id: $USER_ID" 2>/dev/null)
-    echo "$RESPONSE"
-    ;;
-  *)
-    echo '{"error":"Unknown action. Use: add, edit, delete"}'
-    exit 1
-    ;;
-esac
-"##;
-
-const INVITE_RULES_SCRIPT: &str = r##"#!/bin/bash
-
-# UserPromptSubmit hook — handles /invite-rules command.
-# Collects receiver email from hook input, sends share invite via backend.
-
-raw_input=$(cat)
-if [[ -z "${raw_input//[[:space:]]/}" ]]; then
-  exit 0
-fi
-
-# Claude Code passes JSON with a "prompt" field to UserPromptSubmit hooks
-prompt=$(echo "$raw_input" | jq -r '.prompt // empty' 2>/dev/null)
-if [[ -z "$prompt" ]]; then
-  prompt="$raw_input"
-fi
-
-# Only trigger on invite-rules command
-case "$prompt" in
-  invite-rules*) ;;
-  *) exit 0 ;;
-esac
-
-# Extract receiver email from the prompt (e.g., "invite-rules bob@co.com")
-RECEIVER_EMAIL=$(echo "$prompt" | sed 's|^invite-rules[[:space:]]*||' | tr -d '[:space:]')
-
-# Read user config
-CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/Rippletide/Rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  cat <<'HOOK_EOF'
-<user-prompt-submit-hook>
-[Rippletide] Not connected. Run `npx rippletide-code@latest connect` first.
-</user-prompt-submit-hook>
-HOOK_EOF
-  exit 0
-fi
-
-USER_ID=$(jq -r '.user_id // empty' "$CONFIG_FILE" 2>/dev/null)
-USER_EMAIL=$(jq -r '.email // empty' "$CONFIG_FILE" 2>/dev/null)
-if [[ -z "$USER_ID" || -z "$USER_EMAIL" ]]; then
-  cat <<'HOOK_EOF'
-<user-prompt-submit-hook>
-[Rippletide] Missing credentials. Run `npx rippletide-code@latest connect` first.
-</user-prompt-submit-hook>
-HOOK_EOF
-  exit 0
-fi
-
-# If no email provided in command, ask Claude to collect it
-if [[ -z "$RECEIVER_EMAIL" || "$RECEIVER_EMAIL" != *"@"* ]]; then
-  cat <<'HOOK_EOF'
-<user-prompt-submit-hook>
-[Rippletide — Share Rules]
-
-To share your coding rules, I need the recipient's email address.
-Please ask the user: "What email address should I send the rules to?"
-
-Once the user provides an email, run this command via the Bash tool:
-  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/invite-rules.sh" <<< "invite-rules <email>"
-
-Replace <email> with the actual email address provided by the user.
-</user-prompt-submit-hook>
-HOOK_EOF
-  exit 0
-fi
-
-BASE_URL="${RIPPLETIDE_API_URL:-https://coding-agent.up.railway.app}"
-
-PAYLOAD=$(jq -n --arg email "$RECEIVER_EMAIL" '{receiver_email: $email}' 2>/dev/null)
-
-RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/share-rules/invite" \
-  -H "Content-Type: application/json" \
-  -H "X-User-Id: $USER_ID" \
-  -H "X-User-Email: $USER_EMAIL" \
-  -d "$PAYLOAD" 2>/dev/null)
-
-SUCCESS=$(echo "$RESPONSE" | jq -r '.success // false' 2>/dev/null)
-ERROR=$(echo "$RESPONSE" | jq -r '.error // empty' 2>/dev/null)
-FILES_COUNT=$(echo "$RESPONSE" | jq -r '.files_count // 0' 2>/dev/null)
-
-if [[ "$SUCCESS" == "true" ]]; then
-  cat <<HOOK_EOF
-<user-prompt-submit-hook>
-[Rippletide — Rules Shared]
-
-Invite sent to $RECEIVER_EMAIL ($FILES_COUNT rule file(s)).
-The recipient has 24 hours to enter the OTP code from their email.
-
-Tell the recipient to type "receive-rules" in their Claude session and enter the code.
-</user-prompt-submit-hook>
-HOOK_EOF
-else
-  cat <<HOOK_EOF
-<user-prompt-submit-hook>
-[Rippletide — Share Failed]
-
-Failed to share rules: $ERROR
-
-Full response: $RESPONSE
-</user-prompt-submit-hook>
-HOOK_EOF
-fi
-"##;
-
-const RECEIVE_RULES_SCRIPT: &str = r##"#!/bin/bash
-
-# UserPromptSubmit hook — handles /receive-rules command.
-# Receiver enters OTP, backend stages files, returns conflict report.
-# Then receiver chooses to activate or reject.
-
-raw_input=$(cat)
-if [[ -z "${raw_input//[[:space:]]/}" ]]; then
-  exit 0
-fi
-
-# Claude Code passes JSON with a "prompt" field to UserPromptSubmit hooks
-prompt=$(echo "$raw_input" | jq -r '.prompt // empty' 2>/dev/null)
-if [[ -z "$prompt" ]]; then
-  prompt="$raw_input"
-fi
-
-# Only trigger on receive-rules command
-case "$prompt" in
-  receive-rules*) ;;
-  *) exit 0 ;;
-esac
-
-# Extract OTP from the prompt (e.g., "receive-rules 123456")
-OTP_CODE=$(echo "$prompt" | sed 's|^receive-rules[[:space:]]*||' | tr -d '[:space:]')
-
-# Read user config
-CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/Rippletide/Rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  cat <<'HOOK_EOF'
-<user-prompt-submit-hook>
-[Rippletide] Not connected. Run `npx rippletide-code@latest connect` first.
-</user-prompt-submit-hook>
-HOOK_EOF
-  exit 0
-fi
-
-USER_ID=$(jq -r '.user_id // empty' "$CONFIG_FILE" 2>/dev/null)
-if [[ -z "$USER_ID" ]]; then
-  cat <<'HOOK_EOF'
-<user-prompt-submit-hook>
-[Rippletide] Missing credentials. Run `npx rippletide-code@latest connect` first.
-</user-prompt-submit-hook>
-HOOK_EOF
-  exit 0
-fi
-
-# If no OTP provided, ask Claude to collect it
-if [[ -z "$OTP_CODE" ]]; then
-  cat <<'HOOK_EOF'
-<user-prompt-submit-hook>
-[Rippletide — Receive Shared Rules]
-
-To import shared coding rules, I need the OTP code from the email you received.
-Please ask the user: "What is the OTP code from the share invite email?"
-
-Once the user provides the OTP, run this command via the Bash tool:
-  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/receive-rules.sh" <<< "receive-rules <otp>"
-
-Replace <otp> with the actual code provided by the user.
-</user-prompt-submit-hook>
-HOOK_EOF
-  exit 0
-fi
-
-BASE_URL="${RIPPLETIDE_API_URL:-https://coding-agent.up.railway.app}"
-
-# Step 1: Receive — stage files and get conflict report
-PAYLOAD=$(jq -n --arg otp "$OTP_CODE" '{otp: $otp}' 2>/dev/null)
-
-RESPONSE=$(curl -s --max-time 60 -X POST "$BASE_URL/share-rules/receive" \
-  -H "Content-Type: application/json" \
-  -H "X-User-Id: $USER_ID" \
-  -d "$PAYLOAD" 2>/dev/null)
-
-ERROR=$(echo "$RESPONSE" | jq -r '.error // empty' 2>/dev/null)
-if [[ -n "$ERROR" ]]; then
-  cat <<HOOK_EOF
-<user-prompt-submit-hook>
-[Rippletide — Receive Failed]
-
-$ERROR
-</user-prompt-submit-hook>
-HOOK_EOF
-  exit 0
-fi
-
-SHARE_ID=$(echo "$RESPONSE" | jq -r '.share_id // empty' 2>/dev/null)
-SENDER_EMAIL=$(echo "$RESPONSE" | jq -r '.sender_email // empty' 2>/dev/null)
-STAGED_FILES=$(echo "$RESPONSE" | jq -r '.staged_files[]? // empty' 2>/dev/null)
-STAGED_COUNT=$(echo "$RESPONSE" | jq -r '.staged_files | length' 2>/dev/null)
-
-# Conflict report
-NEW_COUNT=$(echo "$RESPONSE" | jq -r '.conflict_report.new_rules_count // 0' 2>/dev/null)
-DUP_COUNT=$(echo "$RESPONSE" | jq -r '.conflict_report.duplicate_count // 0' 2>/dev/null)
-CONFLICT_COUNT=$(echo "$RESPONSE" | jq -r '.conflict_report.conflict_count // 0' 2>/dev/null)
-
-DUPLICATES=$(echo "$RESPONSE" | jq -r '
-  .conflict_report.duplicates[]? |
-  "  - \"\(.sender_rule)\" (yours ~ theirs, \(.similarity * 100 | floor)% similar)"
-' 2>/dev/null)
-
-CONFLICTS=$(echo "$RESPONSE" | jq -r '
-  .conflict_report.conflicts[]? |
-  "  - Your rule: \"\(.rule_a.text // "unknown")\"\n    Their rule: \"\(.rule_b.text // "unknown")\"\n    -> \(.consequence // "Conflicting instructions")"
-' 2>/dev/null)
-
-cat <<HOOK_EOF
-<user-prompt-submit-hook>
-[Shared Rules from $SENDER_EMAIL — STAGED]
-
-Received $STAGED_COUNT file(s):
-$STAGED_FILES
-
-$NEW_COUNT new rule(s), $DUP_COUNT duplicate(s), $CONFLICT_COUNT conflict(s).
-HOOK_EOF
-
-if [[ -n "$DUPLICATES" ]]; then
-  cat <<HOOK_EOF
-
-DUPLICATES (will be skipped on activate):
-$DUPLICATES
-HOOK_EOF
-fi
-
-if [[ -n "$CONFLICTS" ]]; then
-  cat <<HOOK_EOF
-
-CONFLICTS:
-$CONFLICTS
-HOOK_EOF
-fi
-
-cat <<HOOK_EOF
-
-To activate or reject these rules, run one of the following via the Bash tool:
-
-  # Activate — skip duplicates, keep YOUR version on conflicts
-  curl -s -X POST "$BASE_URL/share-rules/activate" \
-    -H "Content-Type: application/json" \
-    -H "X-User-Id: $USER_ID" \
-    -d '{"share_id":"$SHARE_ID","action":"activate_keep_mine"}'
-
-  # Activate — skip duplicates, keep THEIR version on conflicts
-  curl -s -X POST "$BASE_URL/share-rules/activate" \
-    -H "Content-Type: application/json" \
-    -H "X-User-Id: $USER_ID" \
-    -d '{"share_id":"$SHARE_ID","action":"activate_keep_theirs"}'
-
-  # Reject — delete all staged shared files
-  curl -s -X POST "$BASE_URL/share-rules/activate" \
-    -H "Content-Type: application/json" \
-    -H "X-User-Id: $USER_ID" \
-    -d '{"share_id":"$SHARE_ID","action":"reject"}'
-
-Present the conflict report above to the user and ask them to choose:
-  (A) Activate — keep YOUR version on conflicts
-  (B) Activate — keep THEIR version on conflicts
-  (C) Keep staged — review later
-  (D) Reject — delete shared files
-
-Then run the appropriate curl command based on their choice.
-</user-prompt-submit-hook>
-HOOK_EOF
-"##;
-
-const CHECK_CODE_SCRIPT: &str = r##"#!/bin/bash
-
-# PreToolUse hook — checks proposed code changes against the user's Rippletide rules.
-# Fires before Edit, Write, and MultiEdit tool calls.
-# Exit 0 = allow tool to proceed. Exit 2 = block tool and report violations to Claude.
-
-TOOL_INPUT=$(cat)
-if [[ -z "${TOOL_INPUT//[[:space:]]/}" ]]; then
-  exit 0
-fi
-
-# Only intercept code-writing tools
-TOOL_NAME=$(echo "$TOOL_INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
-case "$TOOL_NAME" in
-  Edit)
-    CODE=$(echo "$TOOL_INPUT" | jq -r '.tool_input.new_string // empty' 2>/dev/null)
-    FILENAME=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
-    ;;
-  Write)
-    CODE=$(echo "$TOOL_INPUT" | jq -r '.tool_input.content // empty' 2>/dev/null)
-    FILENAME=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
-    ;;
-  MultiEdit)
-    CODE=$(echo "$TOOL_INPUT" | jq -r '[.tool_input.edits[].new_string] | join("\n")' 2>/dev/null)
-    FILENAME=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
-    ;;
-  *)
-    exit 0
-    ;;
-esac
-
-# Skip non-code files — markdown, config, and data files are not subject to rule checks
-case "$FILENAME" in
-  *.md|*.json|*.yaml|*.yml|*.txt|*.toml|*.cfg|*.ini|*.csv)
-    exit 0
-    ;;
-esac
-
-# Skip if there is no code to check
-if [[ -z "${CODE//[[:space:]]/}" ]]; then
-  exit 0
-fi
-
-# Skip if the user has explicitly approved this change
-if echo "$CODE" | grep -qF "rippletide-override: user approved"; then
-  exit 0
-fi
-
-# Read user_id from Rippletide config (macOS or Linux)
-CONFIG_FILE="$HOME/Library/Application Support/com.Rippletide.Rippletide/config.json"
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  CONFIG_FILE="$HOME/.config/Rippletide/Rippletide/config.json"
-fi
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  exit 0
-fi
-
-USER_ID=$(jq -r '.user_id // empty' "$CONFIG_FILE" 2>/dev/null)
-if [[ -z "$USER_ID" ]]; then
-  exit 0
-fi
-
-# Build request payload
-PAYLOAD=$(jq -n \
-  --arg code "$CODE" \
-  --arg filename "${FILENAME:-unknown}" \
-  --arg context "Code change in ${FILENAME:-a file}" \
-  '{code: $code, filename: $filename, context: $context}' 2>/dev/null)
-if [[ -z "$PAYLOAD" ]]; then
-  exit 0
-fi
-
-# Call the check-code endpoint (30s timeout — fast check, not a fix)
-CHECK_CODE_URL="${RIPPLETIDE_CHECK_CODE_URL:-https://coding-agent.up.railway.app/check-code}"
-RESPONSE=$(curl -s --max-time 30 -X POST "$CHECK_CODE_URL" \
-  -H "Content-Type: application/json" \
-  -H "X-User-Id: $USER_ID" \
-  -d "$PAYLOAD" 2>/dev/null)
-
-PASS=$(echo "$RESPONSE" | jq -r '.pass | tostring' 2>/dev/null)
-if [[ "$PASS" == "true" || -z "$PASS" ]]; then
-  exit 0
-fi
-
-# Format violations for Claude
-VIOLATIONS=$(echo "$RESPONSE" | jq -r '
-  .violations[]? |
-  "  • Rule:  \(.rule)\n    Issue: \(.issue)\n    Fix:   \(.fix)"
-' 2>/dev/null)
-
-if [[ -z "$VIOLATIONS" ]]; then
-  exit 0
-fi
-
-cat >&2 <<'HOOK_EOF'
-[Rippletide] Code compliance check failed.
-
-HOOK_EOF
-
-echo "Violations found:" >&2
-echo "$VIOLATIONS" >&2
-
-cat >&2 <<'HOOK_EOF'
-
-You must now:
-1. Automatically rewrite the code to fix ONLY the listed violations. Keep everything else intact.
-2. Show the user a brief unified diff of the changes you made using a fenced ```diff code block with - (red, removed) and + (green, added) lines. Keep the diff minimal — only show changed hunks.
-3. Retry the tool call with the corrected code.
-4. If the retry still fails after check, repeat steps 1-3. Try up to 3 total attempts.
-5. If all 3 attempts fail, show the remaining violations and ask the user: "(A) Try one more rewrite, or (B) Override and keep original code?"
-   If (A): try one final (4th) rewrite attempt, then show the diff and retry.
-   If (B): revert to the ORIGINAL code (before any rewrites), add the comment "// rippletide-override: user approved" inside the code block (use "# rippletide-override: user approved" for Python/shell/YAML), then retry with the original code + override comment.
-6. If the 4th attempt also fails, automatically revert to the ORIGINAL code, add the override comment, and retry. Do not ask again.
-7. Do NOT ask the user before the first 3 automatic attempts.
-HOOK_EOF
-
-exit 2
-"##;
-
-const CLAUDE_SETTINGS: &str = r#"{
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/fetch-rules.sh\"",
-            "timeout": 180
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/invite-rules.sh\"",
-            "timeout": 60
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/receive-rules.sh\"",
-            "timeout": 120
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-code.sh\"",
-            "timeout": 60
-          }
-        ]
-      }
-    ]
-  }
-}
-"#;
-
-const CLAUDE_LOCAL_SETTINGS: &str = r#"{
-  "permissions": {
-    "allow": [
-      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/plan-command.sh\" *)",
-      "Bash(bash \"$CLAUDE_PROJECT_DIR/.claude/commands/review-plan-command.sh\" *)",
-      "Bash(bash \"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/commands/review-plan-command.sh\" *)"
-    ]
-  }
-}
-"#;
+const HOOK_SCRIPT: &str = include_str!("../../.claude/hooks/fetch-rules.sh");
+const MANAGE_RULE_SCRIPT: &str = include_str!("../../.claude/hooks/manage-rule.sh");
+const INVITE_RULES_SCRIPT: &str = include_str!("../../.claude/hooks/invite-rules.sh");
+const RECEIVE_RULES_SCRIPT: &str = include_str!("../../.claude/hooks/receive-rules.sh");
+const CHECK_CODE_SCRIPT: &str = include_str!("../../.claude/hooks/check-code.sh");
+const CREATE_TEAM_SCRIPT: &str = include_str!("../../.claude/hooks/create-team.sh");
+const JOIN_TEAM_SCRIPT: &str = include_str!("../../.claude/hooks/join-team.sh");
+const APPROVE_JOIN_SCRIPT: &str = include_str!("../../.claude/hooks/approve-join.sh");
+const PUSH_RULES_SCRIPT: &str = include_str!("../../.claude/hooks/push-rules.sh");
+const SYNC_RULES_SCRIPT: &str = include_str!("../../.claude/hooks/sync-rules.sh");
+
+// rippletide-override: user approved
+const CLAUDE_LOCAL_SETTINGS: &str = include_str!("../../.claude/settings.local.json");
 
 const PLAN_COMMAND_MARKDOWN: &str = r#"---
 description: Draft a repo-aware implementation plan and visibly review it against Rippletide rules
@@ -1148,6 +511,84 @@ printf '%s' "$PLAN" | "${{PLAN_CMD[@]}}" review-plan "$REQUEST" --stdin --json
     )
 }
 
+// rippletide-override: user approved
+/// Hook type for settings.json generation.
+enum HookType {
+    UserPromptSubmit,
+    PreToolUse,
+}
+
+/// A hook script entry: filename, content, type, timeout, and optional tool matcher.
+struct HookEntry {
+    name: &'static str,
+    content: &'static str,
+    hook_type: HookType,
+    timeout: u32,
+    matcher: Option<&'static str>,
+}
+
+/// All hook scripts to install. Add new hooks here — settings.json is generated automatically.
+const HOOK_ENTRIES: &[HookEntry] = &[
+    HookEntry { name: "fetch-rules.sh",   content: HOOK_SCRIPT,          hook_type: HookType::UserPromptSubmit, timeout: 180, matcher: None },
+    HookEntry { name: "invite-rules.sh",   content: INVITE_RULES_SCRIPT,  hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
+    HookEntry { name: "receive-rules.sh",  content: RECEIVE_RULES_SCRIPT, hook_type: HookType::UserPromptSubmit, timeout: 120, matcher: None },
+    HookEntry { name: "create-team.sh",    content: CREATE_TEAM_SCRIPT,   hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
+    HookEntry { name: "join-team.sh",      content: JOIN_TEAM_SCRIPT,     hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
+    HookEntry { name: "approve-join.sh",   content: APPROVE_JOIN_SCRIPT,  hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
+    HookEntry { name: "push-rules.sh",     content: PUSH_RULES_SCRIPT,    hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
+    HookEntry { name: "sync-rules.sh",     content: SYNC_RULES_SCRIPT,    hook_type: HookType::UserPromptSubmit, timeout: 120, matcher: None },
+    HookEntry { name: "check-code.sh",     content: CHECK_CODE_SCRIPT,    hook_type: HookType::PreToolUse,       timeout: 60,  matcher: Some("Write|Edit|MultiEdit") },
+    HookEntry { name: "manage-rule.sh",    content: MANAGE_RULE_SCRIPT,   hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
+];
+
+/// Build settings.json from HOOK_ENTRIES at runtime.
+fn generate_settings_json() -> String {
+    let mut user_prompt_submit = Vec::new();
+    let mut pre_tool_use = Vec::new();
+
+    for entry in HOOK_ENTRIES {
+        let hook_obj = if let Some(m) = entry.matcher {
+            format!(
+                r#"      {{
+        "matcher": "{}",
+        "hooks": [
+          {{
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/{}\"",
+            "timeout": {}
+          }}
+        ]
+      }}"#,
+                m, entry.name, entry.timeout
+            )
+        } else {
+            format!(
+                r#"      {{
+        "hooks": [
+          {{
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/{}\"",
+            "timeout": {}
+          }}
+        ]
+      }}"#,
+                entry.name, entry.timeout
+            )
+        };
+
+        match entry.hook_type {
+            HookType::UserPromptSubmit => user_prompt_submit.push(hook_obj),
+            HookType::PreToolUse => pre_tool_use.push(hook_obj),
+        }
+    }
+
+    format!(
+        "{{\n  \"hooks\": {{\n    \"UserPromptSubmit\": [\n{}\n    ],\n    \"PreToolUse\": [\n{}\n    ]\n  }}\n}}\n",
+        user_prompt_submit.join(",\n"),
+        pre_tool_use.join(",\n"),
+    )
+}
+
 fn ensure_claude_hooks() -> io::Result<bool> {
     let cwd = std::env::current_dir()?;
     let hooks_dir = cwd.join(".claude").join("hooks");
@@ -1158,24 +599,16 @@ fn ensure_claude_hooks() -> io::Result<bool> {
 
     let mut changed = false;
 
-    // rippletide-override: user approved
-    // Install hook scripts (fetch-rules.sh + check-code.sh + manage-rule.sh)
-    let scripts: &[(&str, &str)] = &[
-        ("fetch-rules.sh", HOOK_SCRIPT),
-        ("check-code.sh", CHECK_CODE_SCRIPT),
-        ("manage-rule.sh", MANAGE_RULE_SCRIPT),
-        ("invite-rules.sh", INVITE_RULES_SCRIPT),
-        ("receive-rules.sh", RECEIVE_RULES_SCRIPT),
-    ];
-    for (name, content) in scripts {
-        let path = hooks_dir.join(name);
+    // Install all hook scripts from HOOK_ENTRIES
+    for entry in HOOK_ENTRIES {
+        let path = hooks_dir.join(entry.name);
         let needs_write = if path.exists() {
-            fs::read_to_string(&path)? != *content
+            fs::read_to_string(&path)? != entry.content
         } else {
             true
         };
         if needs_write {
-            fs::write(&path, content)?;
+            fs::write(&path, entry.content)?;
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
@@ -1185,13 +618,15 @@ fn ensure_claude_hooks() -> io::Result<bool> {
         }
     }
 
+    // Generate settings.json from HOOK_ENTRIES
+    let settings_content = generate_settings_json();
     let needs_settings = if settings_path.exists() {
-        fs::read_to_string(&settings_path)? != CLAUDE_SETTINGS
+        fs::read_to_string(&settings_path)? != settings_content
     } else {
         true
     };
     if needs_settings {
-        fs::write(&settings_path, CLAUDE_SETTINGS)?;
+        fs::write(&settings_path, &settings_content)?;
         changed = true;
     }
 
