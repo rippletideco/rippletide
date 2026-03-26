@@ -1,17 +1,17 @@
 {
   "name": "rippletide-code",
-  "version": "0.5.38",
+  "version": "0.5.39",
   "description": "Rippletide Code CLI — prebuilt Rust binary launcher",
   "bin": {
     "rippletide-code": "bin/cli.js"
   },
   "optionalDependencies": {
-    "rippletide-code-darwin-arm64": "0.5.38",
-    "rippletide-code-darwin-x64": "0.5.38",
-    "rippletide-code-linux-arm64": "0.5.38",
-    "rippletide-code-linux-x64": "0.5.38",
-    "rippletide-code-win32-arm64": "0.5.38",
-    "rippletide-code-win32-x64": "0.5.38"
+    "rippletide-code-darwin-arm64": "0.5.39",
+    "rippletide-code-darwin-x64": "0.5.39",
+    "rippletide-code-linux-arm64": "0.5.39",
+    "rippletide-code-linux-x64": "0.5.39",
+    "rippletide-code-win32-arm64": "0.5.39",
+    "rippletide-code-win32-x64": "0.5.39"
   },
   "license": "MIT",
   "repository": {
