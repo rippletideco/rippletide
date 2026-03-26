@@ -1475,9 +1475,71 @@ fn fetch_markdown_file(user_id: &str, file_id: &str) -> Result<Option<String>, S
         .map(|value| value.to_string()))
 }
 
+fn parse_list_item(line: &str) -> Option<(usize, String)> {
+    let indent = line.chars().take_while(|ch| ch.is_whitespace()).count();
+    let trimmed = line[indent..].trim_end();
+    let mut chars = trimmed.chars().peekable();
+    let marker_len = match chars.peek().copied() {
+        Some('-' | '*' | '+') => {
+            chars.next();
+            if chars.peek().copied().map(|ch| ch.is_whitespace()).unwrap_or(false) {
+                1
+            } else {
+                return None;
+            }
+        }
+        Some(ch) if ch.is_ascii_digit() => {
+            let mut digits = 0usize;
+            while chars.peek().copied().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                chars.next();
+                digits += 1;
+            }
+            match chars.peek().copied() {
+                Some('.') | Some(')') => {
+                    chars.next();
+                    if chars.peek().copied().map(|ch| ch.is_whitespace()).unwrap_or(false) {
+                        digits + 1
+                    } else {
+                        return None;
+                    }
+                }
+                _ => return None,
+            }
+        }
+        _ => return None,
+    };
+    let text = trimmed[marker_len..].trim();
+    if text.is_empty() {
+        return None;
+    }
+    Some((indent, text.to_string()))
+}
+
 fn parse_rules_markdown(markdown: &str) -> Vec<String> {
     let mut rules = Vec::new();
     let mut in_code_block = false;
+    let mut current_parent: Option<String> = None;
+    let mut parent_indent: usize = 0;
+    let mut children: Vec<String> = Vec::new();
+
+    let flush = |rules: &mut Vec<String>, current_parent: &mut Option<String>, children: &mut Vec<String>| {
+        if let Some(parent) = current_parent.take() {
+            if children.is_empty() {
+                rules.push(parent);
+            } else {
+                let joined = children.join(", ");
+                let base = parent.trim_end().to_string();
+                if base.ends_with(':') {
+                    rules.push(format!("{base} {joined}"));
+                } else if base.ends_with('.') || base.ends_with('!') || base.ends_with('?') {
+                    rules.push(format!("{base} {joined}"));
+                } else {
+                    rules.push(format!("{base}. {joined}"));
+                }
+            }
+        }
+        children.clear();
+    };
 
     for line in markdown.lines() {
         let trimmed = line.trim();
@@ -1490,31 +1552,46 @@ fn parse_rules_markdown(markdown: &str) -> Vec<String> {
         }
 
         let indent = line.chars().take_while(|ch| ch.is_whitespace()).count();
-        let is_top_level_bullet = indent == 0
-            && (line.starts_with("- ") || line.starts_with("* "));
+        if let Some((item_indent, text)) = parse_list_item(line) {
+            if current_parent.is_none() {
+                if item_indent > 0 {
+                    continue;
+                }
+                current_parent = Some(text);
+                parent_indent = item_indent;
+                continue;
+            }
 
-        if is_top_level_bullet {
-            let rule = line[2..].trim();
-            if !rule.is_empty() {
-                rules.push(rule.to_string());
+            if item_indent <= parent_indent {
+                flush(&mut rules, &mut current_parent, &mut children);
+                if item_indent > 0 {
+                    continue;
+                }
+                current_parent = Some(text);
+                parent_indent = item_indent;
+            } else {
+                children.push(text);
             }
             continue;
         }
 
         let is_continuation = indent > 0
             && !trimmed.is_empty()
-            && !trimmed.starts_with("- ")
-            && !trimmed.starts_with("* ")
+            && parse_list_item(line).is_none()
             && !trimmed.starts_with('#');
 
         if is_continuation {
-            if let Some(last) = rules.last_mut() {
-                last.push(' ');
-                last.push_str(trimmed);
+            if let Some(last_child) = children.last_mut() {
+                last_child.push(' ');
+                last_child.push_str(trimmed);
+            } else if let Some(parent) = current_parent.as_mut() {
+                parent.push(' ');
+                parent.push_str(trimmed);
             }
         }
     }
 
+    flush(&mut rules, &mut current_parent, &mut children);
     rules
 }
 
@@ -2438,7 +2515,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_rules_markdown_keeps_only_top_level_bullets_and_continuations() {
+    fn parse_rules_markdown_keeps_continuations_and_merges_nested_bullets() {
         let markdown = r#"# Rules
 - Keep handlers small.
   Continue only when the logic stays cohesive.
@@ -2450,12 +2527,12 @@ mod tests {
         let parsed = parse_rules_markdown(markdown);
         assert_eq!(parsed.len(), 3);
         assert_eq!(parsed[0], "Keep handlers small. Continue only when the logic stays cohesive.");
-        assert_eq!(parsed[1], "Prefer typed boundaries.");
+        assert_eq!(parsed[1], "Prefer typed boundaries. Nested bullet that should not become a standalone rule.");
         assert_eq!(parsed[2], "Write focused tests.");
     }
 
     #[test]
-    fn parse_rules_markdown_ignores_nested_bullets_after_top_level_rule() {
+    fn parse_rules_markdown_merges_nested_bullets_after_top_level_rule() {
         let markdown = r#"# Rules
 - Prefer typed boundaries.
   - Use zod at API boundaries.
@@ -2464,7 +2541,7 @@ mod tests {
 "#;
         let parsed = parse_rules_markdown(markdown);
         assert_eq!(parsed, vec![
-            "Prefer typed boundaries.".to_string(),
+            "Prefer typed boundaries. Use zod at API boundaries., Reuse validators.".to_string(),
             "Keep handlers small.".to_string(),
         ]);
     }
@@ -2525,6 +2602,18 @@ mod tests {
             "Prefer explicit names for exported functions. Continue the same rule with more explanation so the item stays coherent. Another sentence that should remain attached to the same rule.".to_string(),
             "Write focused tests.".to_string(),
         ]);
+    }
+
+    #[test]
+    fn parse_rules_markdown_keeps_hierarchical_rule_as_one_rule() {
+        let markdown = r#"# Rules
+- Always do in order:
+  - 1
+  - 2
+  - 3
+"#;
+        let parsed = parse_rules_markdown(markdown);
+        assert_eq!(parsed, vec!["Always do in order: 1, 2, 3".to_string()]);
     }
 
     #[test]
