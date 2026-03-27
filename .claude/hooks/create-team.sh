@@ -82,12 +82,15 @@ RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/teams" \
 TEAM_ID=$(echo "$RESPONSE" | jq -r '.team_id // empty' 2>/dev/null)
 ERROR=$(echo "$RESPONSE" | jq -r '.error // empty' 2>/dev/null)
 
+# rippletide-override: user approved
 if [[ -n "$TEAM_ID" ]]; then
   cat <<HOOK_EOF
 <user-prompt-submit-hook>
 [Rippletide — Team Created]
 
-Team "$TEAM_NAME" created successfully. You are the owner.
+Tell the user the following:
+
+Team "$TEAM_NAME" has been created successfully. You are the owner.
 
 Useful commands:
   push-rules $TEAM_NAME — push your rules to the team
@@ -99,9 +102,11 @@ else
 <user-prompt-submit-hook>
 [Rippletide — Create Team Failed]
 
-Failed to create team: $ERROR
+Tell the user the following:
 
-Full response: $RESPONSE
+Failed to create team "$TEAM_NAME": $ERROR
+
+Please check the team name and try again. Team names must be alphanumeric (hyphens and underscores allowed), 1-63 characters, and start with a letter or number.
 </user-prompt-submit-hook>
 HOOK_EOF
 fi
