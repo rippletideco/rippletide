@@ -357,16 +357,7 @@ fn parse_draft_plan(raw: &str) -> Result<DraftPlan, String> {
     })
 }
 
-fn parse_review(raw: &str) -> Result<PlanReview, String> {
-    let trimmed = strip_code_fence(raw).trim();
-    if trimmed.eq_ignore_ascii_case("pass") {
-        return Ok(PlanReview {
-            pass: true,
-            violations: Vec::new(),
-        });
-    }
-    parse_json::<PlanReview>(trimmed)
-}
+// rippletide-override: user approved — parse_review removed (dead code; review goes through PlanReviewer)
 
 fn parse_json<T>(raw: &str) -> Result<T, String>
 where
