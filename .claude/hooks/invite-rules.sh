@@ -70,8 +70,40 @@ HOOK_EOF
 fi
 
 BASE_URL="${RIPPLETIDE_API_URL:-https://coding-agent.up.railway.app}"
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
-PAYLOAD=$(jq -n --arg email "$RECEIVER_EMAIL" '{receiver_email: $email}' 2>/dev/null)
+if [[ -n "${RIPPLETIDE_PLAN_CLI_BIN:-}" ]]; then
+  CLI_CMD=("$RIPPLETIDE_PLAN_CLI_BIN")
+else
+  CLI_CMD=(npx -y "rippletide-code@latest")
+fi
+
+cd "$PROJECT_DIR"
+SELECTED_FILES_JSON=$("${CLI_CMD[@]}" select-files --json)
+if [[ $? -ne 0 || -z "$SELECTED_FILES_JSON" ]]; then
+  cat <<'HOOK_EOF'
+<user-prompt-submit-hook>
+[Rippletide — Share Failed]
+
+Failed to collect the selected files for sharing.
+</user-prompt-submit-hook>
+HOOK_EOF
+  exit 0
+fi
+
+SELECTED_COUNT=$(echo "$SELECTED_FILES_JSON" | jq 'length' 2>/dev/null)
+if [[ -z "$SELECTED_COUNT" || "$SELECTED_COUNT" == "0" ]]; then
+  cat <<'HOOK_EOF'
+<user-prompt-submit-hook>
+[Rippletide — Share Cancelled]
+
+No files were selected for sharing.
+</user-prompt-submit-hook>
+HOOK_EOF
+  exit 0
+fi
+
+PAYLOAD=$(jq -n --arg email "$RECEIVER_EMAIL" --argjson file_ids "$SELECTED_FILES_JSON" '{receiver_email: $email, file_ids: $file_ids}' 2>/dev/null)
 
 RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/share-rules/invite" \
   -H "Content-Type: application/json" \

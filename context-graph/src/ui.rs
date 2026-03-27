@@ -114,9 +114,48 @@ pub fn prompt_multi_select(
     subtitle: &[&str],
     items: &[String],
 ) -> io::Result<Vec<usize>> {
-    let term = Term::stdout();
+    prompt_multi_select_with_term(
+        Term::stdout(),
+        title,
+        subtitle,
+        items,
+        "Selected rule preview",
+        &[],
+    )
+}
+
+pub fn prompt_multi_select_to_stderr(
+    title: &str,
+    subtitle: &[&str],
+    items: &[String],
+    preview_label: &str,
+    default_selected: &[usize],
+) -> io::Result<Vec<usize>> {
+    prompt_multi_select_with_term(
+        Term::stderr(),
+        title,
+        subtitle,
+        items,
+        preview_label,
+        default_selected,
+    )
+}
+
+fn prompt_multi_select_with_term(
+    term: Term,
+    title: &str,
+    subtitle: &[&str],
+    items: &[String],
+    preview_label: &str,
+    default_selected: &[usize],
+) -> io::Result<Vec<usize>> {
     let mut cursor: usize = 0;
     let mut selected = vec![false; items.len()];
+    for index in default_selected {
+        if *index < selected.len() {
+            selected[*index] = true;
+        }
+    }
 
     term.write_line("")?;
     term.write_line(&format!("  {}", title.green().bold()))?;
@@ -154,7 +193,7 @@ pub fn prompt_multi_select(
             }
         }
         term.write_line("")?;
-        term.write_line(&format!("  {}", "Selected rule preview".dimmed()))?;
+        term.write_line(&format!("  {}", preview_label.dimmed()))?;
         let preview_lines = if items.is_empty() {
             vec![String::new()]
         } else {
