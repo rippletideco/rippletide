@@ -60,6 +60,12 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Select markdown files to share or push
+    SelectFiles {
+        /// Print the selected file ids as JSON
+        #[arg(long)]
+        json: bool,
+    },
     /// Log out and remove stored credentials
     Logout,
 }
@@ -1445,6 +1451,120 @@ fn fetch_markdown_file(user_id: &str, file_id: &str) -> Result<Option<String>, S
         .map(|value| value.to_string()))
 }
 
+#[derive(Deserialize)]
+struct FilesListEntry {
+    id: String,
+    content: String,
+    #[serde(default)]
+    staged: bool,
+}
+
+#[derive(Deserialize)]
+struct FilesListResponse {
+    files: Vec<FilesListEntry>,
+}
+
+fn fetch_markdown_files(user_id: &str) -> Result<Vec<FilesListEntry>, String> {
+    let resp = match ureq::get(&files_base_url()).set("X-User-Id", user_id).call() {
+        Ok(resp) => resp,
+        Err(ureq::Error::Status(_, resp)) => {
+            let body: serde_json::Value = match resp.into_json() {
+                Ok(body) => body,
+                Err(_) => return Err("api error".to_string()),
+            };
+            let message = body
+                .get("error")
+                .and_then(|value| value.as_str())
+                .unwrap_or("api error");
+            return Err(message.to_string());
+        }
+        Err(err) => return Err(format!("{err}")),
+    };
+
+    let body: FilesListResponse = match resp.into_json() {
+        Ok(body) => body,
+        Err(err) => return Err(format!("{err}")),
+    };
+
+    Ok(body.files)
+}
+
+fn run_select_files_command(config: &Config, json: bool) -> io::Result<()> {
+    let Some(user_id) = config.user_id.as_deref() else {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "not connected; run `rippletide connect` first",
+        ));
+    };
+
+    let files = fetch_markdown_files(user_id)
+        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    let selectable_files: Vec<FilesListEntry> = files
+        .into_iter()
+        .filter(|file| !file.staged && file.id.to_lowercase().ends_with(".md"))
+        .collect();
+
+    if selectable_files.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            "no markdown files are available to share",
+        ));
+    }
+
+    let items: Vec<String> = selectable_files
+        .iter()
+        .map(|file| {
+            let preview = file
+                .content
+                .lines()
+                .map(str::trim)
+                .find(|line| !line.is_empty())
+                .unwrap_or("");
+            if preview.is_empty() {
+                file.id.clone()
+            } else {
+                format!("{} - {}", file.id, preview)
+            }
+        })
+        .collect();
+    let default_selected: Vec<usize> = selectable_files
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, file)| (file.id == "GoldRules.md").then_some(idx))
+        .collect();
+
+    let indices = ui::prompt_multi_select_to_stderr(
+        "Pick the files you'd like to share",
+        &[
+            "Select the markdown files to include. GoldRules.md remains the only active runtime rules file after receive.",
+            "Use ↑/↓ to move, space to toggle, enter to confirm, and 'a' to toggle all.",
+        ],
+        &items,
+        "Selected file preview",
+        &default_selected,
+    )?;
+
+    let selected_ids: Vec<String> = indices
+        .into_iter()
+        .filter_map(|idx| selectable_files.get(idx))
+        .map(|file| file.id.clone())
+        .collect();
+
+    if json {
+        println!(
+            "{}",
+            serde_json::to_string(&selected_ids)
+                .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?
+        );
+    } else {
+        for file_id in selected_ids {
+            println!("{file_id}");
+        }
+    }
+
+    Ok(())
+}
+
 fn parse_list_item(line: &str) -> Option<(usize, String)> {
     let indent = line.chars().take_while(|ch| ch.is_whitespace()).count();
     let trimmed = line[indent..].trim_end();
@@ -2201,11 +2321,16 @@ fn main() -> io::Result<()> {
         return run_review_plan_command(&cwd, &config, query, *stdin, *json);
     }
 
+    if let Some(Commands::SelectFiles { json }) = &cli.command {
+        return run_select_files_command(&config, *json);
+    }
+
     let _read_only = match &cli.command {
         Some(Commands::Connect { read_only }) => *read_only,
         None => false,
         Some(Commands::Plan { .. }) => false,
         Some(Commands::ReviewPlan { .. }) => false,
+        Some(Commands::SelectFiles { .. }) => false,
         Some(Commands::Logout) => unreachable!(),
     };
 

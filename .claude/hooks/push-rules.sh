@@ -66,11 +66,43 @@ HOOK_EOF
 fi
 
 BASE_URL="${RIPPLETIDE_API_URL:-https://coding-agent.up.railway.app}"
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+
+if [[ -n "${RIPPLETIDE_PLAN_CLI_BIN:-}" ]]; then
+  CLI_CMD=("$RIPPLETIDE_PLAN_CLI_BIN")
+else
+  CLI_CMD=(npx -y "rippletide-code@latest")
+fi
+
+cd "$PROJECT_DIR"
+SELECTED_FILES_JSON=$("${CLI_CMD[@]}" select-files --json)
+if [[ $? -ne 0 || -z "$SELECTED_FILES_JSON" ]]; then
+  cat <<'HOOK_EOF'
+<user-prompt-submit-hook>
+[Rippletide — Push Failed]
+
+Failed to collect the selected files for team push.
+</user-prompt-submit-hook>
+HOOK_EOF
+  exit 0
+fi
+
+SELECTED_COUNT=$(echo "$SELECTED_FILES_JSON" | jq 'length' 2>/dev/null)
+if [[ -z "$SELECTED_COUNT" || "$SELECTED_COUNT" == "0" ]]; then
+  cat <<'HOOK_EOF'
+<user-prompt-submit-hook>
+[Rippletide — Push Cancelled]
+
+No files were selected for team push.
+</user-prompt-submit-hook>
+HOOK_EOF
+  exit 0
+fi
 
 RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/teams/$TEAM_NAME/push-rules" \
   -H "Content-Type: application/json" \
   -H "X-User-Id: $USER_ID" \
-  -d '{}' 2>/dev/null)
+  -d "$(jq -n --argjson file_ids "$SELECTED_FILES_JSON" '{file_ids: $file_ids}')" 2>/dev/null)
 
 PUSHED_FILES=$(echo "$RESPONSE" | jq -r '.pushed_files[]? // empty' 2>/dev/null)
 PUSHED_COUNT=$(echo "$RESPONSE" | jq -r '.pushed_files | length' 2>/dev/null)
