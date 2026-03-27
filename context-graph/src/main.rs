@@ -1364,6 +1364,11 @@ fn query_rules_url() -> String {
     })
 }
 
+// rippletide-override: user approved
+fn review_plan_blocks_url() -> String {
+    format!("{}/review-plan-blocks", upload_url().trim_end_matches("/upload"))
+}
+
 fn files_base_url() -> String {
     format!("{}/files", upload_url().trim_end_matches("/upload"))
 }
@@ -2127,6 +2132,58 @@ impl planner::RulesProvider for LiveRulesProvider {
     }
 }
 
+struct LivePlanReviewer {
+    user_id: Option<String>,
+}
+
+impl planner::PlanReviewer for LivePlanReviewer {
+    fn review_blocks(&self, blocks: &[String], rules: &[String]) -> planner::PlanReviewResult {
+        let Some(user_id) = self.user_id.as_deref() else {
+            return planner::PlanReviewResult::Review(planner::PlanReview {
+                pass: true,
+                violations: Vec::new(),
+            });
+        };
+
+        let url = review_plan_blocks_url();
+        let payload = serde_json::json!({
+            "blocks": blocks,
+            "rules": rules,
+        });
+        let resp = match ureq::post(&url)
+            .set("Content-Type", "application/json")
+            .set("X-User-Id", user_id)
+            .send_string(&payload.to_string())
+        {
+            Ok(r) => r,
+            Err(e) => return planner::PlanReviewResult::Error(format!("{e}")),
+        };
+        let body: serde_json::Value = match resp.into_json() {
+            Ok(b) => b,
+            Err(e) => return planner::PlanReviewResult::Error(format!("{e}")),
+        };
+
+        let pass = body.get("pass").and_then(|v| v.as_bool()).unwrap_or(true);
+        let violations = body
+            .get("violations")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| {
+                        Some(planner::PlanViolation {
+                            rule: v.get("rule")?.as_str()?.to_string(),
+                            issue: v.get("issue")?.as_str()?.to_string(),
+                            fix: v.get("fix").and_then(|f| f.as_str()).unwrap_or("").to_string(),
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        planner::PlanReviewResult::Review(planner::PlanReview { pass, violations })
+    }
+}
+
 fn run_configure_phase() {
     let result = configure_all();
 
@@ -2178,8 +2235,11 @@ fn run_plan_command(
     let rules_provider = LiveRulesProvider {
         user_id: config.user_id.clone(),
     };
+    let reviewer = LivePlanReviewer {
+        user_id: config.user_id.clone(),
+    };
 
-    let outcome = planner::run_plan_loop(cwd, &query, max_iterations, &claude, &rules_provider)
+    let outcome = planner::run_plan_loop(cwd, &query, max_iterations, &claude, &rules_provider, &reviewer)
         .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
 
     if raw {
@@ -2247,12 +2307,15 @@ fn run_review_plan_command(
         return Ok(());
     }
 
-    let claude = LiveClaude;
+    let claude = LiveClaude; // rippletide-override: user approved
     let rules_provider = LiveRulesProvider {
         user_id: config.user_id.clone(),
     };
+    let reviewer = LivePlanReviewer {
+        user_id: config.user_id.clone(),
+    };
 
-    let review = planner::review_plan_candidate(cwd, &query, &plan, &claude, &rules_provider)
+    let review = planner::review_plan_candidate(cwd, &query, &plan, &claude, &rules_provider, &reviewer)
         .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
 
     if json {
