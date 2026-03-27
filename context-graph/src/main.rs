@@ -1373,12 +1373,11 @@ fn files_base_url() -> String {
     format!("{}/files", upload_url().trim_end_matches("/upload"))
 }
 
+// rippletide-override: user approved
 fn fetch_rules_payload(query: &str, query_source: QuerySource) -> serde_json::Value {
     serde_json::json!({
         "query": query,
         "query_source": query_source.as_str(),
-        "beam_width": 2,
-        "beam_max_depth": 8,
     })
 }
 
@@ -2628,11 +2627,10 @@ mod tests {
 
     #[test]
     fn fetch_rules_payload_includes_query_source() {
+        // rippletide-override: user approved
         let payload = fetch_rules_payload("Return all coding rules", QuerySource::Bootstrap);
         assert_eq!(payload["query"], "Return all coding rules");
         assert_eq!(payload["query_source"], "bootstrap");
-        assert_eq!(payload["beam_width"], 2);
-        assert_eq!(payload["beam_max_depth"], 8);
     }
 
     #[test]

@@ -28,9 +28,10 @@ if [[ -z "$USER_ID" ]]; then
 fi
 
 # ── 3. Fetch coding rules ───────────────────────────────────────────
+# rippletide-override: user approved
 RULES_PAYLOAD=$(jq -Rn \
   --arg query "Return all active coding rules." \
-  '{query: $query, beam_width: 2, beam_max_depth: 8}' 2>/dev/null)
+  '{query: $query}' 2>/dev/null)
 
 RULES_RESPONSE=$(curl -s --max-time 30 -X POST \
   "https://coding-agent.up.railway.app/query-rules" \

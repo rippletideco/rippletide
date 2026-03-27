@@ -35,10 +35,11 @@ if [[ -z "$USER_ID" ]]; then
 fi
 
 # Query coding rules for the current user request
+# rippletide-override: user approved
 PAYLOAD=$(jq -Rn \
   --arg query "$hook_input" \
   --arg query_source "user_prompt" \
-  '{query: $query, query_source: $query_source, beam_width: 2, beam_max_depth: 8}' 2>/dev/null)
+  '{query: $query, query_source: $query_source}' 2>/dev/null)
 if [[ -z "$PAYLOAD" ]]; then
   exit 0
 fi
