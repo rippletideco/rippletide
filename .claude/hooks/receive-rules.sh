@@ -139,31 +139,31 @@ fi
 
 cat <<HOOK_EOF
 
-To activate or reject these rules, run one of the following via the Bash tool:
+To activate or decline these rules, run one of the following via the Bash tool:
 
-  # Activate — skip duplicates, keep YOUR version on conflicts
+  # Accept non-conflicting — add new rules, skip conflicts (keep YOUR version)
   curl -s -X POST "$BASE_URL/share-rules/activate" \
     -H "Content-Type: application/json" \
     -H "X-User-Id: $USER_ID" \
-    -d '{"share_id":"$SHARE_ID","action":"activate_keep_mine"}'
+    -d '{"share_id":"$SHARE_ID","action":"accept_non_conflicting"}'
 
-  # Activate — skip duplicates, keep THEIR version on conflicts
+  # Accept all — full merge, THEIR version wins on conflicts
   curl -s -X POST "$BASE_URL/share-rules/activate" \
     -H "Content-Type: application/json" \
     -H "X-User-Id: $USER_ID" \
-    -d '{"share_id":"$SHARE_ID","action":"activate_keep_theirs"}'
+    -d '{"share_id":"$SHARE_ID","action":"accept_all"}'
 
-  # Reject — delete all staged shared files
+  # Decline — reject all shared rules
   curl -s -X POST "$BASE_URL/share-rules/activate" \
     -H "Content-Type: application/json" \
     -H "X-User-Id: $USER_ID" \
-    -d '{"share_id":"$SHARE_ID","action":"reject"}'
+    -d '{"share_id":"$SHARE_ID","action":"decline"}'
 
 Present the conflict report above to the user and ask them to choose:
-  (A) Activate — keep YOUR version on conflicts
-  (B) Activate — keep THEIR version on conflicts
+  (A) Accept non-conflicting — add new rules, skip conflicts
+  (B) Accept all — incoming rules win on conflicts
   (C) Keep staged — review later
-  (D) Reject — delete shared files
+  (D) Decline — reject all shared rules
 
 Then run the appropriate curl command based on their choice.
 </user-prompt-submit-hook>
