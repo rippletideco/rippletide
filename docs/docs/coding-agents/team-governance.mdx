@@ -3,6 +3,16 @@ title: Team Governance
 description: Scale coding conventions across engineers and repositories with shared Context Graphs
 ---
 
+## Quick reference
+
+| Action | Command (typed in Claude session) |
+|---|---|
+| Create team | `create-team <name>` |
+| Join team | `join-team <name> [approver_email]` |
+| Approve member | `approve-join <team> <otp> <email>` |
+| Push to team | `push-rules <team>` |
+| Sync from team | `sync-rules <team>` |
+
 ## The problem at scale
 
 Each coding agent has its own local memory — but none of them talk to each other. When multiple agents run in parallel across your organization, Engineer A's agent enforces one set of conventions while Engineer B's enforces another. The context is there, it's just siloed.

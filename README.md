@@ -32,7 +32,7 @@ This repository is your starting point for Rippletide — Eval, Context Graph MC
 ## Table of Contents
 
 - [What is Rippletide?](#what-is-rippletide)
-- [Trust Platform](#trust-platform)
+- [Rippletide Platform](#rippletide-platform)
 
 **Core Modules:**
 
@@ -232,36 +232,45 @@ Give Claude Code a shared, persistent memory. Store your team's conventions once
 ### Quick Start
 
 ```bash
-npx rippletide-code@latest connect
+npx rippletide-code
 ```
 
-This sets up Claude Code hooks and generates the agent instruction files. After running:
+One command to authenticate, scan your repo, select rules, and install hooks. Every Claude Code session in this project will have access to your rules from that point on.
 
-```
-your-project/
-├── .claude/settings.json  # Claude Code hooks
-└── CLAUDE.md              # Agent instructions
-```
+### Features
+
+| Feature | What it does |
+|---|---|
+| **Rule enforcement** | Rules are injected into every prompt. Code that violates a rule is blocked before it hits the file. Claude auto-rewrites until it complies. |
+| **Rule management** | Add, edit, or delete rules in natural language. No config files. Changes take effect immediately. |
+| **Rule sharing** | Send your rule set to a colleague with `invite-rules <email>`. They type `receive-rules <otp>` and get a conflict report with new rules, duplicates, and contradictions. |
+| **Planning** | `/plan` generates an implementation plan and reviews it against your rules. Violations are revised automatically until the plan passes. |
+| **Team governance** | Create a team, push your rules, and have every engineer sync from the same source. Read-only mode lets engineers inherit standards without modifying them. |
+
+### Commands
+
+| Action | Command |
+|---|---|
+| Share rules | `invite-rules <email>` |
+| Receive rules | `receive-rules <otp>` |
+| Create team | `create-team <name>` |
+| Join team | `join-team <name> [approver_email]` |
+| Approve member | `approve-join <team> <otp> <email>` |
+| Push to team | `push-rules <team>` |
+| Sync from team | `sync-rules <team>` |
+| Read-only connect | `npx rippletide-code --read-only` |
 
 ### Data privacy
 
-A common question is what Rippletide actually sees when used with Coding Agents.
-
-For Coding Agents, Rippletide only relies on the context available inside your local Claude Code workflow:
-- the current Claude Code chat session for the active project
-- your `CLAUDE.md`
-
-Your codebase is not centrally analyzed outside of your local Claude Code environment. The analysis happens through your own Claude Code setup.
-
-Rippletide only stores the rules extracted from that context, not the rest of the project content. In practice, this means Rippletide keeps reusable conventions and policies, not your full codebase or unrelated session content.
+Rippletide only relies on the context available inside your local Claude Code workflow — your current chat session and your `CLAUDE.md`. Your codebase is not centrally analyzed. Rippletide stores only the extracted rules, not project content.
 
 → [Coding Agents docs](https://docs.rippletide.com/docs/coding-agents/overview)
 
 ---
 
-## Trust Platform
+## Rippletide Platform
 
-The [Trust Platform](https://app.rippletide.com) brings everything together. Build agents without writing code, connect your knowledge sources, set guardrails that the LLM cannot override, and see exactly how your agent reasons through every decision — all in one place.
+The [Rippletide Platform](https://app.rippletide.com) brings everything together. Build agents without writing code, connect your knowledge sources, set guardrails that the LLM cannot override, and see exactly how your agent reasons through every decision — all in one place.
 
 - **Visual Agent Builder** — configure agents without code
 - **Knowledge Connectors** — import from Amazon Bedrock, PDFs, or manual Q&A
