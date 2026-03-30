@@ -168,31 +168,32 @@ fi
 
 cat <<HOOK_EOF
 
-To activate or reject, run one of the following via the Bash tool:
+# rippletide-override: user approved
+To activate or decline, run one of the following via the Bash tool:
 
-  # Activate — keep YOUR version on conflicts
+  # Accept non-conflicting — add new rules, skip conflicts (keep YOUR version)
   curl -s -X POST "$BASE_URL/teams/$TEAM_NAME/sync-rules/activate" \\
     -H "Content-Type: application/json" \\
     -H "X-User-Id: $USER_ID" \\
-    -d '{"action":"activate_keep_mine"}'
+    -d '{"action":"accept_non_conflicting"}'
 
-  # Activate — keep TEAM version on conflicts
+  # Accept all — full merge, TEAM version wins on conflicts
   curl -s -X POST "$BASE_URL/teams/$TEAM_NAME/sync-rules/activate" \\
     -H "Content-Type: application/json" \\
     -H "X-User-Id: $USER_ID" \\
-    -d '{"action":"activate_keep_theirs"}'
+    -d '{"action":"accept_all"}'
 
-  # Reject — delete all staged team files
+  # Decline — reject all (won't re-appear on next sync)
   curl -s -X POST "$BASE_URL/teams/$TEAM_NAME/sync-rules/activate" \\
     -H "Content-Type: application/json" \\
     -H "X-User-Id: $USER_ID" \\
-    -d '{"action":"reject"}'
+    -d '{"action":"decline"}'
 
 Present the sync report above to the user and ask them to choose:
-  (A) Activate — keep YOUR version on conflicts
-  (B) Activate — keep TEAM version on conflicts
+  (A) Accept non-conflicting — add new rules, skip conflicts
+  (B) Accept all — team rules win on conflicts
   (C) Keep staged — review later
-  (D) Reject — delete staged team files
+  (D) Decline — reject all (won't re-appear on next sync)
 
 Then run the appropriate curl command based on their choice.
 </user-prompt-submit-hook>
