@@ -80,9 +80,12 @@ const PROD_AUTH_URL: &str = "https://app.rippletide.com/code";
 const SIGN_UP_PATH: &str = "/api/auth/sign-up/email";
 const SEND_OTP_PATH: &str = "/api/auth/email-otp/send-verification-otp";
 const SIGN_IN_OTP_PATH: &str = "/api/auth/sign-in/email-otp";
-const UPLOAD_URL: &str = "https://coding-agent.up.railway.app/upload";
+const CODING_AGENT_BASE_URL: &str = "https://coding-agent.up.railway.app";
+const UPLOAD_PATH: &str = "/upload";
+const CHECK_CODE_PATH: &str = "/check-code";
+const REVIEW_PLAN_BLOCKS_PATH: &str = "/review-plan-blocks";
+const FILES_PATH: &str = "/files";
 const CLAUDE_MD_CONTRADICTIONS_PATH: &str = "/claude-md/contradictions";
-
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 enum Environment {
@@ -544,16 +547,76 @@ struct HookEntry {
 
 /// All hook scripts to install. Add new hooks here — settings.json is generated automatically.
 const HOOK_ENTRIES: &[HookEntry] = &[
-    HookEntry { name: "fetch-rules.sh",   content: HOOK_SCRIPT,          hook_type: HookType::UserPromptSubmit, timeout: 180, matcher: None },
-    HookEntry { name: "invite-rules.sh",   content: INVITE_RULES_SCRIPT,  hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
-    HookEntry { name: "receive-rules.sh",  content: RECEIVE_RULES_SCRIPT, hook_type: HookType::UserPromptSubmit, timeout: 120, matcher: None },
-    HookEntry { name: "create-team.sh",    content: CREATE_TEAM_SCRIPT,   hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
-    HookEntry { name: "join-team.sh",      content: JOIN_TEAM_SCRIPT,     hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
-    HookEntry { name: "approve-join.sh",   content: APPROVE_JOIN_SCRIPT,  hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
-    HookEntry { name: "push-rules.sh",     content: PUSH_RULES_SCRIPT,    hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
-    HookEntry { name: "sync-rules.sh",     content: SYNC_RULES_SCRIPT,    hook_type: HookType::UserPromptSubmit, timeout: 120, matcher: None },
-    HookEntry { name: "check-code.sh",     content: CHECK_CODE_SCRIPT,    hook_type: HookType::PreToolUse,       timeout: 60,  matcher: Some("Write|Edit|MultiEdit") },
-    HookEntry { name: "manage-rule.sh",    content: MANAGE_RULE_SCRIPT,   hook_type: HookType::UserPromptSubmit, timeout: 60,  matcher: None },
+    HookEntry {
+        name: "fetch-rules.sh",
+        content: HOOK_SCRIPT,
+        hook_type: HookType::UserPromptSubmit,
+        timeout: 180,
+        matcher: None,
+    },
+    HookEntry {
+        name: "invite-rules.sh",
+        content: INVITE_RULES_SCRIPT,
+        hook_type: HookType::UserPromptSubmit,
+        timeout: 60,
+        matcher: None,
+    },
+    HookEntry {
+        name: "receive-rules.sh",
+        content: RECEIVE_RULES_SCRIPT,
+        hook_type: HookType::UserPromptSubmit,
+        timeout: 120,
+        matcher: None,
+    },
+    HookEntry {
+        name: "create-team.sh",
+        content: CREATE_TEAM_SCRIPT,
+        hook_type: HookType::UserPromptSubmit,
+        timeout: 60,
+        matcher: None,
+    },
+    HookEntry {
+        name: "join-team.sh",
+        content: JOIN_TEAM_SCRIPT,
+        hook_type: HookType::UserPromptSubmit,
+        timeout: 60,
+        matcher: None,
+    },
+    HookEntry {
+        name: "approve-join.sh",
+        content: APPROVE_JOIN_SCRIPT,
+        hook_type: HookType::UserPromptSubmit,
+        timeout: 60,
+        matcher: None,
+    },
+    HookEntry {
+        name: "push-rules.sh",
+        content: PUSH_RULES_SCRIPT,
+        hook_type: HookType::UserPromptSubmit,
+        timeout: 60,
+        matcher: None,
+    },
+    HookEntry {
+        name: "sync-rules.sh",
+        content: SYNC_RULES_SCRIPT,
+        hook_type: HookType::UserPromptSubmit,
+        timeout: 120,
+        matcher: None,
+    },
+    HookEntry {
+        name: "check-code.sh",
+        content: CHECK_CODE_SCRIPT,
+        hook_type: HookType::PreToolUse,
+        timeout: 60,
+        matcher: Some("Write|Edit|MultiEdit"),
+    },
+    HookEntry {
+        name: "manage-rule.sh",
+        content: MANAGE_RULE_SCRIPT,
+        hook_type: HookType::UserPromptSubmit,
+        timeout: 60,
+        matcher: None,
+    },
 ];
 
 /// Build settings.json from HOOK_ENTRIES at runtime.
@@ -1230,11 +1293,69 @@ struct ClaudeMdContradictionsResponse {
     terminal_output: String,
 }
 
+fn normalize_coding_agent_base_url(raw: &str) -> Option<String> {
+    let mut value = raw.trim().trim_end_matches('/').to_string();
+    if value.is_empty() {
+        return None;
+    }
+
+    for suffix in [
+        UPLOAD_PATH,
+        QUERY_RULES_PATH,
+        CHECK_CODE_PATH,
+        REVIEW_PLAN_BLOCKS_PATH,
+        FILES_PATH,
+        CLAUDE_MD_CONTRADICTIONS_PATH,
+    ] {
+        if let Some(prefix) = value.strip_suffix(suffix) {
+            let normalized = prefix.trim_end_matches('/').to_string();
+            if normalized.is_empty() {
+                return None;
+            }
+            value = normalized;
+            break;
+        }
+    }
+
+    Some(value)
+}
+
+fn normalized_endpoint_override(var_name: &str, path: &str) -> Option<String> {
+    let raw = std::env::var(var_name).ok()?;
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if trimmed.trim_end_matches('/').ends_with(path) {
+        return Some(trimmed.trim_end_matches('/').to_string());
+    }
+    let base = normalize_coding_agent_base_url(trimmed)?;
+    Some(format!("{base}{path}"))
+}
+
+fn coding_agent_base_url() -> String {
+    if let Ok(raw) = std::env::var("RIPPLETIDE_API_URL") {
+        if let Some(base) = normalize_coding_agent_base_url(&raw) {
+            return base;
+        }
+    }
+    if let Ok(raw) = std::env::var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL") {
+        if let Some(base) = normalize_coding_agent_base_url(&raw) {
+            return base;
+        }
+    }
+    CODING_AGENT_BASE_URL.to_string()
+}
+
 fn claude_md_contradictions_url() -> String {
-    std::env::var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL").unwrap_or_else(|_| {
+    normalized_endpoint_override(
+        "RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL",
+        CLAUDE_MD_CONTRADICTIONS_PATH,
+    )
+    .unwrap_or_else(|| {
         format!(
             "{}{}",
-            upload_url().trim_end_matches("/upload"),
+            coding_agent_base_url(),
             CLAUDE_MD_CONTRADICTIONS_PATH
         )
     })
@@ -1351,26 +1472,22 @@ impl QuerySource {
 }
 
 fn upload_url() -> String {
-    std::env::var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL").unwrap_or_else(|_| UPLOAD_URL.to_string())
+    normalized_endpoint_override("RIPPLETIDE_CODING_AGENT_UPLOAD_URL", UPLOAD_PATH)
+        .unwrap_or_else(|| format!("{}{}", coding_agent_base_url(), UPLOAD_PATH))
 }
 
 fn query_rules_url() -> String {
-    std::env::var("RIPPLETIDE_QUERY_RULES_URL").unwrap_or_else(|_| {
-        format!(
-            "{}{}",
-            upload_url().trim_end_matches("/upload"),
-            QUERY_RULES_PATH
-        )
-    })
+    normalized_endpoint_override("RIPPLETIDE_QUERY_RULES_URL", QUERY_RULES_PATH)
+        .unwrap_or_else(|| format!("{}{}", coding_agent_base_url(), QUERY_RULES_PATH))
 }
 
 // rippletide-override: user approved
 fn review_plan_blocks_url() -> String {
-    format!("{}/review-plan-blocks", upload_url().trim_end_matches("/upload"))
+    format!("{}{}", coding_agent_base_url(), REVIEW_PLAN_BLOCKS_PATH)
 }
 
 fn files_base_url() -> String {
-    format!("{}/files", upload_url().trim_end_matches("/upload"))
+    format!("{}{}", coding_agent_base_url(), FILES_PATH)
 }
 
 // rippletide-override: user approved
@@ -1469,7 +1586,10 @@ struct FilesListResponse {
 }
 
 fn fetch_markdown_files(user_id: &str) -> Result<Vec<FilesListEntry>, String> {
-    let resp = match ureq::get(&files_base_url()).set("X-User-Id", user_id).call() {
+    let resp = match ureq::get(&files_base_url())
+        .set("X-User-Id", user_id)
+        .call()
+    {
         Ok(resp) => resp,
         Err(ureq::Error::Status(_, resp)) => {
             let body: serde_json::Value = match resp.into_json() {
@@ -1501,8 +1621,8 @@ fn run_select_files_command(config: &Config, json: bool) -> io::Result<()> {
         ));
     };
 
-    let files = fetch_markdown_files(user_id)
-        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    let files =
+        fetch_markdown_files(user_id).map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
     let selectable_files: Vec<FilesListEntry> = files
         .into_iter()
         .filter(|file| !file.staged && file.id.to_lowercase().ends_with(".md"))
@@ -1576,7 +1696,12 @@ fn parse_list_item(line: &str) -> Option<(usize, String)> {
     let marker_len = match chars.peek().copied() {
         Some('-' | '*' | '+') => {
             chars.next();
-            if chars.peek().copied().map(|ch| ch.is_whitespace()).unwrap_or(false) {
+            if chars
+                .peek()
+                .copied()
+                .map(|ch| ch.is_whitespace())
+                .unwrap_or(false)
+            {
                 1
             } else {
                 return None;
@@ -1584,14 +1709,24 @@ fn parse_list_item(line: &str) -> Option<(usize, String)> {
         }
         Some(ch) if ch.is_ascii_digit() => {
             let mut digits = 0usize;
-            while chars.peek().copied().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+            while chars
+                .peek()
+                .copied()
+                .map(|c| c.is_ascii_digit())
+                .unwrap_or(false)
+            {
                 chars.next();
                 digits += 1;
             }
             match chars.peek().copied() {
                 Some('.') | Some(')') => {
                     chars.next();
-                    if chars.peek().copied().map(|ch| ch.is_whitespace()).unwrap_or(false) {
+                    if chars
+                        .peek()
+                        .copied()
+                        .map(|ch| ch.is_whitespace())
+                        .unwrap_or(false)
+                    {
                         digits + 1
                     } else {
                         return None;
@@ -1616,7 +1751,9 @@ fn parse_rules_markdown(markdown: &str) -> Vec<String> {
     let mut parent_indent: usize = 0;
     let mut children: Vec<String> = Vec::new();
 
-    let flush = |rules: &mut Vec<String>, current_parent: &mut Option<String>, children: &mut Vec<String>| {
+    let flush = |rules: &mut Vec<String>,
+                 current_parent: &mut Option<String>,
+                 children: &mut Vec<String>| {
         if let Some(parent) = current_parent.take() {
             if children.is_empty() {
                 rules.push(parent);
@@ -1807,7 +1944,9 @@ fn prompt_rule_selection(
 
     let mut final_rules = if candidates.is_empty() {
         if current_rules.is_empty() {
-            ui::print_info("No candidate rules were generated automatically. You can add custom rules now.");
+            ui::print_info(
+                "No candidate rules were generated automatically. You can add custom rules now.",
+            );
         }
         current_rules.to_vec()
     } else {
@@ -1867,22 +2006,12 @@ fn persist_gold_rules_local(cwd: &Path, rules: &[String]) -> io::Result<PathBuf>
 }
 
 fn remove_legacy_selected_rules_remote(user_id: &str) {
-    let legacy_url = format!(
-        "{}/files/{}",
-        upload_url().trim_end_matches("/upload"),
-        LEGACY_SELECTED_RULES_FILE_ID
-    );
-    let _ = ureq::delete(&legacy_url)
-        .set("X-User-Id", user_id)
-        .call();
+    let legacy_url = format!("{}/{}", files_base_url(), LEGACY_SELECTED_RULES_FILE_ID);
+    let _ = ureq::delete(&legacy_url).set("X-User-Id", user_id).call();
 }
 
 fn persist_gold_rules_remote(user_id: &str, rules: &[String]) -> Result<(), String> {
-    let url = format!(
-        "{}/files/{}",
-        upload_url().trim_end_matches("/upload"),
-        GOLD_RULES_FILE_ID
-    );
+    let url = format!("{}/{}", files_base_url(), GOLD_RULES_FILE_ID);
     let payload = serde_json::json!({
         "content": gold_rules_markdown(rules),
     });
@@ -1897,7 +2026,7 @@ fn persist_gold_rules_remote(user_id: &str, rules: &[String]) -> Result<(), Stri
             Ok(())
         }
         Err(ureq::Error::Status(404, _)) => {
-            let create_url = format!("{}/files", upload_url().trim_end_matches("/upload"));
+            let create_url = files_base_url();
             let create_payload = serde_json::json!({
                 "id": GOLD_RULES_FILE_ID,
                 "content": gold_rules_markdown(rules),
@@ -2172,7 +2301,11 @@ impl planner::PlanReviewer for LivePlanReviewer {
                         Some(planner::PlanViolation {
                             rule: v.get("rule")?.as_str()?.to_string(),
                             issue: v.get("issue")?.as_str()?.to_string(),
-                            fix: v.get("fix").and_then(|f| f.as_str()).unwrap_or("").to_string(),
+                            fix: v
+                                .get("fix")
+                                .and_then(|f| f.as_str())
+                                .unwrap_or("")
+                                .to_string(),
                         })
                     })
                     .collect()
@@ -2238,8 +2371,15 @@ fn run_plan_command(
         user_id: config.user_id.clone(),
     };
 
-    let outcome = planner::run_plan_loop(cwd, &query, max_iterations, &claude, &rules_provider, &reviewer)
-        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    let outcome = planner::run_plan_loop(
+        cwd,
+        &query,
+        max_iterations,
+        &claude,
+        &rules_provider,
+        &reviewer,
+    )
+    .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
 
     if raw {
         println!("{}", outcome.final_plan);
@@ -2314,8 +2454,9 @@ fn run_review_plan_command(
         user_id: config.user_id.clone(),
     };
 
-    let review = planner::review_plan_candidate(cwd, &query, &plan, &claude, &rules_provider, &reviewer)
-        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    let review =
+        planner::review_plan_candidate(cwd, &query, &plan, &claude, &rules_provider, &reviewer)
+            .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
 
     if json {
         let payload = serde_json::to_string(&review)
@@ -2435,15 +2576,15 @@ fn main() -> io::Result<()> {
     // Phase 6a — Load the full generated Rules.md document for setup selection
     let sp = ui::start_spinner("Loading generated rules…");
     let mut has_generated_rules = true;
-    let mut generated_rules: Vec<String> = match config.user_id.as_deref().map(fetch_generated_rules)
-    {
-        Some(Ok(Some(rules))) => rules,
-        Some(Ok(None)) => {
-            has_generated_rules = false;
-            Vec::new()
-        }
-        Some(Err(_)) | None => Vec::new(),
-    };
+    let mut generated_rules: Vec<String> =
+        match config.user_id.as_deref().map(fetch_generated_rules) {
+            Some(Ok(Some(rules))) => rules,
+            Some(Ok(None)) => {
+                has_generated_rules = false;
+                Vec::new()
+            }
+            Some(Err(_)) | None => Vec::new(),
+        };
     ui::finish_spinner(&sp, "Generated rules loaded");
 
     // Phase 6b — Upload sessions to build graph if no generated rules exist, then re-fetch
@@ -2480,10 +2621,7 @@ fn main() -> io::Result<()> {
     let gold_rules = prompt_rule_selection(&candidate_rules, &current_rules)?;
 
     match persist_gold_rules_local(&cwd, &gold_rules) {
-        Ok(path) => ui::print_success(&format!(
-            "Saved gold rules locally to {}",
-            path.display()
-        )),
+        Ok(path) => ui::print_success(&format!("Saved gold rules locally to {}", path.display())),
         Err(err) => ui::print_error(&format!("Failed to save gold rules locally: {err}")),
     }
 
@@ -2558,7 +2696,10 @@ mod tests {
         dir
     }
 
-    fn serve_single_http_response(status: &str, body: &str) -> (String, std::thread::JoinHandle<String>) {
+    fn serve_single_http_response(
+        status: &str,
+        body: &str,
+    ) -> (String, std::thread::JoinHandle<String>) {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let address = listener.local_addr().unwrap();
         let response_status = status.to_string();
@@ -2679,8 +2820,14 @@ mod tests {
 "#;
         let parsed = parse_rules_markdown(markdown);
         assert_eq!(parsed.len(), 3);
-        assert_eq!(parsed[0], "Keep handlers small. Continue only when the logic stays cohesive.");
-        assert_eq!(parsed[1], "Prefer typed boundaries. Nested bullet that should not become a standalone rule.");
+        assert_eq!(
+            parsed[0],
+            "Keep handlers small. Continue only when the logic stays cohesive."
+        );
+        assert_eq!(
+            parsed[1],
+            "Prefer typed boundaries. Nested bullet that should not become a standalone rule."
+        );
         assert_eq!(parsed[2], "Write focused tests.");
     }
 
@@ -2693,10 +2840,14 @@ mod tests {
 - Keep handlers small.
 "#;
         let parsed = parse_rules_markdown(markdown);
-        assert_eq!(parsed, vec![
-            "Prefer typed boundaries. Use zod at API boundaries., Reuse validators.".to_string(),
-            "Keep handlers small.".to_string(),
-        ]);
+        assert_eq!(
+            parsed,
+            vec![
+                "Prefer typed boundaries. Use zod at API boundaries., Reuse validators."
+                    .to_string(),
+                "Keep handlers small.".to_string(),
+            ]
+        );
     }
 
     #[test]
@@ -2707,11 +2858,14 @@ mod tests {
 - Prefer explicit names.
 "#;
         let parsed = parse_rules_markdown(markdown);
-        assert_eq!(parsed, vec![
-            "Keep handlers small.".to_string(),
-            "Write focused tests.".to_string(),
-            "Prefer explicit names.".to_string(),
-        ]);
+        assert_eq!(
+            parsed,
+            vec![
+                "Keep handlers small.".to_string(),
+                "Write focused tests.".to_string(),
+                "Prefer explicit names.".to_string(),
+            ]
+        );
     }
 
     #[test]
@@ -2727,10 +2881,13 @@ mod tests {
 - Prefer typed boundaries.
 "#;
         let parsed = parse_rules_markdown(markdown);
-        assert_eq!(parsed, vec![
-            "Keep handlers small.".to_string(),
-            "Prefer typed boundaries.".to_string(),
-        ]);
+        assert_eq!(
+            parsed,
+            vec![
+                "Keep handlers small.".to_string(),
+                "Prefer typed boundaries.".to_string(),
+            ]
+        );
     }
 
     #[test]
@@ -3126,6 +3283,69 @@ mod tests {
         match old_value {
             Some(v) => std::env::set_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL", v),
             None => std::env::remove_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL"),
+        }
+    }
+
+    #[test]
+    fn coding_agent_urls_follow_rippletide_api_url_override() {
+        let _guard = env_lock();
+        let old_api_url = std::env::var_os("RIPPLETIDE_API_URL");
+        let old_upload_url = std::env::var_os("RIPPLETIDE_CODING_AGENT_UPLOAD_URL");
+        let old_query_rules_url = std::env::var_os("RIPPLETIDE_QUERY_RULES_URL");
+        let old_contradictions_url = std::env::var_os("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL");
+        std::env::set_var("RIPPLETIDE_API_URL", "http://127.0.0.1:5051/backend/");
+        std::env::remove_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL");
+        std::env::remove_var("RIPPLETIDE_QUERY_RULES_URL");
+        std::env::remove_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL");
+
+        assert_eq!(upload_url(), "http://127.0.0.1:5051/backend/upload");
+        assert_eq!(
+            query_rules_url(),
+            "http://127.0.0.1:5051/backend/query-rules"
+        );
+        assert_eq!(
+            review_plan_blocks_url(),
+            "http://127.0.0.1:5051/backend/review-plan-blocks"
+        );
+        assert_eq!(files_base_url(), "http://127.0.0.1:5051/backend/files");
+        assert_eq!(
+            claude_md_contradictions_url(),
+            "http://127.0.0.1:5051/backend/claude-md/contradictions"
+        );
+
+        match old_api_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_API_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_API_URL"),
+        }
+        match old_upload_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL"),
+        }
+        match old_query_rules_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_QUERY_RULES_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_QUERY_RULES_URL"),
+        }
+        match old_contradictions_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL"),
+        }
+    }
+
+    #[test]
+    fn upload_url_override_accepts_base_url_value() {
+        let _guard = env_lock();
+        let old_value = std::env::var_os("RIPPLETIDE_CODING_AGENT_UPLOAD_URL");
+        std::env::set_var(
+            "RIPPLETIDE_CODING_AGENT_UPLOAD_URL",
+            "http://127.0.0.1:5051/backend",
+        );
+
+        let value = upload_url();
+        assert_eq!(value, "http://127.0.0.1:5051/backend/upload");
+
+        match old_value {
+            Some(v) => std::env::set_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL"),
         }
     }
 
