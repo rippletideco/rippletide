@@ -237,6 +237,12 @@ npx rippletide-code
 
 One command to authenticate, scan your repo, select rules, and install hooks. Every Claude Code session in this project will have access to your rules from that point on.
 
+If you need to point the CLI at a specific coding-agent backend, set one base URL and the CLI will derive the related endpoints from it:
+
+```bash
+RIPPLETIDE_API_URL="https://coding-agent.up.railway.app" npx rippletide-code
+```
+
 ### Features
 
 | Feature | What it does |
