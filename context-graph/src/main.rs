@@ -1189,11 +1189,41 @@ fn upload_zip(
     body.extend_from_slice(format!("\r\n--{}--\r\n", boundary).as_bytes());
 
     let content_type = format!("multipart/form-data; boundary={}", boundary);
-    let resp = ureq::post(&upload_url())
+    let resp = match ureq::post(&upload_url())
         .set("Content-Type", &content_type)
         .set("X-User-Id", user_id)
         .send_bytes(&body)
-        .map_err(|e| format!("Upload error: {e}"))?;
+    {
+        Ok(resp) => resp,
+        Err(ureq::Error::Status(status, resp)) => {
+            let raw_body = resp.into_string().unwrap_or_default();
+            let body: serde_json::Value = serde_json::from_str(&raw_body).unwrap_or_default();
+            let message = body
+                .get("message")
+                .and_then(|value| value.as_str())
+                .or_else(|| body.get("error").and_then(|value| value.as_str()))
+                .unwrap_or(if status == 422 {
+                    "Not enough stable coding instructions were found to generate rules from this upload."
+                } else {
+                    "Upload failed."
+                });
+
+            let details = body
+                .get("messages_extracted")
+                .and_then(|value| value.as_u64())
+                .map(|count| format!(" Messages extracted: {count}."))
+                .unwrap_or_default();
+
+            if status == 422 {
+                return Err(format!(
+                    "{message} You can still add rules manually below or reconnect after more coding sessions.{details}"
+                ));
+            }
+
+            return Err(format!("Upload error ({status}): {message}{details}"));
+        }
+        Err(e) => return Err(format!("Upload error: {e}")),
+    };
     resp.into_json::<serde_json::Value>()
         .map_err(|e| format!("Invalid response: {e}"))
 }
@@ -2620,15 +2650,19 @@ fn main() -> io::Result<()> {
     let current_rules = generated_rules.clone();
     let gold_rules = prompt_rule_selection(&candidate_rules, &current_rules)?;
 
-    match persist_gold_rules_local(&cwd, &gold_rules) {
-        Ok(path) => ui::print_success(&format!("Saved gold rules locally to {}", path.display())),
-        Err(err) => ui::print_error(&format!("Failed to save gold rules locally: {err}")),
-    }
+    if gold_rules.is_empty() {
+        ui::print_info("No rules selected yet — skipping gold rules save");
+    } else {
+        match persist_gold_rules_local(&cwd, &gold_rules) {
+            Ok(path) => ui::print_success(&format!("Saved gold rules locally to {}", path.display())),
+            Err(err) => ui::print_error(&format!("Failed to save gold rules locally: {err}")),
+        }
 
-    if let Some(ref user_id) = config.user_id {
-        match persist_gold_rules_remote(user_id, &gold_rules) {
-            Ok(()) => ui::print_success("Saved gold rules to Rippletide backend"),
-            Err(err) => ui::print_error(&err),
+        if let Some(ref user_id) = config.user_id {
+            match persist_gold_rules_remote(user_id, &gold_rules) {
+                Ok(()) => ui::print_success("Saved gold rules to Rippletide backend"),
+                Err(err) => ui::print_error(&err),
+            }
         }
     }
     println!();
@@ -3328,6 +3362,29 @@ mod tests {
         match old_contradictions_url {
             Some(v) => std::env::set_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL", v),
             None => std::env::remove_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL"),
+        }
+    }
+
+    #[test]
+    fn upload_zip_surfaces_backend_message_for_insufficient_content() {
+        let _guard = env_lock();
+        let old_value = std::env::var_os("RIPPLETIDE_CODING_AGENT_UPLOAD_URL");
+        let (base_url, handle) = serve_single_http_response(
+            "422 Unprocessable Entity",
+            r#"{"error":"insufficient_content","message":"Not enough stable coding instructions were found to generate rules from this upload.","messages_extracted":1}"#,
+        );
+        std::env::set_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL", &base_url);
+
+        let error = upload_zip(b"fake-zip", "user-123", None).unwrap_err();
+        assert!(error.contains("Not enough stable coding instructions were found"));
+        assert!(error.contains("add rules manually below"));
+
+        let request = handle.join().unwrap();
+        assert!(request.starts_with("POST /upload "));
+
+        match old_value {
+            Some(v) => std::env::set_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL"),
         }
     }
 
