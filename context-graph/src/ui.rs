@@ -16,31 +16,31 @@ pub enum ConnectionMode {
 }
 
 impl ConnectionMode {
-    fn title_text(self) -> &'static str {
-        match self {
-            Self::Individual => "Individual Workspace",
-            Self::Enterprise => "Enterprise Backend",
-        }
-    }
-
-    fn border(self, text: &str) -> colored::ColoredString {
-        match self {
-            Self::Individual => text.magenta().bold(),
-            Self::Enterprise => text.cyan().bold(),
-        }
-    }
-
     fn prompt_symbol(self) -> colored::ColoredString {
         match self {
-            Self::Individual => "●".magenta().bold(),
-            Self::Enterprise => "◈".cyan().bold(),
+            Self::Individual => "●".red().bold(),
+            Self::Enterprise => "◈".blue().bold(),
         }
     }
 
     fn prompt_label(self, text: &str) -> colored::ColoredString {
         match self {
-            Self::Individual => text.magenta(),
-            Self::Enterprise => text.cyan(),
+            Self::Individual => text.red(),
+            Self::Enterprise => text.blue(),
+        }
+    }
+
+    fn summary_symbol(self) -> colored::ColoredString {
+        match self {
+            Self::Individual => "•".red().bold(),
+            Self::Enterprise => "◈".blue().bold(),
+        }
+    }
+
+    fn summary_label(self, text: &str) -> colored::ColoredString {
+        match self {
+            Self::Individual => text.red(),
+            Self::Enterprise => text.blue(),
         }
     }
 }
@@ -51,19 +51,19 @@ fn pause() {
 
 pub fn print_header(text: &str) {
     println!();
-    println!("  {}", text.green().bold());
+    println!("  {}", text.blue().bold());
     println!();
     pause();
 }
 
 pub fn print_success(text: &str) {
     pause();
-    println!("  {} {}", "✓".green(), text.green());
+    println!("  {} {}", "✓".blue(), text.blue());
 }
 
 pub fn print_progress(text: &str) {
     pause();
-    println!("  {} {}", "✓".yellow(), text.yellow());
+    println!("  {} {}", "✓".red(), text.red());
 }
 
 pub fn print_sub(text: &str) {
@@ -73,7 +73,7 @@ pub fn print_sub(text: &str) {
 
 pub fn print_result(text: &str) {
     pause();
-    println!("  {}", text.yellow());
+    println!("  {}", text.red());
 }
 
 pub fn print_info(text: &str) {
@@ -85,28 +85,26 @@ pub fn print_error(text: &str) {
     eprintln!("  {}", text.red());
 }
 
-pub fn print_mode_banner(mode: ConnectionMode, lines: &[String]) {
+pub fn print_mode_header(mode: ConnectionMode) {
     println!();
-    println!(
-        "  {}",
-        mode.border("╭────────────────────────────────────────────╮")
-    );
-    println!(
-        "  {}",
-        mode.border(&format!("│ {:<42} │", mode.title_text()))
-    );
-    println!(
-        "  {}",
-        mode.border("├────────────────────────────────────────────┤")
-    );
-    for line in lines {
-        let rendered = truncate_single_line(line, 42);
-        println!("  {}", mode.border(&format!("│ {:<42} │", rendered)));
+    match mode {
+        ConnectionMode::Enterprise => {
+            print!("  {}", "Rippletide Code - ".blue().bold());
+            println!("{}", "ENTREPRISE".white().bold().on_blue());
+        }
+        ConnectionMode::Individual => {
+            println!("  {}", "Rippletide Code - INDIVIDUAL".blue().bold());
+        }
     }
-    println!(
-        "  {}",
-        mode.border("╰────────────────────────────────────────────╯")
-    );
+    println!();
+    pause();
+}
+
+pub fn print_mode_summary(mode: ConnectionMode, lines: &[String]) {
+    for line in lines {
+        pause();
+        println!("  {} {}", mode.summary_symbol(), mode.summary_label(line));
+    }
     println!();
     pause();
 }
@@ -229,7 +227,7 @@ fn prompt_multi_select_with_term(
     }
 
     term.write_line("")?;
-    term.write_line(&format!("  {}", title.green().bold()))?;
+    term.write_line(&format!("  {}", title.blue().bold()))?;
     term.write_line("")?;
     for line in subtitle {
         term.write_line(&format!("    {}", line.dimmed()))?;
@@ -318,7 +316,7 @@ pub fn start_spinner(msg: &str) -> ProgressBar {
     let pb = ProgressBar::new_spinner();
     pb.set_style(
         ProgressStyle::default_spinner()
-            .template("  {spinner:.yellow} {msg:.yellow}")
+            .template("  {spinner:.red} {msg:.red}")
             .expect("invalid spinner template")
             .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
     );

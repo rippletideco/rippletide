@@ -1489,7 +1489,7 @@ fn active_connection_mode(config: &Config) -> ui::ConnectionMode {
     }
 }
 
-fn print_connection_mode_banner(config: &Config) {
+fn print_connection_mode_summary(config: &Config) {
     match active_connection_mode(config) {
         ui::ConnectionMode::Enterprise => {
             let backend = custom_coding_agent_backend_override()
@@ -1500,7 +1500,7 @@ fn print_connection_mode_banner(config: &Config) {
             } else {
                 "Custom company backend detected for setup".to_string()
             };
-            ui::print_mode_banner(
+            ui::print_mode_summary(
                 ui::ConnectionMode::Enterprise,
                 &[
                     state_line,
@@ -1515,7 +1515,7 @@ fn print_connection_mode_banner(config: &Config) {
             } else {
                 "Using the standard Rippletide cloud setup".to_string()
             };
-            ui::print_mode_banner(
+            ui::print_mode_summary(
                 ui::ConnectionMode::Individual,
                 &[
                     state_line,
@@ -2740,8 +2740,8 @@ fn main() -> io::Result<()> {
     };
 
     // Phase 1 — Header
-    ui::print_header("Rippletide Code");
-    print_connection_mode_banner(&config);
+    ui::print_mode_header(active_connection_mode(&config));
+    print_connection_mode_summary(&config);
 
     let mut dashboard_url: Option<String> = None;
     if let Some(login_result) = maybe_handle_enterprise_connect(&mut config)? {
