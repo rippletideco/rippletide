@@ -243,6 +243,35 @@ If you need to point the CLI at a specific coding-agent backend, set one base UR
 RIPPLETIDE_API_URL="https://coding-agent.up.railway.app" npx rippletide-code
 ```
 
+### Setup Flow
+
+The CLI now has two setup flows.
+
+**Individual**
+
+- Start the CLI and choose `1. Individual workspace`
+- The CLI uses the standard Rippletide cloud login flow
+- After login, rules sync with the individual workspace
+
+**Enterprise**
+
+- Point the CLI at a client-hosted coding-agent backend:
+
+```bash
+RIPPLETIDE_API_URL="https://company-coding-agent.internal" npx rippletide-code
+```
+
+- Start the CLI and choose `2. Enterprise backend`
+- The CLI stores that backend as the active coding-agent backend for later runs
+- The enterprise backend handles uploads, rule extraction, and Anthropic-backed processing
+
+In practice:
+
+- Individual = Rippletide cloud auth + cloud workspace
+- Enterprise = company backend + enterprise-local coding-agent flow
+
+For the maintainer release flow for the internal CLI channel, see [context-graph/CLI_RELEASE_FLOW.md](./context-graph/CLI_RELEASE_FLOW.md).
+
 ### Features
 
 | Feature | What it does |
