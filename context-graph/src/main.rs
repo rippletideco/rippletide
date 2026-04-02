@@ -91,6 +91,7 @@ const CLAUDE_MD_CONTRADICTIONS_PATH: &str = "/claude-md/contradictions";
 enum Environment {
     Local,
     Production,
+    Enterprise,
 }
 
 impl Default for Environment {
@@ -104,6 +105,7 @@ impl std::fmt::Display for Environment {
         match self {
             Self::Local => write!(f, "local"),
             Self::Production => write!(f, "production"),
+            Self::Enterprise => write!(f, "enterprise"),
         }
     }
 }
@@ -127,6 +129,7 @@ impl Config {
         match self.environment {
             Environment::Local => LOCAL_API_URL,
             Environment::Production => PROD_API_URL,
+            Environment::Enterprise => PROD_API_URL,
         }
     }
 
@@ -134,7 +137,29 @@ impl Config {
         match self.environment {
             Environment::Local => LOCAL_AUTH_URL,
             Environment::Production => PROD_AUTH_URL,
+            Environment::Enterprise => PROD_AUTH_URL,
         }
+    }
+
+    fn is_connected(&self) -> bool {
+        match self.environment {
+            Environment::Enterprise => self
+                .user_id
+                .as_deref()
+                .map(|value| !value.trim().is_empty())
+                .unwrap_or(false),
+            Environment::Local | Environment::Production => self
+                .session_token
+                .as_deref()
+                .map(|value| !value.trim().is_empty())
+                .unwrap_or(false),
+        }
+    }
+
+    fn configured_coding_agent_base_url(&self) -> Option<String> {
+        self.api_url
+            .as_deref()
+            .and_then(normalize_coding_agent_base_url)
     }
 }
 
@@ -172,6 +197,7 @@ fn apply_environment_override(config: &mut Config) {
         match env_val.to_lowercase().as_str() {
             "local" => config.environment = Environment::Local,
             "production" | "prod" => config.environment = Environment::Production,
+            "enterprise" => config.environment = Environment::Enterprise,
             _ => {}
         }
     }
@@ -876,6 +902,82 @@ struct LoginResult {
     dashboard_url: Option<String>,
 }
 
+fn prompt_enterprise_email(config: &Config) -> io::Result<Option<String>> {
+    if let Some(existing_email) = config.email.as_deref() {
+        let reuse = ui::styled_prompt(&format!(
+            "Use {} for the enterprise backend? (y/n) ",
+            existing_email
+        ))?;
+        if matches!(reuse.trim().to_lowercase().as_str(), "y" | "yes" | "") {
+            return Ok(Some(existing_email.to_string()));
+        }
+    }
+
+    println!("  Enter your email for the enterprise backend");
+    let email = ui::styled_prompt("")?;
+    if email.is_empty() {
+        ui::print_error("Email cannot be empty");
+        return Ok(None);
+    }
+    Ok(Some(email))
+}
+
+fn connect_enterprise_backend(config: &mut Config, backend_url: String) -> io::Result<LoginResult> {
+    let Some(email) = prompt_enterprise_email(config)? else {
+        return Ok(LoginResult {
+            success: false,
+            dashboard_url: None,
+        });
+    };
+
+    config.environment = Environment::Enterprise;
+    config.api_url = Some(backend_url.clone());
+    config.user_id = Some(email.clone());
+    config.email = Some(email);
+    config.session_token = None;
+    save_config(config)?;
+
+    println!();
+    ui::print_success("Enterprise backend configured");
+    ui::print_sub(&format!("Backend: {backend_url}"));
+    Ok(LoginResult {
+        success: true,
+        dashboard_url: None,
+    })
+}
+
+fn maybe_handle_enterprise_connect(config: &mut Config) -> io::Result<Option<LoginResult>> {
+    let Some(backend_url) = custom_coding_agent_backend_override() else {
+        return Ok(None);
+    };
+
+    if matches!(config.environment, Environment::Enterprise)
+        && config
+            .configured_coding_agent_base_url()
+            .as_deref()
+            .map(|value| value == backend_url)
+            .unwrap_or(false)
+        && config.is_connected()
+    {
+        return Ok(None);
+    }
+
+    println!();
+    ui::print_info(&format!(
+        "Custom coding-agent backend detected: {backend_url}"
+    ));
+    let use_enterprise = ui::styled_prompt("Use enterprise backend mode? (y/n) ")?;
+    if !matches!(use_enterprise.trim().to_lowercase().as_str(), "y" | "yes") {
+        ui::print_info("Unset RIPPLETIDE_API_URL to continue with the Rippletide cloud setup.");
+        return Ok(Some(LoginResult {
+            success: false,
+            dashboard_url: None,
+        }));
+    }
+
+    connect_enterprise_backend(config, backend_url).map(Some)
+}
+
 fn login(config: &mut Config) -> io::Result<LoginResult> {
     let auth_url = config.auth_url().to_string();
 
@@ -1363,7 +1465,17 @@ fn normalized_endpoint_override(var_name: &str, path: &str) -> Option<String> {
     Some(format!("{base}{path}"))
 }
 
-fn coding_agent_base_url() -> String {
+fn custom_coding_agent_backend_override() -> Option<String> {
+    let override_base = std::env::var("RIPPLETIDE_API_URL")
+        .ok()
+        .and_then(|raw| normalize_coding_agent_base_url(&raw))?;
+    if override_base == CODING_AGENT_BASE_URL {
+        return None;
+    }
+    Some(override_base)
+}
+
+fn coding_agent_base_url_for_config(config: Option<&Config>) -> String {
     if let Ok(raw) = std::env::var("RIPPLETIDE_API_URL") {
         if let Some(base) = normalize_coding_agent_base_url(&raw) {
             return base;
@@ -1374,7 +1486,15 @@ fn coding_agent_base_url() -> String {
             return base;
         }
     }
+    if let Some(base) = config.and_then(|value| value.configured_coding_agent_base_url()) {
+        return base;
+    }
     CODING_AGENT_BASE_URL.to_string()
+}
+
+fn coding_agent_base_url() -> String {
+    let config = load_config();
+    coding_agent_base_url_for_config(Some(&config))
 }
 
 fn claude_md_contradictions_url() -> String {
@@ -2570,10 +2690,18 @@ fn main() -> io::Result<()> {
     // Phase 1 — Header
     ui::print_header("Rippletide Code");
 
-    let is_logged_in = config.session_token.is_some();
+    let mut dashboard_url: Option<String> = None;
+    if let Some(login_result) = maybe_handle_enterprise_connect(&mut config)? {
+        println!();
+        if !login_result.success {
+            return Ok(());
+        }
+        dashboard_url = login_result.dashboard_url;
+    }
+
+    let is_logged_in = config.is_connected();
 
     // Phase 2 — Auth (if not logged in)
-    let mut dashboard_url: Option<String> = None;
     if !is_logged_in {
         let login_result = login(&mut config)?;
         println!();
@@ -2654,7 +2782,9 @@ fn main() -> io::Result<()> {
         ui::print_info("No rules selected yet — skipping gold rules save");
     } else {
         match persist_gold_rules_local(&cwd, &gold_rules) {
-            Ok(path) => ui::print_success(&format!("Saved gold rules locally to {}", path.display())),
+            Ok(path) => {
+                ui::print_success(&format!("Saved gold rules locally to {}", path.display()))
+            }
             Err(err) => ui::print_error(&format!("Failed to save gold rules locally: {err}")),
         }
 
@@ -3362,6 +3492,84 @@ mod tests {
         match old_contradictions_url {
             Some(v) => std::env::set_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL", v),
             None => std::env::remove_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL"),
+        }
+    }
+
+    #[test]
+    fn config_is_connected_for_enterprise_without_session_token() {
+        let config = Config {
+            user_id: Some("alice@example.com".to_string()),
+            session_token: None,
+            email: Some("alice@example.com".to_string()),
+            api_url: Some("https://coding-agent-staging.up.railway.app".to_string()),
+            environment: Environment::Enterprise,
+        };
+
+        assert!(config.is_connected());
+    }
+
+    #[test]
+    fn custom_coding_agent_backend_override_ignores_default_backend() {
+        let _guard = env_lock();
+        let old_api_url = std::env::var_os("RIPPLETIDE_API_URL");
+        std::env::set_var("RIPPLETIDE_API_URL", "https://coding-agent.up.railway.app");
+
+        assert_eq!(custom_coding_agent_backend_override(), None);
+
+        match old_api_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_API_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_API_URL"),
+        }
+    }
+
+    #[test]
+    fn custom_coding_agent_backend_override_accepts_custom_backend() {
+        let _guard = env_lock();
+        let old_api_url = std::env::var_os("RIPPLETIDE_API_URL");
+        std::env::set_var(
+            "RIPPLETIDE_API_URL",
+            "https://coding-agent-staging.up.railway.app/backend/",
+        );
+
+        assert_eq!(
+            custom_coding_agent_backend_override(),
+            Some("https://coding-agent-staging.up.railway.app/backend".to_string())
+        );
+
+        match old_api_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_API_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_API_URL"),
+        }
+    }
+
+    #[test]
+    fn coding_agent_base_url_uses_saved_enterprise_backend_when_no_env_override() {
+        let _guard = env_lock();
+        let old_api_url = std::env::var_os("RIPPLETIDE_API_URL");
+        let old_upload_url = std::env::var_os("RIPPLETIDE_CODING_AGENT_UPLOAD_URL");
+        std::env::remove_var("RIPPLETIDE_API_URL");
+        std::env::remove_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL");
+
+        let config = Config {
+            user_id: Some("alice@example.com".to_string()),
+            session_token: None,
+            email: Some("alice@example.com".to_string()),
+            api_url: Some("https://coding-agent-staging.up.railway.app/backend/".to_string()),
+            environment: Environment::Enterprise,
+        };
+
+        assert_eq!(
+            coding_agent_base_url_for_config(Some(&config)),
+            "https://coding-agent-staging.up.railway.app/backend"
+        );
+
+        match old_api_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_API_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_API_URL"),
+        }
+        match old_upload_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL"),
         }
     }
 
