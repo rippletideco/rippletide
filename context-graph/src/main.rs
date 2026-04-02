@@ -902,6 +902,84 @@ struct LoginResult {
     dashboard_url: Option<String>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SetupModeChoice {
+    Individual,
+    Enterprise,
+}
+
+fn should_prompt_setup_mode(config: &Config) -> bool {
+    !config.is_connected() || custom_coding_agent_backend_override().is_some()
+}
+
+fn parse_setup_mode_choice(input: &str) -> Option<SetupModeChoice> {
+    match input.trim().to_lowercase().as_str() {
+        "" | "1" | "i" | "individual" => Some(SetupModeChoice::Individual),
+        "2" | "e" | "enterprise" => Some(SetupModeChoice::Enterprise),
+        _ => None,
+    }
+}
+
+fn prompt_enterprise_backend_url() -> io::Result<Option<String>> {
+    let backend_url = ui::styled_prompt_for_mode(
+        ui::ConnectionMode::Enterprise,
+        "Enter enterprise backend URL: ",
+    )?;
+    let Some(normalized) = normalize_coding_agent_base_url(&backend_url) else {
+        ui::print_error("Enterprise backend URL is invalid");
+        return Ok(None);
+    };
+    Ok(Some(normalized))
+}
+
+fn select_setup_mode(config: &mut Config) -> io::Result<Option<LoginResult>> {
+    if !should_prompt_setup_mode(config) {
+        return Ok(None);
+    }
+
+    let custom_backend = custom_coding_agent_backend_override();
+    println!();
+    ui::print_result("Choose connection mode");
+    if let Some(ref backend_url) = custom_backend {
+        ui::print_sub(&format!("Custom backend detected: {backend_url}"));
+    }
+    ui::print_sub("1. Individual workspace");
+    ui::print_sub("2. Enterprise backend");
+    println!();
+
+    let choice = loop {
+        let raw = ui::styled_prompt("Select mode [1/2]: ")?;
+        if let Some(choice) = parse_setup_mode_choice(&raw) {
+            break choice;
+        }
+        ui::print_error("Choose 1 for individual or 2 for enterprise");
+    };
+
+    match choice {
+        SetupModeChoice::Individual => {
+            config.environment = Environment::Production;
+            if custom_backend.is_some() {
+                config.api_url = None;
+                std::env::remove_var("RIPPLETIDE_API_URL");
+                ui::print_info("Ignoring custom backend for this run and using individual cloud mode.");
+            }
+            Ok(None)
+        }
+        SetupModeChoice::Enterprise => {
+            let Some(backend_url) = (match custom_backend {
+                Some(url) => Some(url),
+                None => prompt_enterprise_backend_url()?,
+            }) else {
+                return Ok(Some(LoginResult {
+                    success: false,
+                    dashboard_url: None,
+                }));
+            };
+            connect_enterprise_backend(config, backend_url).map(Some)
+        }
+    }
+}
+
 fn prompt_enterprise_email(config: &Config) -> io::Result<Option<String>> {
     if let Some(existing_email) = config.email.as_deref() {
         let reuse = ui::styled_prompt_for_mode(
@@ -944,41 +1022,6 @@ fn connect_enterprise_backend(config: &mut Config, backend_url: String) -> io::R
         success: true,
         dashboard_url: None,
     })
-}
-
-fn maybe_handle_enterprise_connect(config: &mut Config) -> io::Result<Option<LoginResult>> {
-    let Some(backend_url) = custom_coding_agent_backend_override() else {
-        return Ok(None);
-    };
-
-    if matches!(config.environment, Environment::Enterprise)
-        && config
-            .configured_coding_agent_base_url()
-            .as_deref()
-            .map(|value| value == backend_url)
-            .unwrap_or(false)
-        && config.is_connected()
-    {
-        return Ok(None);
-    }
-
-    println!();
-    ui::print_info(&format!(
-        "Custom coding-agent backend detected: {backend_url}"
-    ));
-    let use_enterprise = ui::styled_prompt_for_mode(
-        ui::ConnectionMode::Enterprise,
-        "Use enterprise backend mode? (y/n) ",
-    )?;
-    if !matches!(use_enterprise.trim().to_lowercase().as_str(), "y" | "yes") {
-        ui::print_info("Unset RIPPLETIDE_API_URL to continue with the Rippletide cloud setup.");
-        return Ok(Some(LoginResult {
-            success: false,
-            dashboard_url: None,
-        }));
-    }
-
-    connect_enterprise_backend(config, backend_url).map(Some)
 }
 
 fn login(config: &mut Config) -> io::Result<LoginResult> {
@@ -2740,16 +2783,27 @@ fn main() -> io::Result<()> {
     };
 
     // Phase 1 — Header
-    ui::print_mode_header(active_connection_mode(&config));
-    print_connection_mode_summary(&config);
+    let prompt_setup_mode = should_prompt_setup_mode(&config);
+    if prompt_setup_mode {
+        ui::print_header("Rippletide Code");
+    } else {
+        ui::print_mode_header(active_connection_mode(&config));
+        print_connection_mode_summary(&config);
+    }
 
     let mut dashboard_url: Option<String> = None;
-    if let Some(login_result) = maybe_handle_enterprise_connect(&mut config)? {
+    let setup_result = select_setup_mode(&mut config)?;
+    if let Some(login_result) = setup_result {
         println!();
         if !login_result.success {
             return Ok(());
         }
         dashboard_url = login_result.dashboard_url;
+        ui::print_mode_header(active_connection_mode(&config));
+        print_connection_mode_summary(&config);
+    } else if prompt_setup_mode {
+        ui::print_mode_header(active_connection_mode(&config));
+        print_connection_mode_summary(&config);
     }
 
     let is_logged_in = config.is_connected();
@@ -3584,6 +3638,32 @@ mod tests {
             active_connection_mode(&config),
             ui::ConnectionMode::Individual
         );
+    }
+
+    #[test]
+    fn parse_setup_mode_choice_defaults_to_individual() {
+        assert_eq!(parse_setup_mode_choice(""), Some(SetupModeChoice::Individual));
+        assert_eq!(parse_setup_mode_choice("1"), Some(SetupModeChoice::Individual));
+        assert_eq!(
+            parse_setup_mode_choice("individual"),
+            Some(SetupModeChoice::Individual)
+        );
+    }
+
+    #[test]
+    fn parse_setup_mode_choice_accepts_enterprise_inputs() {
+        assert_eq!(parse_setup_mode_choice("2"), Some(SetupModeChoice::Enterprise));
+        assert_eq!(
+            parse_setup_mode_choice("enterprise"),
+            Some(SetupModeChoice::Enterprise)
+        );
+        assert_eq!(parse_setup_mode_choice("e"), Some(SetupModeChoice::Enterprise));
+    }
+
+    #[test]
+    fn should_prompt_setup_mode_for_unconnected_config() {
+        let config = Config::default();
+        assert!(should_prompt_setup_mode(&config));
     }
 
     #[test]
