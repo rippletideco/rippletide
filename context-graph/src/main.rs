@@ -904,17 +904,17 @@ struct LoginResult {
 
 fn prompt_enterprise_email(config: &Config) -> io::Result<Option<String>> {
     if let Some(existing_email) = config.email.as_deref() {
-        let reuse = ui::styled_prompt(&format!(
-            "Use {} for the enterprise backend? (y/n) ",
-            existing_email
-        ))?;
+        let reuse = ui::styled_prompt_for_mode(
+            ui::ConnectionMode::Enterprise,
+            &format!("Use {} for the enterprise backend? (y/n) ", existing_email),
+        )?;
         if matches!(reuse.trim().to_lowercase().as_str(), "y" | "yes" | "") {
             return Ok(Some(existing_email.to_string()));
         }
     }
 
     println!("  Enter your email for the enterprise backend");
-    let email = ui::styled_prompt("")?;
+    let email = ui::styled_prompt_for_mode(ui::ConnectionMode::Enterprise, "")?;
     if email.is_empty() {
         ui::print_error("Email cannot be empty");
         return Ok(None);
@@ -966,7 +966,10 @@ fn maybe_handle_enterprise_connect(config: &mut Config) -> io::Result<Option<Log
     ui::print_info(&format!(
         "Custom coding-agent backend detected: {backend_url}"
     ));
-    let use_enterprise = ui::styled_prompt("Use enterprise backend mode? (y/n) ")?;
+    let use_enterprise = ui::styled_prompt_for_mode(
+        ui::ConnectionMode::Enterprise,
+        "Use enterprise backend mode? (y/n) ",
+    )?;
     if !matches!(use_enterprise.trim().to_lowercase().as_str(), "y" | "yes") {
         ui::print_info("Unset RIPPLETIDE_API_URL to continue with the Rippletide cloud setup.");
         return Ok(Some(LoginResult {
@@ -982,7 +985,7 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
     let auth_url = config.auth_url().to_string();
 
     println!("  Enter your email to create your workspace");
-    let email = ui::styled_prompt("")?;
+    let email = ui::styled_prompt_for_mode(ui::ConnectionMode::Individual, "")?;
     if email.is_empty() {
         ui::print_error("Email cannot be empty");
         return Ok(LoginResult {
@@ -1026,7 +1029,8 @@ fn login(config: &mut Config) -> io::Result<LoginResult> {
             }
             ui::print_success("Verification code sent to your email");
             println!();
-            let otp = ui::styled_prompt("Enter OTP code: ")?;
+            let otp =
+                ui::styled_prompt_for_mode(ui::ConnectionMode::Individual, "Enter OTP code: ")?;
             if otp.is_empty() {
                 ui::print_error("OTP code cannot be empty");
                 return Ok(LoginResult {
@@ -1473,6 +1477,54 @@ fn custom_coding_agent_backend_override() -> Option<String> {
         return None;
     }
     Some(override_base)
+}
+
+fn active_connection_mode(config: &Config) -> ui::ConnectionMode {
+    if custom_coding_agent_backend_override().is_some()
+        || matches!(config.environment, Environment::Enterprise)
+    {
+        ui::ConnectionMode::Enterprise
+    } else {
+        ui::ConnectionMode::Individual
+    }
+}
+
+fn print_connection_mode_banner(config: &Config) {
+    match active_connection_mode(config) {
+        ui::ConnectionMode::Enterprise => {
+            let backend = custom_coding_agent_backend_override()
+                .or_else(|| config.configured_coding_agent_base_url())
+                .unwrap_or_else(|| "custom enterprise backend".to_string());
+            let state_line = if config.is_connected() {
+                "Connected through company-hosted coding-agent".to_string()
+            } else {
+                "Custom company backend detected for setup".to_string()
+            };
+            ui::print_mode_banner(
+                ui::ConnectionMode::Enterprise,
+                &[
+                    state_line,
+                    format!("Backend: {backend}"),
+                    "Company backend handles the coding-agent flow".to_string(),
+                ],
+            );
+        }
+        ui::ConnectionMode::Individual => {
+            let state_line = if config.is_connected() {
+                "Connected to your Rippletide cloud workspace".to_string()
+            } else {
+                "Using the standard Rippletide cloud setup".to_string()
+            };
+            ui::print_mode_banner(
+                ui::ConnectionMode::Individual,
+                &[
+                    state_line,
+                    "Email + OTP sign-in through Rippletide".to_string(),
+                    "Rules sync with your individual workspace".to_string(),
+                ],
+            );
+        }
+    }
 }
 
 fn coding_agent_base_url_for_config(config: Option<&Config>) -> String {
@@ -2689,6 +2741,7 @@ fn main() -> io::Result<()> {
 
     // Phase 1 — Header
     ui::print_header("Rippletide Code");
+    print_connection_mode_banner(&config);
 
     let mut dashboard_url: Option<String> = None;
     if let Some(login_result) = maybe_handle_enterprise_connect(&mut config)? {
@@ -3509,6 +3562,31 @@ mod tests {
     }
 
     #[test]
+    fn active_connection_mode_is_enterprise_for_saved_enterprise_config() {
+        let config = Config {
+            user_id: Some("alice@example.com".to_string()),
+            session_token: None,
+            email: Some("alice@example.com".to_string()),
+            api_url: Some("https://coding-agent-staging.up.railway.app".to_string()),
+            environment: Environment::Enterprise,
+        };
+
+        assert_eq!(
+            active_connection_mode(&config),
+            ui::ConnectionMode::Enterprise
+        );
+    }
+
+    #[test]
+    fn active_connection_mode_defaults_to_individual() {
+        let config = Config::default();
+        assert_eq!(
+            active_connection_mode(&config),
+            ui::ConnectionMode::Individual
+        );
+    }
+
+    #[test]
     fn custom_coding_agent_backend_override_ignores_default_backend() {
         let _guard = env_lock();
         let old_api_url = std::env::var_os("RIPPLETIDE_API_URL");
@@ -3616,11 +3694,40 @@ mod tests {
 
     #[test]
     fn claude_md_contradictions_url_defaults_from_upload_url() {
+        let _guard = env_lock();
+        let home = temp_dir("rippletide-claude-md-default-url");
+        let old_home = std::env::var_os("HOME");
+        let old_api_url = std::env::var_os("RIPPLETIDE_API_URL");
+        let old_upload_url = std::env::var_os("RIPPLETIDE_CODING_AGENT_UPLOAD_URL");
+        let old_contradictions_url = std::env::var_os("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL");
+        std::env::set_var("HOME", &home);
+        std::env::remove_var("RIPPLETIDE_API_URL");
+        std::env::remove_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL");
+        std::env::remove_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL");
+
         let value = claude_md_contradictions_url();
         assert_eq!(
             value,
             "https://coding-agent.up.railway.app/claude-md/contradictions"
         );
+
+        match old_home {
+            Some(v) => std::env::set_var("HOME", v),
+            None => std::env::remove_var("HOME"),
+        }
+        match old_api_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_API_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_API_URL"),
+        }
+        match old_upload_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_CODING_AGENT_UPLOAD_URL"),
+        }
+        match old_contradictions_url {
+            Some(v) => std::env::set_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL", v),
+            None => std::env::remove_var("RIPPLETIDE_CLAUDE_MD_CONTRADICTIONS_URL"),
+        }
+        let _ = fs::remove_dir_all(home);
     }
 
     #[test]

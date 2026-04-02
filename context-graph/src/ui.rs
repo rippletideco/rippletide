@@ -9,6 +9,42 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 const LINE_DELAY: Duration = Duration::from_millis(100);
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ConnectionMode {
+    Individual,
+    Enterprise,
+}
+
+impl ConnectionMode {
+    fn title_text(self) -> &'static str {
+        match self {
+            Self::Individual => "Individual Workspace",
+            Self::Enterprise => "Enterprise Backend",
+        }
+    }
+
+    fn border(self, text: &str) -> colored::ColoredString {
+        match self {
+            Self::Individual => text.magenta().bold(),
+            Self::Enterprise => text.cyan().bold(),
+        }
+    }
+
+    fn prompt_symbol(self) -> colored::ColoredString {
+        match self {
+            Self::Individual => "●".magenta().bold(),
+            Self::Enterprise => "◈".cyan().bold(),
+        }
+    }
+
+    fn prompt_label(self, text: &str) -> colored::ColoredString {
+        match self {
+            Self::Individual => text.magenta(),
+            Self::Enterprise => text.cyan(),
+        }
+    }
+}
+
 fn pause() {
     thread::sleep(LINE_DELAY);
 }
@@ -49,9 +85,44 @@ pub fn print_error(text: &str) {
     eprintln!("  {}", text.red());
 }
 
+pub fn print_mode_banner(mode: ConnectionMode, lines: &[String]) {
+    println!();
+    println!(
+        "  {}",
+        mode.border("╭────────────────────────────────────────────╮")
+    );
+    println!(
+        "  {}",
+        mode.border(&format!("│ {:<42} │", mode.title_text()))
+    );
+    println!(
+        "  {}",
+        mode.border("├────────────────────────────────────────────┤")
+    );
+    for line in lines {
+        let rendered = truncate_single_line(line, 42);
+        println!("  {}", mode.border(&format!("│ {:<42} │", rendered)));
+    }
+    println!(
+        "  {}",
+        mode.border("╰────────────────────────────────────────────╯")
+    );
+    println!();
+    pause();
+}
+
 pub fn styled_prompt(label: &str) -> io::Result<String> {
     print!("  {} ", ">".white());
     print!("{}", label.white());
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    Ok(input.trim().to_string())
+}
+
+pub fn styled_prompt_for_mode(mode: ConnectionMode, label: &str) -> io::Result<String> {
+    print!("  {} ", mode.prompt_symbol());
+    print!("{}", mode.prompt_label(label));
     io::stdout().flush()?;
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
