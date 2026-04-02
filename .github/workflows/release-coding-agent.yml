@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to publish from"
+        required: true
+        default: "main"
+      version:
+        description: "CLI semver version. Use an internal prerelease such as 0.5.47-internal.1"
+        required: true
 
 permissions:
   contents: read
@@ -12,7 +21,41 @@ env:
   WORKING_DIR: context-graph
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      checkout_ref: ${{ steps.meta.outputs.checkout_ref }}
+      cli_version: ${{ steps.meta.outputs.cli_version }}
+      npm_dist_tag: ${{ steps.meta.outputs.npm_dist_tag }}
+    steps:
+      - id: meta
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            ref_name="${GITHUB_REF_NAME}"
+            if [[ ! "${ref_name}" =~ ^v.+$ ]]; then
+              echo "Unexpected release tag: ${ref_name}" >&2
+              exit 1
+            fi
+            cli_version="${ref_name#v}"
+            npm_dist_tag="latest"
+            checkout_ref="${GITHUB_SHA}"
+          else
+            cli_version="${{ github.event.inputs.version }}"
+            checkout_ref="${{ github.event.inputs.ref }}"
+            npm_dist_tag="internal"
+            if [[ ! "${cli_version}" =~ -internal([.-][0-9A-Za-z.-]+)?$ ]]; then
+              echo "Internal releases must use an internal prerelease version like 0.5.47-internal.1" >&2
+              exit 1
+            fi
+          fi
+
+          echo "checkout_ref=${checkout_ref}" >> "${GITHUB_OUTPUT}"
+          echo "cli_version=${cli_version}" >> "${GITHUB_OUTPUT}"
+          echo "npm_dist_tag=${npm_dist_tag}" >> "${GITHUB_OUTPUT}"
+
   build:
+    needs: prepare
     strategy:
       matrix:
         include:
@@ -39,6 +82,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set CLI package version
+        run: python context-graph/scripts/set_coding_agent_version.py "${{ needs.prepare.outputs.cli_version }}"
 
       - name: Install cross-compilation tools (Linux ARM64)
         if: matrix.target == 'aarch64-unknown-linux-gnu'
@@ -77,10 +129,21 @@ jobs:
           path: ${{ env.WORKING_DIR }}/npm/${{ matrix.npm-pkg }}/
 
   publish:
-    needs: build
+    needs:
+      - prepare
+      - build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set CLI package version
+        run: python context-graph/scripts/set_coding_agent_version.py "${{ needs.prepare.outputs.cli_version }}"
 
       - uses: actions/setup-node@v4
         with:
@@ -106,13 +169,15 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
         run: |
           for pkg in rippletide-code-darwin-arm64 rippletide-code-darwin-x64 rippletide-code-linux-x64 rippletide-code-linux-arm64 rippletide-code-win32-x64 rippletide-code-win32-arm64; do
-            npm publish npm/$pkg/ --access public
+            npm publish npm/$pkg/ --access public --tag "${NPM_DIST_TAG}"
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_DIST_TAG: ${{ needs.prepare.outputs.npm_dist_tag }}
 
       - name: Publish main package
         working-directory: ${{ env.WORKING_DIR }}
-        run: npm publish npm/rippletide-code/ --access public
+        run: npm publish npm/rippletide-code/ --access public --tag "${NPM_DIST_TAG}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_DIST_TAG: ${{ needs.prepare.outputs.npm_dist_tag }}
