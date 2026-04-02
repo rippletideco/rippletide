@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Git ref to publish from"
+        description: "Git ref to publish from. Internal releases must come from staging."
         required: true
-        default: "main"
+        default: "staging"
       version:
         description: "CLI semver version. Use an internal prerelease such as 0.5.47-internal.1"
         required: true
@@ -28,6 +28,11 @@ jobs:
       cli_version: ${{ steps.meta.outputs.cli_version }}
       npm_dist_tag: ${{ steps.meta.outputs.npm_dist_tag }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
+          fetch-depth: 0
+
       - id: meta
         shell: bash
         run: |
@@ -40,12 +45,21 @@ jobs:
             cli_version="${ref_name#v}"
             npm_dist_tag="latest"
             checkout_ref="${GITHUB_SHA}"
+            git fetch origin main
+            if ! git merge-base --is-ancestor "${checkout_ref}" "origin/main"; then
+              echo "Stable CLI releases must tag a commit reachable from main" >&2
+              exit 1
+            fi
           else
             cli_version="${{ github.event.inputs.version }}"
             checkout_ref="${{ github.event.inputs.ref }}"
             npm_dist_tag="internal"
             if [[ ! "${cli_version}" =~ -internal([.-][0-9A-Za-z.-]+)?$ ]]; then
               echo "Internal releases must use an internal prerelease version like 0.5.47-internal.1" >&2
+              exit 1
+            fi
+            if [[ "${checkout_ref}" != "staging" && "${checkout_ref}" != "refs/heads/staging" ]]; then
+              echo "Internal CLI releases must be published from staging" >&2
               exit 1
             fi
           fi
