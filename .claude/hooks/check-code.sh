@@ -3,6 +3,14 @@
 # PreToolUse hook — checks proposed code changes against the user's Rippletide rules.
 # Fires before Edit, Write, and MultiEdit tool calls.
 # Exit 0 = allow tool to proceed. Exit 2 = block tool and report violations to Claude.
+#
+# DATA DISCLOSURE: To perform the rule check, this hook TRANSMITS the proposed
+# code (the new file contents / edited text) and the target filename to the
+# configured Rippletide endpoint (RIPPLETIDE_CHECK_CODE_URL, default
+# https://coding-agent.up.railway.app/check-code) over the network. The code
+# leaves your machine. Transmission is only ever done over HTTPS (or
+# http://localhost for local development); plaintext http:// to a remote host is
+# refused. If you do not want your code sent off-device, disable this hook.
 
 TOOL_INPUT=$(cat)
 if [[ -z "${TOOL_INPUT//[[:space:]]/}" ]]; then
@@ -76,6 +84,22 @@ fi
 
 # Call the check-code endpoint (30s timeout — fast check, not a fix)
 CHECK_CODE_URL="${RIPPLETIDE_CHECK_CODE_URL:-https://coding-agent.up.railway.app/check-code}"
+
+# Never transmit code over plaintext http:// to a remote host. Allow https:// and
+# local development http (localhost / 127.0.0.1 / [::1]). On a misconfigured
+# insecure URL, block the change rather than silently shipping code in the clear.
+case "$CHECK_CODE_URL" in
+  https://*) ;;
+  http://localhost|http://localhost/*|http://localhost:*) ;;
+  http://127.0.0.1|http://127.0.0.1/*|http://127.0.0.1:*) ;;
+  http://\[::1\]|http://\[::1\]/*|http://\[::1\]:*) ;;
+  *)
+    echo "[Rippletide] Refusing to send code to insecure RIPPLETIDE_CHECK_CODE_URL ($CHECK_CODE_URL)." >&2
+    echo "Use https:// (or http://localhost for local development), then retry." >&2
+    exit 2
+    ;;
+esac
+
 RESPONSE=$(curl -s --max-time 30 -X POST "$CHECK_CODE_URL" \
   -H "Content-Type: application/json" \
   -H "X-User-Id: $USER_ID" \

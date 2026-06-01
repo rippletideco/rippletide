@@ -259,8 +259,11 @@ For this Overview demo, the right side is preloaded with **code best practices**
 
   <script>
     var API_BASE = 'https://playground-proxy-docs.vercel.app';
-    var MCP_AGENT_CHAT_URL = 'https://agent-evalserver-production.up.railway.app/api/agents/51e43552-0cc3-4029-bc81-8e489e3d4235/chat';
-    var MCP_AGENT_ID = '51e43552-0cc3-4029-bc81-8e489e3d4235';
+    // NOTE: 'YOUR_AGENT_ID' is a placeholder. Do NOT hardcode a production agent ID here.
+    // A dedicated, non-production demo agent ID must be injected at build/render time
+    // for the live demo to work. Until that wiring exists, the demo is intentionally inert.
+    var MCP_AGENT_ID = 'YOUR_AGENT_ID';
+    var MCP_AGENT_CHAT_URL = 'https://agent-evalserver-production.up.railway.app/api/agents/' + MCP_AGENT_ID + '/chat';
     var DEMO_ID = 'overview-live-preloaded';
 
     var sessionId = '';

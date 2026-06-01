@@ -72,13 +72,37 @@ fi
 
 BASE_URL="${RIPPLETIDE_API_URL:-https://coding-agent.up.railway.app}"
 
+# Reject plaintext http:// for non-localhost hosts (prevents credential/rule
+# downgrade over the network). https:// and local development http are allowed.
+rippletide_require_https() {
+  case "$1" in
+    https://*) return 0 ;;
+    http://localhost|http://localhost/*|http://localhost:*) return 0 ;;
+    http://127.0.0.1|http://127.0.0.1/*|http://127.0.0.1:*) return 0 ;;
+    http://\[::1\]|http://\[::1\]/*|http://\[::1\]:*) return 0 ;;
+    *)
+      cat <<HOOK_EOF
+<user-prompt-submit-hook>
+[Rippletide] Refusing to use insecure RIPPLETIDE_API_URL ($1).
+Use https:// (or http://localhost for local development).
+</user-prompt-submit-hook>
+HOOK_EOF
+      exit 0
+      ;;
+  esac
+}
+rippletide_require_https "$BASE_URL"
+
+# URL-encode the team name so it cannot break out of the path segment.
+TEAM_NAME_ENC=$(printf '%s' "$TEAM_NAME" | jq -sRr @uri)
+
 if [[ -n "$APPROVER_EMAIL" && "$APPROVER_EMAIL" == *"@"* ]]; then
   PAYLOAD=$(jq -n --arg email "$APPROVER_EMAIL" '{approver_email: $email}' 2>/dev/null)
 else
   PAYLOAD='{}'
 fi
 
-RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/teams/$TEAM_NAME/join" \
+RESPONSE=$(curl -s --max-time 30 -X POST "$BASE_URL/teams/$TEAM_NAME_ENC/join" \
   -H "Content-Type: application/json" \
   -H "X-User-Id: $USER_ID" \
   -H "X-User-Email: $USER_EMAIL" \

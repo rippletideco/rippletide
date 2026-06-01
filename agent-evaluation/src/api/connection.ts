@@ -8,14 +8,25 @@ import {
 } from './endpoint.js';
 import { extractResponseText, extractCustomResponseField } from './response.js';
 import { transformNetworkError } from '../errors/transform.js';
+import { assertSafeBackendUrl } from './urlGuard.js';
 
 export async function testAgentConnection(
   endpoint: string
 ): Promise<{ success: boolean; message: string; details?: any }> {
+  let normalizedEndpoint: string;
   try {
-    const normalizedEndpoint = normalizeEndpoint(endpoint);
+    normalizedEndpoint = assertSafeBackendUrl(normalizeEndpoint(endpoint));
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || 'Invalid endpoint URL',
+      details: { error: 'unsafe_url' }
+    };
+  }
+
+  try {
     logger.debug(`Testing connection to: ${normalizedEndpoint}`);
-    
+
     const testClient = axios.create({
       timeout: 10000,
       validateStatus: () => true
@@ -72,11 +83,21 @@ export async function testAgentConnection(
 }
 
 export async function testAgentConnectionWithConfig(
-  endpoint: string, 
+  endpoint: string,
   config: CustomEndpointConfig
 ): Promise<{ success: boolean; message: string; details?: any }> {
+  let normalizedEndpoint: string;
   try {
-    const normalizedEndpoint = normalizeEndpoint(endpoint);
+    normalizedEndpoint = assertSafeBackendUrl(normalizeEndpoint(endpoint));
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || 'Invalid endpoint URL',
+      details: { error: 'unsafe_url' }
+    };
+  }
+
+  try {
     logger.debug(`Testing connection with custom config to: ${normalizedEndpoint}`);
     logger.debug('Custom config:', config);
     

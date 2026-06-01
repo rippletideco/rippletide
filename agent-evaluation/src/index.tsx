@@ -6,6 +6,7 @@ import { ErrorHandler } from './errors/handler.js';
 import { ValidationError } from './errors/types.js';
 import { listTemplates, loadTemplate, getTemplateOptions } from './utils/templates.js';
 import { analytics } from './utils/analytics.js';
+import { assertSafeBackendUrl } from './api/urlGuard.js';
 
 const parseArgs = async () => {
   const args = process.argv.slice(2);
@@ -52,7 +53,7 @@ const parseArgs = async () => {
       Object.assign(options, templateOptions);
       i++;
     } else if ((args[i] === '--backend-url' || args[i] === '-b') && args[i + 1]) {
-      options.backendUrl = args[i + 1];
+      options.backendUrl = assertSafeBackendUrl(args[i + 1]);
       i++;
     } else if ((args[i] === '--dashboard-url' || args[i] === '-d') && args[i + 1]) {
       options.dashboardUrl = args[i + 1];

@@ -41,6 +41,22 @@ fi
 
 BASE_URL="${RIPPLETIDE_API_URL:-https://coding-agent.up.railway.app}"
 
+# Reject plaintext http:// for non-localhost hosts (prevents credential/code
+# downgrade over the network). https:// and local development http are allowed.
+rippletide_require_https() {
+  case "$1" in
+    https://*) return 0 ;;
+    http://localhost|http://localhost/*|http://localhost:*) return 0 ;;
+    http://127.0.0.1|http://127.0.0.1/*|http://127.0.0.1:*) return 0 ;;
+    http://\[::1\]|http://\[::1\]/*|http://\[::1\]:*) return 0 ;;
+    *)
+      echo "{\"error\":\"Refusing to use insecure RIPPLETIDE_API_URL ($1). Use https:// (or http://localhost for local dev).\"}"
+      exit 1
+      ;;
+  esac
+}
+rippletide_require_https "$BASE_URL"
+
 case "$ACTION" in
   add)
     if [[ -z "$RULE_TEXT" ]]; then

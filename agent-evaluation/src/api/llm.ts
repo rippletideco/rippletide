@@ -9,6 +9,7 @@ import {
 } from './endpoint.js';
 import { extractResponseText, extractCustomResponseField } from './response.js';
 import { ConnectionError, ErrorCode } from '../errors/types.js';
+import { assertSafeBackendUrl } from './urlGuard.js';
 
 export async function callLLMEndpoint(
   agentEndpoint: string, 
@@ -19,7 +20,7 @@ export async function callLLMEndpoint(
     logger.debug(`Calling LLM endpoint: ${agentEndpoint}`);
     logger.debug(`Question: ${question}`);
     
-    const normalizedEndpoint = normalizeEndpoint(agentEndpoint);
+    const normalizedEndpoint = assertSafeBackendUrl(normalizeEndpoint(agentEndpoint));
     logger.debug(`Normalized endpoint: ${normalizedEndpoint}`);
     
     let response: any = null;

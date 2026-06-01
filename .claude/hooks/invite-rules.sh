@@ -70,6 +70,28 @@ HOOK_EOF
 fi
 
 BASE_URL="${RIPPLETIDE_API_URL:-https://coding-agent.up.railway.app}"
+
+# Reject plaintext http:// for non-localhost hosts (prevents credential/rule
+# downgrade over the network). https:// and local development http are allowed.
+rippletide_require_https() {
+  case "$1" in
+    https://*) return 0 ;;
+    http://localhost|http://localhost/*|http://localhost:*) return 0 ;;
+    http://127.0.0.1|http://127.0.0.1/*|http://127.0.0.1:*) return 0 ;;
+    http://\[::1\]|http://\[::1\]/*|http://\[::1\]:*) return 0 ;;
+    *)
+      cat <<HOOK_EOF
+<user-prompt-submit-hook>
+[Rippletide] Refusing to use insecure RIPPLETIDE_API_URL ($1).
+Use https:// (or http://localhost for local development).
+</user-prompt-submit-hook>
+HOOK_EOF
+      exit 0
+      ;;
+  esac
+}
+rippletide_require_https "$BASE_URL"
+
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 if [[ -n "${RIPPLETIDE_PLAN_CLI_BIN:-}" ]]; then

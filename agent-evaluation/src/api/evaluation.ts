@@ -2,6 +2,7 @@ import axios from 'axios';
 import { logger } from '../utils/logger.js';
 import { callLLMEndpoint } from './llm.js';
 import { type CustomEndpointConfig } from './endpoint.js';
+import { assertSafeBackendUrl } from './urlGuard.js';
 
 let client = axios.create({
   baseURL: 'https://agent-evalserver-production.up.railway.app',
@@ -42,14 +43,15 @@ export interface PromptEvaluationResult {
 }
 
 export function setBackendUrl(url: string) {
+  const safeUrl = assertSafeBackendUrl(url);
   client = axios.create({
-    baseURL: url,
+    baseURL: safeUrl,
     headers: {
       'Content-Type': 'application/json',
     },
   });
   setupInterceptor();
-  logger.debug('Backend URL set to:', url);
+  logger.debug('Backend URL set to:', safeUrl);
 }
 
 export async function generateApiKey(name?: string) {
