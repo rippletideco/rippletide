@@ -9,6 +9,7 @@ import { extractResponseText, extractCustomResponseField } from './response.js';
 import {
   setBackendUrl,
   generateApiKey,
+  initializeEvaluationSession,
   createAgent,
   addTestPrompts,
   checkHallucination,
@@ -45,6 +46,7 @@ export const api = {
   extractCustomResponseField,
   callLLMEndpoint,
   generateApiKey,
+  initializeEvaluationSession,
   healthCheck,
   checkKnowledge,
   createAgent,

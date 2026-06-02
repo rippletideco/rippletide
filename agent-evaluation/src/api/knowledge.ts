@@ -11,11 +11,11 @@ let client = axios.create({
   },
 });
 
-let API_KEY: string | null = null;
+let SESSION_ID: string | null = null;
 
-export function setApiClient(newClient: any, apiKey: string | null) {
+export function setApiClient(newClient: any, sessionId: string | null) {
   client = newClient;
-  API_KEY = apiKey;
+  SESSION_ID = sessionId;
 }
 
 export async function healthCheck() {
@@ -159,7 +159,7 @@ export async function uploadPdfToAgent(
       `/api/agents/${agentId}/upload-pdf`,
       formData,
       {
-        headers: API_KEY ? { 'x-api-key': API_KEY } : {},
+        headers: SESSION_ID ? { 'x-session-id': SESSION_ID } : {},
         maxBodyLength: Infinity,
         maxContentLength: Infinity,
         timeout: 300000
@@ -218,7 +218,7 @@ export async function runEvaluation(
   onProgress?: (progress: number) => void
 ) {
   const { 
-    generateApiKey, 
+    initializeEvaluationSession,
     createAgent, 
     addTestPrompts, 
     runAllPromptEvaluations 
@@ -228,6 +228,7 @@ export async function runEvaluation(
     const startTime = Date.now();
     
     if (onProgress) onProgress(10);
+    await initializeEvaluationSession();
     const payloadTemplate = config.customConfig?.bodyTemplate || '{"message": "[eval-question]"}';
     const agent = await createAgent(config.agentEndpoint, payloadTemplate);
     const agentId = agent.id;
@@ -308,5 +309,3 @@ export async function runEvaluation(
     throw error;
   }
 }
-
-

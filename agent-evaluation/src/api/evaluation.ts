@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { randomUUID } from 'node:crypto';
 import { logger } from '../utils/logger.js';
 import { callLLMEndpoint } from './llm.js';
 import { type CustomEndpointConfig } from './endpoint.js';
@@ -10,13 +11,19 @@ let client = axios.create({
   },
 });
 
-let API_KEY: string | null = null;
+let SESSION_ID: string | null = null;
+
+function getSessionId() {
+  if (!SESSION_ID) {
+    SESSION_ID = `cli-${randomUUID()}`;
+  }
+
+  return SESSION_ID;
+}
 
 const setupInterceptor = () => {
   client.interceptors.request.use((config) => {
-    if (API_KEY) {
-      config.headers['x-api-key'] = API_KEY;
-    }
+    config.headers['x-session-id'] = getSessionId();
     return config;
   });
 };
@@ -52,24 +59,23 @@ export function setBackendUrl(url: string) {
   logger.debug('Backend URL set to:', url);
 }
 
-export async function generateApiKey(name?: string) {
-  try {
-    const response = await client.post('/api/api-keys/generate-cli', {
-      name: name || 'CLI Evaluation Key'
-    });
-    
-    API_KEY = response.data.apiKey;
-    logger.info('API key generated successfully');
-    logger.debug('API Key:', API_KEY?.substring(0, 12) + '...');
-    
-    const { setApiClient } = await import('./knowledge.js');
-    setApiClient(client, API_KEY);
-    
-    return response.data;
-  } catch (error) {
-    logger.error('Error generating API key:', error);
-    throw error;
-  }
+export async function initializeEvaluationSession() {
+  const sessionId = getSessionId();
+
+  const { setApiClient } = await import('./knowledge.js');
+  setApiClient(client, sessionId);
+
+  logger.info('Evaluation session initialized');
+  logger.debug('Session ID:', `${sessionId.substring(0, 12)}...`);
+
+  return {
+    sessionId,
+    message: 'Evaluation session initialized successfully.',
+  };
+}
+
+export async function generateApiKey(_name?: string) {
+  return initializeEvaluationSession();
 }
 
 export async function createAgent(publicUrl: string, customPayloadTemplate?: string) {
@@ -415,5 +421,4 @@ export async function runAllPromptEvaluations(
   }
   return results;
 }
-
 

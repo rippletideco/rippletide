@@ -25,7 +25,7 @@ You will be asked for:
 
 The CLI will:
 
-1. Generate an API key for the evaluation
+1. Start an anonymous evaluation session
 2. Create a temporary agent
 3. Run a small set of test prompts against your endpoint
 4. Show progress and a summary of passed/failed tests

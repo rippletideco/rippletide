@@ -308,8 +308,8 @@ export const App: React.FC<AppProps> = ({
         try {
           const startTime = Date.now();
           
-          setPdfProgress('Generating API key...');
-          await api.generateApiKey('CLI Evaluation');
+          setPdfProgress('Starting evaluation session...');
+          await api.initializeEvaluationSession();
           
           setPdfProgress('Creating agent...');
           const agent = await api.createAgent(agentEndpoint);
@@ -356,7 +356,7 @@ export const App: React.FC<AppProps> = ({
           const logs: Array<{question: string, response: string}> = [];
           
           setEvaluationProgress(5);
-          await api.generateApiKey('CLI Evaluation');
+          await api.initializeEvaluationSession();
           
           setEvaluationProgress(10);
           let agentId = currentAgentId;
