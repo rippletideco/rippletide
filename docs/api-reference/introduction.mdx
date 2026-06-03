@@ -1,35 +1,68 @@
 ---
 title: API Reference
-description: Complete API documentation for Rippletide SDK
+description: Current Rippletide API surfaces for evaluation and MCP
 ---
 
 # API Reference
 
-Welcome to the Rippletide API documentation. This API allows you to manage your agents, knowledge base, and interact with your conversational AI agents.
+Rippletide's current public integration surface is focused on evaluating and
+connecting agents that you already run.
+
+<Warning>
+  The legacy agent-builder SDK API is no longer part of the public API
+  Reference. New integrations should use the Evaluation API or MCP.
+</Warning>
+
+## Current APIs
+
+### Evaluation API
+
+Use the Evaluation API when you want to run test prompts against an agent
+endpoint and store the results in Rippletide.
+
+The fastest supported path is the CLI:
+
+```bash
+npx rippletide
+```
+
+For programmatic use, the Evaluation API covers:
+
+- Creating and updating evaluation agents
+- Uploading PDF knowledge sources
+- Adding evaluation questions and saving result records
+- Reading test results
+
+See the **Evaluation API** section in this reference for the route details.
+
+### MCP and Context Graph
+
+Use MCP when your AI client needs persistent memory through Rippletide's Context
+Graph.
+
+Start with the MCP quickstart:
+
+- [MCP Overview](/docs/mcp/overview)
+- [MCP Quickstart](/docs/mcp/quickstart)
+- [MCP Tools](/docs/mcp/tools)
 
 ## Authentication
 
-All API requests require an API key in the header:
+Most API requests use an API key in the header:
 
 ```
 x-api-key: your-api-key-here
 ```
 
-## Base URL
+Some product routes may also accept a signed-in platform session.
 
-```
-https://agent.rippletide.com/api/sdk
-```
+## Legacy SDK API
 
-## Getting Started
+The old agent-builder SDK surface has been removed from the public API
+Reference. Do not use it for new integrations unless the Rippletide team has
+explicitly confirmed that your workspace still depends on it.
 
-1. **Get an API Key**: Create an account on [Rippletide Platform](https://app.rippletide.com/) and go to Settings to get your API key
-2. **Create an Agent**: Use the `/agent` endpoint to create your first agent
-3. **Add Knowledge**: Use the `/q-and-a` endpoint to add Q&A pairs to your agent
-4. **Start Chatting**: Use the `/chat/{agent_id}` endpoint to interact with your agent
+## Recommended Start
 
-For more detailed guides, see:
-- [Get Started](/docs) - Quick start guide
-- [Agent Setup](/docs/agent_setup) - Configure your hypergraph
-- [Complete Guide](/docs/Agent) - Comprehensive development guide
-
+1. Use [the CLI](/docs/cli_guide) if you want to evaluate an agent quickly.
+2. Use [MCP](/docs/mcp/quickstart) if your agent needs persistent memory.
