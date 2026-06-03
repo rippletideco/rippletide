@@ -64,13 +64,9 @@ Run evaluations from the terminal with an interactive UI, real-time progress, an
 
 ### API Endpoints
 
-The evaluation API is separate from the SDK API:
-
-| | SDK API | Evaluation API |
-|---|---------|---------------|
-| **Purpose** | Create agents, manage knowledge, chat | Evaluate agent responses |
-| **Base URL** | `https://agent.rippletide.com/api/sdk` | Evaluation server |
-| **Auth** | `x-api-key` header | `x-api-key` header |
+Use the Evaluation API for the smallest supported programmatic workflow:
+create or update an evaluation agent, upload knowledge, create a test prompt,
+submit the result, and read the result.
 
 See the [API Reference](/api-reference/introduction) for full endpoint documentation.
 

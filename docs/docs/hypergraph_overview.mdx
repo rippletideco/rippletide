@@ -74,7 +74,7 @@ The LLM is only used for **language** (understanding input, generating output). 
 
 <Steps>
   <Step title="Create an agent">
-    Define your agent's name and system prompt via the SDK API.
+    Start with an evaluated agent and define the behavior it should make deterministic.
   </Step>
   <Step title="Add Q&A pairs">
     Populate your agent's knowledge base with questions and answers.
@@ -95,16 +95,12 @@ The LLM is only used for **language** (understanding input, generating output). 
 
 ## Next Steps
 
-<CardGroup cols={3}>
-  <Card title="Create Your Hypergraph" icon="cog" href="/docs/agent_setup">
-    Step-by-step guide to setting up Q&A, tags, actions, and states
+<CardGroup cols={2}>
+  <Card title="Evaluate your agent" icon="vial" href="/docs/evaluation_overview">
+    Test the agent behavior before making decisions deterministic
   </Card>
 
-  <Card title="LangChain Integration" icon="link" href="/docs/agent_chat">
-    Use your Rippletide agent as a drop-in LLM replacement in LangChain
-  </Card>
-
-  <Card title="Complete Developer Guide" icon="book" href="/docs/Agent">
-    Full API reference with executable code examples
+  <Card title="Add memory" icon="diagram-project" href="/docs/mcp/overview">
+    Give the agent persistent context with the Context Graph
   </Card>
 </CardGroup>
