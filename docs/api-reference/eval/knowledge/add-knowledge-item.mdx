@@ -1,0 +1,42 @@
+---
+title: Add knowledge item
+description: Add one source fact or expected answer to an evaluation agent.
+openapi: post /api/agents/{id}/config
+---
+
+# Add Knowledge Item
+
+Add one source fact, answer, or knowledge item to an evaluation agent.
+
+Use this when your evaluation source material already exists as structured
+question-answer data and you want to attach it directly to the agent.
+
+## Endpoint
+
+```http
+POST /api/agents/{id}/config
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `id` | `string<uuid>` | Evaluation agent ID. |
+
+## Request Body
+
+```json
+{
+  "label": "Refund policy",
+  "description": "Customers can request a refund within 30 days of purchase.",
+  "type": "knowledge"
+}
+```
+
+## Success Response
+
+Returns `201 Created` with the knowledge item that was added.

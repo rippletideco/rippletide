@@ -74,7 +74,9 @@
           },
           "label": {
             "type": "string",
-            "enum": ["eval"],
+            "enum": [
+              "eval"
+            ],
             "default": "eval",
             "description": "Public integrations should use eval.",
             "example": "eval"
@@ -92,7 +94,11 @@
             "example": "2026-06-02T15:05:00Z"
           }
         },
-        "required": ["name", "seed", "numNodes"]
+        "required": [
+          "name",
+          "seed",
+          "numNodes"
+        ]
       },
       "CreateAgentRequest": {
         "type": "object",
@@ -134,13 +140,19 @@
           },
           "label": {
             "type": "string",
-            "enum": ["eval"],
+            "enum": [
+              "eval"
+            ],
             "description": "Set to eval for public evaluation workflows.",
             "default": "eval",
             "example": "eval"
           }
         },
-        "required": ["name", "seed", "numNodes"]
+        "required": [
+          "name",
+          "seed",
+          "numNodes"
+        ]
       },
       "UpdateAgentRequest": {
         "type": "object",
@@ -181,6 +193,82 @@
             }
           }
         }
+      },
+      "KnowledgeItem": {
+        "type": "object",
+        "description": "Knowledge entry attached to an evaluation agent.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Knowledge item identifier.",
+            "example": 12
+          },
+          "label": {
+            "type": "string",
+            "description": "Question, title, or short label for the knowledge item.",
+            "example": "Refund policy"
+          },
+          "description": {
+            "type": "string",
+            "description": "Answer or source content used during evaluation.",
+            "example": "Customers can request a refund within 30 days of purchase."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "knowledge"
+            ],
+            "description": "Public evaluation workflows should use knowledge.",
+            "example": "knowledge"
+          },
+          "node_count": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Number of graph nodes created from this item, when available.",
+            "example": 3
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp.",
+            "example": "2026-06-02T15:08:00Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp.",
+            "example": "2026-06-02T15:08:00Z"
+          }
+        }
+      },
+      "CreateKnowledgeItemRequest": {
+        "type": "object",
+        "description": "Add a knowledge item or expected answer source for an evaluation agent.",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Question, title, or short label for the knowledge item.",
+            "example": "Refund policy"
+          },
+          "description": {
+            "type": "string",
+            "description": "Answer or source content used during evaluation.",
+            "example": "Customers can request a refund within 30 days of purchase."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "knowledge"
+            ],
+            "default": "knowledge",
+            "description": "Public evaluation workflows should use knowledge.",
+            "example": "knowledge"
+          }
+        },
+        "required": [
+          "label",
+          "description"
+        ]
       },
       "TestPrompt": {
         "type": "object",
@@ -231,7 +319,9 @@
             "description": "Prompts to add to the evaluation suite.",
             "items": {
               "type": "object",
-              "required": ["prompt"],
+              "required": [
+                "prompt"
+              ],
               "properties": {
                 "prompt": {
                   "type": "string",
@@ -248,7 +338,26 @@
             }
           }
         },
-        "required": ["prompts"]
+        "required": [
+          "prompts"
+        ]
+      },
+      "UpdateTestPromptRequest": {
+        "type": "object",
+        "description": "Update one evaluation question and its optional expected answer.",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Updated question or task sent to the evaluated agent.",
+            "example": "What is your refund policy for annual plans?"
+          },
+          "expectedAnswer": {
+            "type": "string",
+            "nullable": true,
+            "description": "Updated reference answer used during evaluation.",
+            "example": "Customers can request a refund within 30 days of purchase."
+          }
+        }
       },
       "TestResult": {
         "type": "object",
@@ -273,7 +382,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["passed", "failed", "ambiguous"],
+            "enum": [
+              "passed",
+              "failed",
+              "ambiguous"
+            ],
             "description": "Evaluation outcome.",
             "example": "passed"
           },
@@ -331,7 +444,11 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["passed", "failed", "ambiguous"],
+            "enum": [
+              "passed",
+              "failed",
+              "ambiguous"
+            ],
             "description": "Evaluation outcome.",
             "example": "passed"
           },
@@ -362,7 +479,192 @@
             "example": []
           }
         },
-        "required": ["status", "response"]
+        "required": [
+          "status",
+          "response"
+        ]
+      },
+      "ImportUrlRequest": {
+        "type": "object",
+        "description": "Import source knowledge from a public web page.",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Public HTTPS URL to process.",
+            "example": "https://example.com/refund-policy"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ImportUrlResponse": {
+        "type": "object",
+        "description": "Summary of the source URL import.",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Knowledge imported successfully"
+          },
+          "article": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "example": "https://example.com/refund-policy"
+              },
+              "title": {
+                "type": "string",
+                "example": "Refund Policy"
+              },
+              "summary": {
+                "type": "string",
+                "example": "Policy details for customer refunds."
+              },
+              "wordCount": {
+                "type": "integer",
+                "example": 1200
+              },
+              "chunkCount": {
+                "type": "integer",
+                "example": 8
+              },
+              "preview": {
+                "type": "string",
+                "example": "Customers can request a refund within 30 days..."
+              }
+            }
+          },
+          "knowledge": {
+            "type": "object",
+            "properties": {
+              "qaPairsStored": {
+                "type": "integer",
+                "example": 6
+              },
+              "usedDefaultFallback": {
+                "type": "boolean",
+                "example": false
+              }
+            }
+          }
+        }
+      },
+      "CheckAnswerRequest": {
+        "type": "object",
+        "description": "Evaluate one agent answer against a question and optional expected answer.",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "Question that was sent to the evaluated agent.",
+            "example": "What is your refund policy?"
+          },
+          "llmResponse": {
+            "type": "string",
+            "description": "Answer returned by the evaluated agent.",
+            "example": "Customers can request a refund within 30 days of purchase."
+          },
+          "expectedAnswer": {
+            "type": "string",
+            "nullable": true,
+            "description": "Reference answer used for comparison.",
+            "example": "Customers can request a refund within 30 days."
+          }
+        },
+        "required": [
+          "question",
+          "llmResponse"
+        ]
+      },
+      "CheckAnswerResponse": {
+        "type": "object",
+        "description": "Evaluator judgment for one answer.",
+        "properties": {
+          "question": {
+            "type": "string",
+            "example": "What is your refund policy?"
+          },
+          "llmResponse": {
+            "type": "string",
+            "example": "Customers can request a refund within 30 days of purchase."
+          },
+          "summary": {
+            "type": "string",
+            "example": "The answer matches the expected refund window."
+          },
+          "facts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Refunds are available within 30 days."
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "ambiguous"
+            ],
+            "example": "passed"
+          },
+          "hallucinationLabel": {
+            "type": "string",
+            "example": "FactIsPresent"
+          },
+          "hallucinationFindings": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "example": []
+          }
+        }
+      },
+      "ResetResultsResponse": {
+        "type": "object",
+        "description": "Summary returned after clearing stored evaluation results.",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Evaluation results cleared successfully"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "description": "Basic service health signal.",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "up": {
+            "type": "integer",
+            "example": 1
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-03T08:09:53.831Z"
+          },
+          "uptime": {
+            "type": "integer",
+            "description": "Process uptime in seconds.",
+            "example": 144490
+          }
+        }
       },
       "Error": {
         "type": "object",
@@ -382,9 +684,112 @@
     }
   },
   "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health check",
+        "description": "Check whether the evaluation API service is reachable. This endpoint is useful for uptime checks, deployment verification, and integration smoke tests.",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "examples": {
+                  "healthy": {
+                    "summary": "Healthy service",
+                    "value": {
+                      "status": "healthy",
+                      "up": 1,
+                      "timestamp": "2026-06-03T08:09:53.831Z",
+                      "uptime": 144490
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agents": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "List evaluation agents",
+        "description": "List evaluation agents owned by the authenticated account. Use this to find an agent ID before reading questions or results.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "label",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "eval"
+              ],
+              "default": "eval"
+            },
+            "description": "Filter to evaluation agents. Public integrations should use eval."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evaluation agents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Agent"
+                  }
+                },
+                "examples": {
+                  "agents": {
+                    "summary": "Evaluation agents",
+                    "value": [
+                      {
+                        "id": "2f7e9c9c-9a2e-4e3a-b77f-6d9d1a7e3a11",
+                        "name": "Support bot evaluation",
+                        "seed": 123,
+                        "numNodes": 100,
+                        "publicUrl": "https://example.com/chat",
+                        "advancedPayload": null,
+                        "label": "eval",
+                        "created_at": "2026-06-02T15:00:00Z",
+                        "updated_at": "2026-06-02T15:00:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
-        "tags": ["Agents"],
+        "tags": [
+          "Agents"
+        ],
         "summary": "Create evaluation agent",
         "description": "Register an external agent endpoint in Rippletide so you can upload knowledge, create test prompts, run evaluations, and read results. This does not build or host an agent for you.",
         "security": [
@@ -475,8 +880,72 @@
       }
     },
     "/api/agents/{id}": {
-      "put": {
-        "tags": ["Agents"],
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get evaluation agent",
+        "description": "Read the saved metadata for one evaluation agent, including its target endpoint and payload template.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID returned by Create evaluation agent."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evaluation agent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Agent"
+                },
+                "examples": {
+                  "agent": {
+                    "summary": "Evaluation agent",
+                    "value": {
+                      "id": "2f7e9c9c-9a2e-4e3a-b77f-6d9d1a7e3a11",
+                      "name": "Support bot evaluation",
+                      "seed": 123,
+                      "numNodes": 100,
+                      "publicUrl": "https://example.com/chat",
+                      "advancedPayload": null,
+                      "label": "eval",
+                      "created_at": "2026-06-02T15:00:00Z",
+                      "updated_at": "2026-06-02T15:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Agents"
+        ],
         "summary": "Update evaluation agent",
         "description": "Update the endpoint URL, display name, or request payload template for an evaluation agent.",
         "security": [
@@ -570,11 +1039,361 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Delete evaluation agent",
+        "description": "Delete an evaluation agent that you no longer want to test or track. This is a cleanup action for agents owned by the authenticated account.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID returned by Create evaluation agent."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Evaluation agent deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{id}/config": {
+      "get": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "List knowledge items",
+        "description": "List knowledge items attached to an evaluation agent. Use this to inspect source answers or facts that support your evaluation questions.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "knowledge"
+              ],
+              "default": "knowledge"
+            },
+            "description": "Filter to knowledge items."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Knowledge items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeItem"
+                  }
+                },
+                "examples": {
+                  "knowledge": {
+                    "summary": "Knowledge items",
+                    "value": [
+                      {
+                        "id": 12,
+                        "label": "Refund policy",
+                        "description": "Customers can request a refund within 30 days of purchase.",
+                        "type": "knowledge",
+                        "node_count": 3,
+                        "created_at": "2026-06-02T15:08:00Z",
+                        "updated_at": "2026-06-02T15:08:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "Add knowledge item",
+        "description": "Add one source answer, fact, or knowledge item to an evaluation agent. The open-source CLI uses this shape when importing Q&A files.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateKnowledgeItemRequest"
+              },
+              "examples": {
+                "knowledge": {
+                  "summary": "Add a knowledge item",
+                  "value": {
+                    "label": "Refund policy",
+                    "description": "Customers can request a refund within 30 days of purchase.",
+                    "type": "knowledge"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Knowledge item created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{id}/config/{configId}": {
+      "delete": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "Delete knowledge item",
+        "description": "Remove one knowledge item from an evaluation agent.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID."
+          },
+          {
+            "name": "configId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Knowledge item ID."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Knowledge item deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent or knowledge item not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/agents/{id}/test-prompts": {
+      "get": {
+        "tags": [
+          "Test Prompts"
+        ],
+        "summary": "List evaluation questions",
+        "description": "List the questions configured for an evaluation agent. Use this to show the current test set or find a prompt ID before submitting a result.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evaluation questions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TestPrompt"
+                  }
+                },
+                "examples": {
+                  "prompts": {
+                    "summary": "Evaluation questions",
+                    "value": [
+                      {
+                        "id": 42,
+                        "prompt": "What is your refund policy?",
+                        "expectedAnswer": "Customers can request a refund within 30 days.",
+                        "testAnswer": null,
+                        "created_at": "2026-06-02T15:10:00Z",
+                        "updated_at": "2026-06-02T15:10:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
-        "tags": ["Test Prompts"],
+        "tags": [
+          "Test Prompts"
+        ],
         "summary": "Add evaluation questions",
         "description": "Add one or more questions your agent should answer during evaluation. Each question can include an optional expected answer.",
         "security": [
@@ -681,9 +1500,168 @@
         }
       }
     },
+    "/api/agents/{id}/test-prompts/{promptId}": {
+      "put": {
+        "tags": [
+          "Test Prompts"
+        ],
+        "summary": "Update evaluation question",
+        "description": "Update one question in an agent's evaluation set. Use this when the prompt wording or expected answer changes.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID."
+          },
+          {
+            "name": "promptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Evaluation question ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTestPromptRequest"
+              },
+              "examples": {
+                "question": {
+                  "summary": "Update an evaluation question",
+                  "value": {
+                    "prompt": "What is your refund policy for annual plans?",
+                    "expectedAnswer": "Customers can request a refund within 30 days of purchase."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evaluation question updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestPrompt"
+                },
+                "examples": {
+                  "updated": {
+                    "summary": "Updated evaluation question",
+                    "value": {
+                      "id": 42,
+                      "prompt": "What is your refund policy for annual plans?",
+                      "expectedAnswer": "Customers can request a refund within 30 days of purchase.",
+                      "testAnswer": null,
+                      "created_at": "2026-06-02T15:10:00Z",
+                      "updated_at": "2026-06-02T15:18:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent or question not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Test Prompts"
+        ],
+        "summary": "Delete evaluation question",
+        "description": "Remove one question from an agent's evaluation set. Use this to clean up outdated or duplicated questions.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID."
+          },
+          {
+            "name": "promptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Evaluation question ID."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Evaluation question deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent or question not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agents/{id}/test-results": {
       "get": {
-        "tags": ["Test Results"],
+        "tags": [
+          "Test Results"
+        ],
         "summary": "View evaluation results",
         "description": "Read the saved pass/fail results for an agent. Use this after submitting evaluation results to show status and evaluator findings.",
         "security": [
@@ -740,9 +1718,69 @@
         }
       }
     },
+    "/api/agents/{id}/test-results/reset": {
+      "post": {
+        "tags": [
+          "Test Results"
+        ],
+        "summary": "Clear evaluation results",
+        "description": "Clear stored evaluation results for an agent while keeping the agent and its questions. Use this before rerunning a clean evaluation pass.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evaluation results cleared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetResultsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agents/{agentId}/test-results/{promptId}": {
       "post": {
-        "tags": ["Test Results"],
+        "tags": [
+          "Test Results"
+        ],
         "summary": "Submit evaluation result",
         "description": "Save the answer and pass/fail outcome for one evaluation question. Your eval runner calls the agent endpoint, compares the response to the expected answer, then submits the result here.",
         "security": [
@@ -825,9 +1863,97 @@
         }
       }
     },
+    "/api/agents/{id}/import-url": {
+      "post": {
+        "tags": [
+          "Knowledge Import"
+        ],
+        "summary": "Import source URL",
+        "description": "Import source knowledge from a public web page so Rippletide can create evaluation material. Use this for published docs, help center articles, or product pages.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evaluation agent ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportUrlRequest"
+              },
+              "examples": {
+                "url": {
+                  "summary": "Import a public web page",
+                  "value": {
+                    "url": "https://example.com/refund-policy"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Knowledge imported successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportUrlResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Could not extract useful content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agents/{id}/upload-pdf": {
       "post": {
-        "tags": ["Knowledge Import"],
+        "tags": [
+          "Knowledge Import"
+        ],
         "summary": "Upload source PDF",
         "description": "Upload a PDF so Rippletide can extract candidate questions and expected answers for evaluation. Use this when your source knowledge already lives in a document.",
         "security": [
@@ -860,7 +1986,9 @@
                     "description": "PDF file to process."
                   }
                 },
-                "required": ["file"]
+                "required": [
+                  "file"
+                ]
               }
             }
           }

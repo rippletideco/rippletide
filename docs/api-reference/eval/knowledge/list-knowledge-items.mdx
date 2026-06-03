@@ -1,0 +1,38 @@
+---
+title: List knowledge items
+description: View source knowledge attached to an evaluation agent.
+openapi: get /api/agents/{id}/config
+---
+
+# List Knowledge Items
+
+View the source knowledge attached to an evaluation agent.
+
+Use this before editing or deleting knowledge so you can inspect the current
+source facts and answers connected to the agent.
+
+## Endpoint
+
+```http
+GET /api/agents/{id}/config
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `id` | `string<uuid>` | Evaluation agent ID. |
+
+## Query Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `type` | `string` | Use `knowledge` to list evaluation knowledge items. |
+
+## Success Response
+
+Returns `200 OK` with an array of knowledge items.
