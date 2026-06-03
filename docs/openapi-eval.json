@@ -74,7 +74,9 @@
           },
           "label": {
             "type": "string",
-            "enum": ["eval"],
+            "enum": [
+              "eval"
+            ],
             "default": "eval",
             "description": "Public integrations should use eval.",
             "example": "eval"
@@ -92,7 +94,11 @@
             "example": "2026-06-02T15:05:00Z"
           }
         },
-        "required": ["name", "seed", "numNodes"]
+        "required": [
+          "name",
+          "seed",
+          "numNodes"
+        ]
       },
       "CreateAgentRequest": {
         "type": "object",
@@ -134,13 +140,19 @@
           },
           "label": {
             "type": "string",
-            "enum": ["eval"],
+            "enum": [
+              "eval"
+            ],
             "description": "Set to eval for public evaluation workflows.",
             "default": "eval",
             "example": "eval"
           }
         },
-        "required": ["name", "seed", "numNodes"]
+        "required": [
+          "name",
+          "seed",
+          "numNodes"
+        ]
       },
       "UpdateAgentRequest": {
         "type": "object",
@@ -203,7 +215,9 @@
           },
           "type": {
             "type": "string",
-            "enum": ["knowledge"],
+            "enum": [
+              "knowledge"
+            ],
             "description": "Public evaluation workflows should use knowledge.",
             "example": "knowledge"
           },
@@ -243,13 +257,18 @@
           },
           "type": {
             "type": "string",
-            "enum": ["knowledge"],
+            "enum": [
+              "knowledge"
+            ],
             "default": "knowledge",
             "description": "Public evaluation workflows should use knowledge.",
             "example": "knowledge"
           }
         },
-        "required": ["label", "description"]
+        "required": [
+          "label",
+          "description"
+        ]
       },
       "TestPrompt": {
         "type": "object",
@@ -300,7 +319,9 @@
             "description": "Prompts to add to the evaluation suite.",
             "items": {
               "type": "object",
-              "required": ["prompt"],
+              "required": [
+                "prompt"
+              ],
               "properties": {
                 "prompt": {
                   "type": "string",
@@ -317,7 +338,9 @@
             }
           }
         },
-        "required": ["prompts"]
+        "required": [
+          "prompts"
+        ]
       },
       "UpdateTestPromptRequest": {
         "type": "object",
@@ -359,7 +382,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["passed", "failed", "ambiguous"],
+            "enum": [
+              "passed",
+              "failed",
+              "ambiguous"
+            ],
             "description": "Evaluation outcome.",
             "example": "passed"
           },
@@ -417,7 +444,11 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["passed", "failed", "ambiguous"],
+            "enum": [
+              "passed",
+              "failed",
+              "ambiguous"
+            ],
             "description": "Evaluation outcome.",
             "example": "passed"
           },
@@ -448,7 +479,10 @@
             "example": []
           }
         },
-        "required": ["status", "response"]
+        "required": [
+          "status",
+          "response"
+        ]
       },
       "ImportUrlRequest": {
         "type": "object",
@@ -461,7 +495,9 @@
             "example": "https://example.com/refund-policy"
           }
         },
-        "required": ["url"]
+        "required": [
+          "url"
+        ]
       },
       "ImportUrlResponse": {
         "type": "object",
@@ -540,7 +576,10 @@
             "example": "Customers can request a refund within 30 days."
           }
         },
-        "required": ["question", "llmResponse"]
+        "required": [
+          "question",
+          "llmResponse"
+        ]
       },
       "CheckAnswerResponse": {
         "type": "object",
@@ -563,11 +602,17 @@
             "items": {
               "type": "string"
             },
-            "example": ["Refunds are available within 30 days."]
+            "example": [
+              "Refunds are available within 30 days."
+            ]
           },
           "status": {
             "type": "string",
-            "enum": ["passed", "failed", "ambiguous"],
+            "enum": [
+              "passed",
+              "failed",
+              "ambiguous"
+            ],
             "example": "passed"
           },
           "hallucinationLabel": {
@@ -621,168 +666,6 @@
           }
         }
       },
-      "OptimizationKnowledgeElement": {
-        "type": "object",
-        "description": "Knowledge element that can be reviewed or converted into an evaluation question.",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Knowledge element identifier.",
-            "example": "fact_123"
-          },
-          "fact": {
-            "type": "string",
-            "description": "Source fact or knowledge statement.",
-            "example": "Customers can request a refund within 30 days of purchase."
-          },
-          "source": {
-            "type": "string",
-            "nullable": true,
-            "description": "Source label, file, or URL when available.",
-            "example": "refund-policy.pdf"
-          }
-        },
-        "additionalProperties": true
-      },
-      "OptimizationItem": {
-        "type": "object",
-        "description": "Candidate improvement for an evaluation dataset.",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Optimization item ID.",
-            "example": "99c2c0ea-5ce6-4a0c-902d-e4caa4f06076"
-          },
-          "agentId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Evaluation agent ID.",
-            "example": "2f7e9c9c-9a2e-4e3a-b77f-6d9d1a7e3a11"
-          },
-          "fact": {
-            "type": "string",
-            "description": "Fact or behavior that should be tested.",
-            "example": "Customers can request a refund within 30 days of purchase."
-          },
-          "expectedAnswer": {
-            "type": "string",
-            "nullable": true,
-            "description": "Expected answer generated or supplied for this item.",
-            "example": "Customers can request a refund within 30 days."
-          },
-          "justification": {
-            "type": "string",
-            "description": "Why this item is useful for improving the evaluation set.",
-            "example": "Refund policy questions are high-volume support cases."
-          },
-          "question": {
-            "type": "string",
-            "nullable": true,
-            "description": "Generated or edited evaluation question.",
-            "example": "Can customers get a refund after 30 days?"
-          },
-          "answer": {
-            "type": "string",
-            "nullable": true,
-            "description": "Generated or edited expected answer.",
-            "example": "No. Refunds are available within 30 days unless support approves an exception."
-          },
-          "approved": {
-            "type": "boolean",
-            "description": "Whether this optimization item is approved for use.",
-            "example": false
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-06-02T15:30:00Z"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-06-02T15:35:00Z"
-          }
-        }
-      },
-      "CreateOptimizationItemRequest": {
-        "type": "object",
-        "description": "Create an evaluation dataset improvement item.",
-        "properties": {
-          "fact": {
-            "type": "string",
-            "description": "Fact or behavior that should be tested.",
-            "example": "Customers can request a refund within 30 days of purchase."
-          },
-          "expectedAnswer": {
-            "type": "string",
-            "nullable": true,
-            "description": "Optional expected answer.",
-            "example": "Customers can request a refund within 30 days."
-          },
-          "justification": {
-            "type": "string",
-            "description": "Why this item should be added to the evaluation set.",
-            "example": "Refund policy questions are common and business-critical."
-          }
-        },
-        "required": ["fact", "justification"]
-      },
-      "UpdateOptimizationItemRequest": {
-        "type": "object",
-        "description": "Edit or approve an optimization item.",
-        "properties": {
-          "question": {
-            "type": "string",
-            "nullable": true,
-            "description": "Updated evaluation question.",
-            "example": "Can customers get a refund after 30 days?"
-          },
-          "answer": {
-            "type": "string",
-            "nullable": true,
-            "description": "Updated expected answer.",
-            "example": "No. Refunds are available within 30 days unless support approves an exception."
-          },
-          "approved": {
-            "type": "boolean",
-            "description": "Whether this item is approved for use.",
-            "example": true
-          }
-        }
-      },
-      "GenerateQAPairRequest": {
-        "type": "object",
-        "description": "Generate a candidate evaluation question and expected answer from a fact.",
-        "properties": {
-          "fact": {
-            "type": "string",
-            "description": "Fact to convert into an evaluation question.",
-            "example": "Customers can request a refund within 30 days of purchase."
-          },
-          "expectedAnswer": {
-            "type": "string",
-            "nullable": true,
-            "description": "Optional reference answer to guide generation.",
-            "example": "Customers can request a refund within 30 days."
-          }
-        },
-        "required": ["fact"]
-      },
-      "GenerateQAPairResponse": {
-        "type": "object",
-        "description": "Generated evaluation question and answer.",
-        "properties": {
-          "question": {
-            "type": "string",
-            "example": "What is the refund window?"
-          },
-          "answer": {
-            "type": "string",
-            "example": "Customers can request a refund within 30 days of purchase."
-          }
-        }
-      },
       "Error": {
         "type": "object",
         "properties": {
@@ -803,7 +686,9 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Health check",
         "description": "Check whether the evaluation API service is reachable. This endpoint is useful for uptime checks, deployment verification, and integration smoke tests.",
         "responses": {
@@ -833,7 +718,9 @@
     },
     "/api/agents": {
       "get": {
-        "tags": ["Agents"],
+        "tags": [
+          "Agents"
+        ],
         "summary": "List evaluation agents",
         "description": "List evaluation agents owned by the authenticated account. Use this to find an agent ID before reading questions or results.",
         "security": [
@@ -847,7 +734,9 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["eval"],
+              "enum": [
+                "eval"
+              ],
               "default": "eval"
             },
             "description": "Filter to evaluation agents. Public integrations should use eval."
@@ -898,7 +787,9 @@
         }
       },
       "post": {
-        "tags": ["Agents"],
+        "tags": [
+          "Agents"
+        ],
         "summary": "Create evaluation agent",
         "description": "Register an external agent endpoint in Rippletide so you can upload knowledge, create test prompts, run evaluations, and read results. This does not build or host an agent for you.",
         "security": [
@@ -990,7 +881,9 @@
     },
     "/api/agents/{id}": {
       "get": {
-        "tags": ["Agents"],
+        "tags": [
+          "Agents"
+        ],
         "summary": "Get evaluation agent",
         "description": "Read the saved metadata for one evaluation agent, including its target endpoint and payload template.",
         "security": [
@@ -1050,7 +943,9 @@
         }
       },
       "patch": {
-        "tags": ["Agents"],
+        "tags": [
+          "Agents"
+        ],
         "summary": "Update evaluation agent",
         "description": "Update the endpoint URL, display name, or request payload template for an evaluation agent.",
         "security": [
@@ -1146,7 +1041,9 @@
         }
       },
       "delete": {
-        "tags": ["Agents"],
+        "tags": [
+          "Agents"
+        ],
         "summary": "Delete evaluation agent",
         "description": "Delete an evaluation agent that you no longer want to test or track. This is a cleanup action for agents owned by the authenticated account.",
         "security": [
@@ -1195,7 +1092,9 @@
     },
     "/api/agents/{id}/config": {
       "get": {
-        "tags": ["Knowledge"],
+        "tags": [
+          "Knowledge"
+        ],
         "summary": "List knowledge items",
         "description": "List knowledge items attached to an evaluation agent. Use this to inspect source answers or facts that support your evaluation questions.",
         "security": [
@@ -1219,7 +1118,9 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["knowledge"],
+              "enum": [
+                "knowledge"
+              ],
               "default": "knowledge"
             },
             "description": "Filter to knowledge items."
@@ -1278,7 +1179,9 @@
         }
       },
       "post": {
-        "tags": ["Knowledge"],
+        "tags": [
+          "Knowledge"
+        ],
         "summary": "Add knowledge item",
         "description": "Add one source answer, fact, or knowledge item to an evaluation agent. The open-source CLI uses this shape when importing Q&A files.",
         "security": [
@@ -1364,7 +1267,9 @@
     },
     "/api/agents/{id}/config/{configId}": {
       "delete": {
-        "tags": ["Knowledge"],
+        "tags": [
+          "Knowledge"
+        ],
         "summary": "Delete knowledge item",
         "description": "Remove one knowledge item from an evaluation agent.",
         "security": [
@@ -1422,7 +1327,9 @@
     },
     "/api/agents/{id}/test-prompts": {
       "get": {
-        "tags": ["Test Prompts"],
+        "tags": [
+          "Test Prompts"
+        ],
         "summary": "List evaluation questions",
         "description": "List the questions configured for an evaluation agent. Use this to show the current test set or find a prompt ID before submitting a result.",
         "security": [
@@ -1484,7 +1391,9 @@
         }
       },
       "post": {
-        "tags": ["Test Prompts"],
+        "tags": [
+          "Test Prompts"
+        ],
         "summary": "Add evaluation questions",
         "description": "Add one or more questions your agent should answer during evaluation. Each question can include an optional expected answer.",
         "security": [
@@ -1593,7 +1502,9 @@
     },
     "/api/agents/{id}/test-prompts/{promptId}": {
       "put": {
-        "tags": ["Test Prompts"],
+        "tags": [
+          "Test Prompts"
+        ],
         "summary": "Update evaluation question",
         "description": "Update one question in an agent's evaluation set. Use this when the prompt wording or expected answer changes.",
         "security": [
@@ -1688,7 +1599,9 @@
         }
       },
       "delete": {
-        "tags": ["Test Prompts"],
+        "tags": [
+          "Test Prompts"
+        ],
         "summary": "Delete evaluation question",
         "description": "Remove one question from an agent's evaluation set. Use this to clean up outdated or duplicated questions.",
         "security": [
@@ -1746,7 +1659,9 @@
     },
     "/api/agents/{id}/test-results": {
       "get": {
-        "tags": ["Test Results"],
+        "tags": [
+          "Test Results"
+        ],
         "summary": "View evaluation results",
         "description": "Read the saved pass/fail results for an agent. Use this after submitting evaluation results to show status and evaluator findings.",
         "security": [
@@ -1805,7 +1720,9 @@
     },
     "/api/agents/{id}/test-results/reset": {
       "post": {
-        "tags": ["Test Results"],
+        "tags": [
+          "Test Results"
+        ],
         "summary": "Clear evaluation results",
         "description": "Clear stored evaluation results for an agent while keeping the agent and its questions. Use this before rerunning a clean evaluation pass.",
         "security": [
@@ -1861,7 +1778,9 @@
     },
     "/api/agents/{agentId}/test-results/{promptId}": {
       "post": {
-        "tags": ["Test Results"],
+        "tags": [
+          "Test Results"
+        ],
         "summary": "Submit evaluation result",
         "description": "Save the answer and pass/fail outcome for one evaluation question. Your eval runner calls the agent endpoint, compares the response to the expected answer, then submits the result here.",
         "security": [
@@ -1944,95 +1863,11 @@
         }
       }
     },
-    "/api/agents/{id}/check-hallucination-response": {
-      "post": {
-        "tags": ["Evaluation Checks"],
-        "summary": "Check evaluation answer",
-        "description": "Evaluate one answer against a question and optional expected answer. The open-source CLI uses this before saving a test result.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Evaluation agent ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CheckAnswerRequest"
-              },
-              "examples": {
-                "answer": {
-                  "summary": "Check an answer",
-                  "value": {
-                    "question": "What is your refund policy?",
-                    "llmResponse": "Customers can request a refund within 30 days of purchase.",
-                    "expectedAnswer": "Customers can request a refund within 30 days."
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Answer check result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckAnswerResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Agent not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/agents/{id}/import-url": {
       "post": {
-        "tags": ["Knowledge Import"],
+        "tags": [
+          "Knowledge Import"
+        ],
         "summary": "Import source URL",
         "description": "Import source knowledge from a public web page so Rippletide can create evaluation material. Use this for published docs, help center articles, or product pages.",
         "security": [
@@ -2114,416 +1949,11 @@
         }
       }
     },
-    "/api/agents/{agentId}/optimization-knowledge-elements": {
-      "get": {
-        "tags": ["Optimization"],
-        "summary": "List optimization knowledge",
-        "description": "List knowledge elements that can be reviewed or converted into stronger evaluation questions.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Evaluation agent ID."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Optimization knowledge elements",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/OptimizationKnowledgeElement"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agents/{agentId}/generate-qa-pair": {
-      "post": {
-        "tags": ["Optimization"],
-        "summary": "Generate QA pair",
-        "description": "Generate a candidate evaluation question and expected answer from a source fact.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Evaluation agent ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GenerateQAPairRequest"
-              },
-              "examples": {
-                "fact": {
-                  "summary": "Generate from a fact",
-                  "value": {
-                    "fact": "Customers can request a refund within 30 days of purchase.",
-                    "expectedAnswer": "Customers can request a refund within 30 days."
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "QA pair generated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GenerateQAPairResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agents/{agentId}/optimization-items": {
-      "get": {
-        "tags": ["Optimization"],
-        "summary": "List optimization items",
-        "description": "List candidate improvements for an agent's evaluation dataset.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Evaluation agent ID."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Optimization items",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/OptimizationItem"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": ["Optimization"],
-        "summary": "Create optimization item",
-        "description": "Create a candidate improvement item for an evaluation dataset.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Evaluation agent ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateOptimizationItemRequest"
-              },
-              "examples": {
-                "item": {
-                  "summary": "Create an improvement item",
-                  "value": {
-                    "fact": "Customers can request a refund within 30 days of purchase.",
-                    "expectedAnswer": "Customers can request a refund within 30 days.",
-                    "justification": "Refund policy questions are common and business-critical."
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Optimization item created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OptimizationItem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["Optimization"],
-        "summary": "Delete all optimization items",
-        "description": "Delete all optimization items for an evaluation agent. Use this when you want to rebuild the improvement queue from scratch.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Evaluation agent ID."
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Optimization items deleted successfully"
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agents/{agentId}/optimization-items/{itemId}": {
-      "patch": {
-        "tags": ["Optimization"],
-        "summary": "Update optimization item",
-        "description": "Edit a candidate question, expected answer, or approval state.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Evaluation agent ID."
-          },
-          {
-            "name": "itemId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Optimization item ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateOptimizationItemRequest"
-              },
-              "examples": {
-                "approve": {
-                  "summary": "Approve an optimization item",
-                  "value": {
-                    "question": "Can customers get a refund after 30 days?",
-                    "answer": "No. Refunds are available within 30 days unless support approves an exception.",
-                    "approved": true
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Optimization item updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OptimizationItem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Optimization item not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["Optimization"],
-        "summary": "Delete optimization item",
-        "description": "Delete one optimization item from the improvement queue.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Evaluation agent ID."
-          },
-          {
-            "name": "itemId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Optimization item ID."
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Optimization item deleted successfully"
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Optimization item not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/agents/{id}/upload-pdf": {
       "post": {
-        "tags": ["Knowledge Import"],
+        "tags": [
+          "Knowledge Import"
+        ],
         "summary": "Upload source PDF",
         "description": "Upload a PDF so Rippletide can extract candidate questions and expected answers for evaluation. Use this when your source knowledge already lives in a document.",
         "security": [
@@ -2556,7 +1986,9 @@
                     "description": "PDF file to process."
                   }
                 },
-                "required": ["file"]
+                "required": [
+                  "file"
+                ]
               }
             }
           }
