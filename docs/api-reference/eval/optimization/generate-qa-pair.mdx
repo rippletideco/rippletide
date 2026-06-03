@@ -1,0 +1,41 @@
+---
+title: Generate QA pair
+description: Generate a candidate evaluation question and expected answer from a fact.
+openapi: post /api/agents/{agentId}/generate-qa-pair
+---
+
+# Generate QA Pair
+
+Generate a candidate evaluation question and expected answer from a source fact.
+
+Use this to turn useful knowledge into a testable question before adding it to
+your evaluation set.
+
+## Endpoint
+
+```http
+POST /api/agents/{agentId}/generate-qa-pair
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `agentId` | `string<uuid>` | Evaluation agent ID. |
+
+## Request Body
+
+```json
+{
+  "fact": "Customers can request a refund within 30 days of purchase.",
+  "expectedAnswer": "Customers can request a refund within 30 days."
+}
+```
+
+## Success Response
+
+Returns `200 OK` with a generated `question` and `answer`.

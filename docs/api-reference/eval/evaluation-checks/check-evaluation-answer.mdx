@@ -1,0 +1,43 @@
+---
+title: Check evaluation answer
+description: Evaluate one agent answer against a question and expected answer.
+openapi: post /api/agents/{id}/check-hallucination-response
+---
+
+# Check Evaluation Answer
+
+Evaluate one answer from your agent against a question and optional expected
+answer.
+
+Use this when you want Rippletide to judge an answer before you submit the
+stored evaluation result.
+
+## Endpoint
+
+```http
+POST /api/agents/{id}/check-hallucination-response
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `id` | `string<uuid>` | Evaluation agent ID. |
+
+## Request Body
+
+```json
+{
+  "question": "What is your refund policy?",
+  "llmResponse": "Customers can request a refund within 30 days of purchase.",
+  "expectedAnswer": "Customers can request a refund within 30 days."
+}
+```
+
+## Success Response
+
+Returns `200 OK` with a pass/fail/ambiguous status and evaluator findings.

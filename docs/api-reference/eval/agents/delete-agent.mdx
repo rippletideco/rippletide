@@ -1,0 +1,37 @@
+---
+title: Delete evaluation agent
+description: Remove an evaluation agent that is no longer needed.
+openapi: delete /api/agents/{id}
+---
+
+# Delete Evaluation Agent
+
+Delete an evaluation agent when it is no longer needed.
+
+<Warning>
+  This is a destructive cleanup action. It removes the evaluation agent record
+  for the authenticated account.
+</Warning>
+
+Use this after listing or retrieving an agent and confirming the `id` belongs
+to the evaluation target you want to remove.
+
+## Endpoint
+
+```http
+DELETE /api/agents/{id}
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `id` | `string<uuid>` | Evaluation agent ID. |
+
+## Success Response
+
+Returns `204 No Content` when the agent is deleted.

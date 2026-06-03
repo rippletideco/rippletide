@@ -111,12 +111,74 @@
           {
             "group": "Evaluation API",
             "pages": [
-              "api-reference/eval/agents/create-agent",
-              "api-reference/eval/agents/update-agent",
-              "api-reference/eval/test-prompts/create-test-prompt",
-              "api-reference/eval/test-results/run-test-for-prompt",
-              "api-reference/eval/test-results/get-test-results",
-              "api-reference/eval/knowledge-import/upload-pdf"
+              {
+                "group": "Health",
+                "expanded": true,
+                "pages": [
+                  "api-reference/eval/health/health-check"
+                ]
+              },
+              {
+                "group": "Agents",
+                "expanded": true,
+                "pages": [
+                  "api-reference/eval/agents/list-agents",
+                  "api-reference/eval/agents/create-agent",
+                  "api-reference/eval/agents/get-agent-by-id",
+                  "api-reference/eval/agents/update-agent",
+                  "api-reference/eval/agents/delete-agent"
+                ]
+              },
+              {
+                "group": "Knowledge",
+                "expanded": true,
+                "pages": [
+                  "api-reference/eval/knowledge/list-knowledge-items",
+                  "api-reference/eval/knowledge/add-knowledge-item",
+                  "api-reference/eval/knowledge/delete-knowledge-item"
+                ]
+              },
+              {
+                "group": "Evaluation Questions",
+                "expanded": true,
+                "pages": [
+                  "api-reference/eval/test-prompts/get-test-prompts",
+                  "api-reference/eval/test-prompts/create-test-prompt",
+                  "api-reference/eval/test-prompts/update-test-prompt",
+                  "api-reference/eval/test-prompts/delete-test-prompt"
+                ]
+              },
+              {
+                "group": "Evaluation Results",
+                "expanded": true,
+                "pages": [
+                  "api-reference/eval/evaluation-checks/check-evaluation-answer",
+                  "api-reference/eval/test-results/run-test-for-prompt",
+                  "api-reference/eval/test-results/get-test-results",
+                  "api-reference/eval/test-results/clear-test-results"
+                ]
+              },
+              {
+                "group": "Optimization",
+                "expanded": true,
+                "pages": [
+                  "api-reference/eval/optimization/list-optimization-knowledge",
+                  "api-reference/eval/optimization/generate-qa-pair",
+                  "api-reference/eval/optimization/list-optimization-items",
+                  "api-reference/eval/optimization/create-optimization-item",
+                  "api-reference/eval/optimization/update-optimization-item",
+                  "api-reference/eval/optimization/delete-optimization-item",
+                  "api-reference/eval/optimization/delete-all-optimization-items"
+                ]
+              },
+              {
+                "group": "Source Import",
+                "expanded": true,
+                "pages": [
+                  "api-reference/eval/knowledge-import/import-source-url",
+                  "api-reference/eval/knowledge-import/upload-pdf"
+                ]
+              }
             ]
           }
         ]

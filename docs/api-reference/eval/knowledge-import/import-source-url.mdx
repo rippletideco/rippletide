@@ -1,0 +1,41 @@
+---
+title: Import source URL
+description: Import source knowledge from a public web page.
+openapi: post /api/agents/{id}/import-url
+---
+
+# Import Source URL
+
+Import source knowledge from a public web page.
+
+Use this for published docs, help center articles, product pages, or other
+public source material that should inform evaluation questions.
+
+## Endpoint
+
+```http
+POST /api/agents/{id}/import-url
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `id` | `string<uuid>` | Evaluation agent ID. |
+
+## Request Body
+
+```json
+{
+  "url": "https://example.com/refund-policy"
+}
+```
+
+## Success Response
+
+Returns `200 OK` with a summary of extracted article content and stored
+knowledge.

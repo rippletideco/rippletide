@@ -1,0 +1,32 @@
+---
+title: List optimization items
+description: View candidate improvements for an evaluation dataset.
+openapi: get /api/agents/{agentId}/optimization-items
+---
+
+# List Optimization Items
+
+View candidate improvements for an agent's evaluation dataset.
+
+Use this to review generated or manually created improvement items before
+editing, approving, or deleting them.
+
+## Endpoint
+
+```http
+GET /api/agents/{agentId}/optimization-items
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `agentId` | `string<uuid>` | Evaluation agent ID. |
+
+## Success Response
+
+Returns `200 OK` with optimization items for the agent.

@@ -1,0 +1,37 @@
+---
+title: Delete knowledge item
+description: Remove one knowledge item from an evaluation agent.
+openapi: delete /api/agents/{id}/config/{configId}
+---
+
+# Delete Knowledge Item
+
+Remove one knowledge item from an evaluation agent.
+
+<Warning>
+  This is a destructive cleanup action. Use it when a source item is outdated,
+  duplicated, or should no longer inform evaluation.
+</Warning>
+
+Use this after listing knowledge items and confirming the `configId`.
+
+## Endpoint
+
+```http
+DELETE /api/agents/{id}/config/{configId}
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `id` | `string<uuid>` | Evaluation agent ID. |
+| `configId` | `integer` | Knowledge item ID. |
+
+## Success Response
+
+Returns `204 No Content` when the knowledge item is deleted.

@@ -1,0 +1,36 @@
+---
+title: Delete all optimization items
+description: Clear the full optimization queue for an evaluation agent.
+openapi: delete /api/agents/{agentId}/optimization-items
+---
+
+# Delete All Optimization Items
+
+Clear the full optimization queue for an evaluation agent.
+
+<Warning>
+  This removes all optimization items for the agent. Use it when you want to
+  rebuild the improvement queue from scratch.
+</Warning>
+
+This does not delete the evaluation agent itself.
+
+## Endpoint
+
+```http
+DELETE /api/agents/{agentId}/optimization-items
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `agentId` | `string<uuid>` | Evaluation agent ID. |
+
+## Success Response
+
+Returns `204 No Content` when the queue is cleared.

@@ -1,0 +1,42 @@
+---
+title: Create optimization item
+description: Create a candidate improvement for an evaluation dataset.
+openapi: post /api/agents/{agentId}/optimization-items
+---
+
+# Create Optimization Item
+
+Create a candidate improvement for an evaluation dataset.
+
+Use this when you find a fact or behavior that should become a future
+evaluation question.
+
+## Endpoint
+
+```http
+POST /api/agents/{agentId}/optimization-items
+```
+
+## Authentication
+
+Send your platform API key in the `x-api-key` header.
+
+## Path Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `agentId` | `string<uuid>` | Evaluation agent ID. |
+
+## Request Body
+
+```json
+{
+  "fact": "Customers can request a refund within 30 days of purchase.",
+  "expectedAnswer": "Customers can request a refund within 30 days.",
+  "justification": "Refund policy questions are common and business-critical."
+}
+```
+
+## Success Response
+
+Returns `201 Created` with the optimization item.
