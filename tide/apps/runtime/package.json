@@ -1,0 +1,49 @@
+{
+  "name": "tide-runtime",
+  "version": "0.1.0",
+  "description": "Tide Decision Runtime — deterministic pre-execution enforcement for AI agents",
+  "type": "module",
+  "license": "Apache-2.0",
+  "keywords": [
+    "mcp",
+    "ai-agents",
+    "policy",
+    "guardrails"
+  ],
+  "homepage": "https://github.com/rippletideco/rippletide/tree/main/tide#readme",
+  "bugs": {
+    "url": "https://github.com/rippletideco/rippletide/issues"
+  },
+  "bin": {
+    "tide-runtime": "dist/src/server.js",
+    "tide-eval": "dist/src/evalcli.js"
+  },
+  "files": [
+    "dist/src",
+    "public",
+    "package.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rippletideco/rippletide.git",
+    "directory": "tide/apps/runtime"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "npm run build",
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "start": "node dist/src/server.js"
+  },
+  "dependencies": {
+    "@fastify/static": "^9.1.3",
+    "fastify": "^5.2.0",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

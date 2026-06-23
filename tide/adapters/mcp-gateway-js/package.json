@@ -1,0 +1,35 @@
+{
+  "name": "tide-mcp-gateway",
+  "version": "0.1.0",
+  "description": "MCP gateway that enforces Tide policy decisions before tool calls execute",
+  "type": "module",
+  "license": "Apache-2.0",
+  "keywords": [
+    "mcp",
+    "ai-agents",
+    "policy",
+    "guardrails"
+  ],
+  "homepage": "https://github.com/rippletideco/rippletide/tree/main/tide#readme",
+  "bugs": {
+    "url": "https://github.com/rippletideco/rippletide/issues"
+  },
+  "bin": {
+    "tide-mcp-gateway": "index.js"
+  },
+  "files": [
+    "index.js",
+    "mcp-config.js"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rippletideco/rippletide.git",
+    "directory": "tide/adapters/mcp-gateway-js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}

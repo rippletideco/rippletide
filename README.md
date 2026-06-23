@@ -25,7 +25,8 @@
 
 <br />
 
-This repository is your starting point for Rippletide — Eval, Context Graph MCP, and Coding Agents.
+This repository is your starting point for Rippletide — Eval, Context Graph MCP,
+Coding Agents, and Tide.
 
 ---
 
@@ -42,9 +43,10 @@ This repository is your starting point for Rippletide — Eval, Context Graph MC
 | 1   | [Agent Evaluation - CLI](#agent-evaluation-cli) | Validate before you ship                           |
 | 2   | [Context Graph - MCP](#context-graph---mcp)     | Give your agents persistent memory across sessions |
 | 3   | [Coding Agents](#coding-agents)                 | A persistent memory layer for Claude               |
+| 4   | [Tide - MCP Policy Gateway](./tide)             | Block unsafe MCP tool calls before execution       |
 
 
-<sub>**Decision Runtime** — Enterprise Only. Build deterministic agents with less than 1% hallucination rate. [Contact us](https://rippletide.com) to learn more.</sub>
+<sub>**Tide technical preview** — deterministic pre-execution guardrails for MCP tool calls. See [./tide](./tide).</sub>
 
 ---
 

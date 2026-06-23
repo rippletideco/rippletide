@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.venv/
+.env
+__pycache__/
+*.egg-info/
+build/
+.tide/
+var/
+.DS_Store
+reports/
+demo-video/
+demo-video-hyperframes/

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tide Console</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">◍</span>
+      <div>
+        <h1>Tide Console</h1>
+        <div class="sub" id="bundle-info">loading bundle…</div>
+      </div>
+    </div>
+    <nav>
+      <button class="tab active" data-tab="decisions">Decisions</button>
+      <button class="tab" data-tab="approvals">Approvals <span id="pending-badge" class="badge hidden">0</span></button>
+      <button class="tab" data-tab="rules">Rules</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="tab-decisions" class="panel">
+      <div class="split">
+        <div class="feed">
+          <div class="feed-head">
+            <h2>Decision feed</h2>
+            <label class="live"><span class="dot"></span> live</label>
+          </div>
+          <ul id="decision-list"></ul>
+        </div>
+        <div class="detail" id="trace-detail">
+          <div class="empty">Select a decision to inspect its causal trace.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-approvals" class="panel hidden">
+      <h2>Approval queue</h2>
+      <p class="hint">Actions the agent proposed that policy routes to a human. Approving releases execution and records the action in the session history.</p>
+      <ul id="approval-list"></ul>
+      <h2 class="spaced">Decided</h2>
+      <ul id="approval-history"></ul>
+    </section>
+
+    <section id="tab-rules" class="panel hidden">
+      <h2>Active bundle</h2>
+      <table id="rules-table">
+        <thead><tr><th>Rule</th><th>Action</th><th>Verdict</th><th>Mode</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
