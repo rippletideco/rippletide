@@ -49,26 +49,36 @@ A copied command or a “setup complete” screen alone is not enough.
 Default API is **production**. Do not pass a staging `--endpoint` unless you
 intentionally want staging.
 
+## Install
+
+```bash
+npm install -g rippletide-package
+```
+
+After install, every command is `rippletide <command>`. Without a global install,
+you can run a one-off with `npx rippletide-package <command>` — the examples
+below use the installed `rippletide` bin.
+
 ## Steps
 
 ```bash
 # 1) Account login (device flow). Prefer --json for automation.
-npx rippletide-package@latest login --json
+rippletide login --json
 # Open verification_uri_complete (computer use), complete Auth0 if needed,
 # wait until status=ok.
 
 # 2) Bind this repo and sync inventory + start the Runtime worker.
 cd <agent-repo>
-npx rippletide-package@latest connect --yes
+rippletide connect --yes
 # If the repo has no rippletide:sync / rippletide:start scripts yet, add the
 # thin SDK wiring, then re-run connect --yes until status is ready.
 
 # 3) Prove readiness.
-npx rippletide-package@latest status
+rippletide status
 # Expect: Connection: ready · Runner: online · Inventory: available
 
 # 4) Optional proof run.
-npx rippletide-package@latest evaluate --generate --wait
+rippletide evaluate --generate --wait
 ```
 
 Alternate path without CLI login: open **Connect Agent** in Rippletide, copy the
@@ -88,7 +98,7 @@ scoped credentials.
 | `create-rules` / `generate-rules` | Compile NL rule → save (optional enable) on a policy target |
 | `rules targets\|show-target\|list\|enable\|…` | Manage platform policy targets and rule releases |
 
-All commands accept `--json`. Prefer `npx rippletide-package@latest <cmd>`.
+All commands accept `--json`.
 
 ## Policy rules (platform CLI)
 
@@ -97,15 +107,15 @@ Rules UI / `/api/policy-targets/.../rules`). Auth matches every other CLI
 command — no coding-agent URL and no GoldRules upload path.
 
 ```bash
-npx rippletide-package@latest rules targets
-npx rippletide-package@latest rules show-target <targetId>
-npx rippletide-package@latest create-rules \
+rippletide rules targets
+rippletide rules show-target <targetId>
+rippletide create-rules \
   --target <targetId> \
   --action calendar/create_event \
   --input "Only admins may invite external attendees."
-npx rippletide-package@latest rules list --target <targetId>
-npx rippletide-package@latest rules enable --target <targetId> --release <releaseId>
-npx rippletide-package@latest rules control-mode --target <targetId> --mode observe
+rippletide rules list --target <targetId>
+rippletide rules enable --target <targetId> --release <releaseId>
+rippletide rules control-mode --target <targetId> --mode observe
 ```
 
 - `create-rules` (alias `generate-rules`) compiles natural language for one
