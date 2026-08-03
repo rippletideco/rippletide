@@ -1,6 +1,6 @@
 ---
 title: Connect an existing agent
-description: Tell Codex or Cursor “Use Rippletide to connect this agent” — login, sync inventory, prove ready, optionally evaluate
+description: Tell Codex or Cursor “Use Rippletide to connect this agent” — login, sync inventory, GoldRules CLI, evaluate
 ---
 
 User ask that should be enough:
@@ -23,8 +23,8 @@ and run the loop below. No long pasted prompt is required.
   This is the **Connect Agent / `rippletide-package` CLI** path for an existing
   TypeScript or JavaScript agent repo.
 
-  - For **Rippletide Code** (coding rules in Claude Code), see
-    [Coding Agents → Connect](/docs/coding-agents/connect).
+  - For **Rippletide Code** (coding rules hooks in Claude Code via
+    `npx rippletide-code`), see [Coding Agents → Connect](/docs/coding-agents/connect).
   - For the older **Eval CLI** (`npx rippletide` hallucination eval against an
     HTTP endpoint), see [Use the CLI](/docs/cli_guide).
 </Warning>
@@ -75,6 +75,40 @@ Alternate path without CLI login: open **Connect Agent** in Rippletide, copy the
 generated setup prompt into the coding agent. That prompt already embeds
 scoped credentials.
 
+## CLI commands
+
+| Command | Purpose |
+| --- | --- |
+| `login [--endpoint <url>]` | Device-flow login (`~/.rippletide`) |
+| `logout` / `whoami` / `agents` | Account helpers |
+| `connect [--yes]` | Bind repo, sync inventory, start Runtime worker |
+| `status` | Auth + binding + inventory + runner readiness |
+| `evaluate [--generate] [--wait]` | Run connected-agent evaluation |
+| `improve [--yes] [--wait]` | Improvement loop after review |
+| `create-rules` / `generate-rules` | Upload Claude export → activate `GoldRules.md` |
+| `rules show\|add\|remove\|query\|check` | Inspect / edit / query / check GoldRules |
+
+All commands accept `--json`. Prefer `npx rippletide-package@latest <cmd>`.
+
+## GoldRules (coding rules via CLI)
+
+After `login`, manage active GoldRules from the terminal:
+
+```bash
+npx rippletide-package@latest create-rules ./claude-export.zip --claude-md ./CLAUDE.md
+npx rippletide-package@latest rules show
+npx rippletide-package@latest rules add "Run targeted tests before shipping."
+npx rippletide-package@latest rules remove 2
+npx rippletide-package@latest rules query "What should be done before shipping?" --strategy heuristic
+npx rippletide-package@latest rules check --file ./snippet.ts
+```
+
+- `create-rules` (alias `generate-rules`) uploads a Claude export `.zip` or a
+  projects directory, then promotes generated rules into `GoldRules.md` unless
+  `--no-activate` is set.
+- Override API base with `--coding-agent-url` or `RIPPLETIDE_CODING_AGENT_URL`
+  (otherwise it follows the logged-in platform endpoint).
+
 ## If scripts are missing
 
 Compatible repos declare:
@@ -91,6 +125,7 @@ unknown layouts, the coding agent adds the adapters, then re-runs `connect`.
 | --- | --- |
 | `Use Rippletide to connect this agent` | login → connect → status ready |
 | `Install Rippletide and run an evaluation` | above + `evaluate --generate --wait` |
+| `Create GoldRules from this Claude export` | `create-rules` → `rules show` |
 | `Connect this agent to Rippletide and open the evaluate result` | above + surface the UI URL from evaluate output |
 
 If a cold coding agent fails the short prompt, the fix is better public docs /
