@@ -1,0 +1,102 @@
+---
+title: Connect an existing agent
+description: Tell Codex or Cursor “Use Rippletide to connect this agent” — login, sync inventory, prove ready, optionally evaluate
+---
+
+User ask that should be enough:
+
+```text
+Use Rippletide to connect this agent.
+```
+
+Or:
+
+```text
+Install Rippletide on this agent and connect it end-to-end.
+```
+
+The coding agent should find this page (or the
+[`rippletide-package` npm README](https://www.npmjs.com/package/rippletide-package))
+and run the loop below. No long pasted prompt is required.
+
+<Warning>
+  This is the **Connect Agent / `rippletide-package` CLI** path for an existing
+  TypeScript or JavaScript agent repo.
+
+  - For **Rippletide Code** (coding rules in Claude Code), see
+    [Coding Agents → Connect](/docs/coding-agents/connect).
+  - For the older **Eval CLI** (`npx rippletide` hallucination eval against an
+    HTTP endpoint), see [Use the CLI](/docs/cli_guide).
+</Warning>
+
+## What “connected” means
+
+Done when Rippletide shows:
+
+1. Agent identity + prompt/tool inventory synced
+2. Runtime worker online (`Connection: ready`)
+3. At least one evaluate run visible in the UI (pass or fail is fine for proof)
+
+A copied command or a “setup complete” screen alone is not enough.
+
+## Prerequisites
+
+- A TypeScript/JavaScript agent repo the coding agent can edit
+- Customer secrets the agent already needs (model key, HubSpot token, …) in the
+  environment — Rippletide does not invent or commit those
+- Computer use / controlled browser for Auth0 device login (or a human once)
+
+Default API is **production**. Do not pass a staging `--endpoint` unless you
+intentionally want staging.
+
+## Steps
+
+```bash
+# 1) Account login (device flow). Prefer --json for automation.
+npx rippletide-package@latest login --json
+# Open verification_uri_complete (computer use), complete Auth0 if needed,
+# wait until status=ok.
+
+# 2) Bind this repo and sync inventory + start the Runtime worker.
+cd <agent-repo>
+npx rippletide-package@latest connect --yes
+# If the repo has no rippletide:sync / rippletide:start scripts yet, add the
+# thin SDK wiring, then re-run connect --yes until status is ready.
+
+# 3) Prove readiness.
+npx rippletide-package@latest status
+# Expect: Connection: ready · Runner: online · Inventory: available
+
+# 4) Optional proof run.
+npx rippletide-package@latest evaluate --generate --wait
+```
+
+Alternate path without CLI login: open **Connect Agent** in Rippletide, copy the
+generated setup prompt into the coding agent. That prompt already embeds
+scoped credentials.
+
+## If scripts are missing
+
+Compatible repos declare:
+
+- `rippletide:sync` — register identity, prompts, tools (inventory)
+- `rippletide:start` (optional but recommended) — keep the Runtime worker online
+
+`rippletide connect` does **not** rewrite arbitrary application code. For
+unknown layouts, the coding agent adds the adapters, then re-runs `connect`.
+
+## One-line prompts
+
+| Prompt | Expected behavior |
+| --- | --- |
+| `Use Rippletide to connect this agent` | login → connect → status ready |
+| `Install Rippletide and run an evaluation` | above + `evaluate --generate --wait` |
+| `Connect this agent to Rippletide and open the evaluate result` | above + surface the UI URL from evaluate output |
+
+If a cold coding agent fails the short prompt, the fix is better public docs /
+npm discoverability — not a longer prompt for every user.
+
+## Package reference
+
+Full CLI and SDK reference:
+[npmjs.com/package/rippletide-package](https://www.npmjs.com/package/rippletide-package)
