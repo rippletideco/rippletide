@@ -38,6 +38,13 @@
             ]
           },
           {
+            "group": "Connect Agent",
+            "expanded": true,
+            "pages": [
+              "docs/connect-agent"
+            ]
+          },
+          {
             "group": "Agent Evaluation",
             "expanded": false,
             "pages": [
@@ -78,7 +85,8 @@
                 "group": "Rippletide Platform",
                 "expanded": false,
                 "pages": [
-                  "docs/trust-platform/overview"
+                  "docs/trust-platform/overview",
+                  "docs/connect-agent"
                 ]
               },
               {
