@@ -1,7 +1,0 @@
-{
-    "name": "local_dev",
-    "description": "Template for local development testing",
-    "endpoint_url": "http://localhost:8000",
-    "type": "development",
-    "knowledge_source": "files"
-}
