@@ -62,10 +62,8 @@ below use the installed `rippletide` bin.
 ## Steps
 
 ```bash
-# 1) Account login (device flow). Prefer --json for automation.
-rippletide login --json
-# Open verification_uri_complete (computer use), complete Auth0 if needed,
-# wait until status=ok.
+# 1) Account login (device flow). Opens the browser; complete Auth0 if needed.
+rippletide login
 
 # 2) Bind this repo and sync inventory + start the Runtime worker.
 cd <agent-repo>
@@ -80,6 +78,10 @@ rippletide status
 # 4) Optional proof run.
 rippletide evaluate --generate --wait
 ```
+
+Humans should run `rippletide login` (browser opens). Use `rippletide login --json`
+only for coding-agent / CI automation: it prints a pending JSON line with
+`verification_uri_complete` and does **not** open the browser.
 
 Alternate path without CLI login: open **Connect Agent** in Rippletide, copy the
 generated setup prompt into the coding agent. That prompt already embeds
@@ -98,7 +100,7 @@ scoped credentials.
 | `create-rules` / `generate-rules` | Compile NL rule → save (optional enable) on a policy target |
 | `rules targets\|show-target\|list\|enable\|…` | Manage platform policy targets and rule releases |
 
-All commands accept `--json`.
+All commands accept `--json` for machine-readable output (agents / CI).
 
 ## Policy rules (platform CLI)
 
