@@ -25,7 +25,7 @@
 
 <br />
 
-This repository is your starting point for Rippletide — Eval, Context Graph MCP, and Coding Agents.
+This repository is your starting point for Rippletide — Context Graph MCP and Coding Agents.
 
 ---
 
@@ -37,11 +37,10 @@ This repository is your starting point for Rippletide — Eval, Context Graph MC
 **Core Modules:**
 
 
-| #   | Module                                          | What it does                                       |
-| --- | ----------------------------------------------- | -------------------------------------------------- |
-| 1   | [Agent Evaluation - CLI](#agent-evaluation-cli) | Validate before you ship                           |
-| 2   | [Context Graph - MCP](#context-graph---mcp)     | Give your agents persistent memory across sessions |
-| 3   | [Coding Agents](#coding-agents)                 | A persistent memory layer for Claude               |
+| #   | Module                                      | What it does                                       |
+| --- | ------------------------------------------- | -------------------------------------------------- |
+| 1   | [Context Graph - MCP](#context-graph---mcp) | Give your agents persistent memory across sessions |
+| 2   | [Coding Agents](#coding-agents)             | A persistent memory layer for Claude               |
 
 
 <sub>**Decision Runtime** — Enterprise Only. Build deterministic agents with less than 1% hallucination rate. [Contact us](https://rippletide.com) to learn more.</sub>
@@ -59,139 +58,6 @@ Rippletide adds an authority layer that validates, constrains, or blocks agent a
 | **Memory**         | Lost between conversations   | Persistent context graph      |
 | **Guardrails**     | Prompt-based, easy to bypass | Engine-level, 100% compliance |
 | **Explainability** | Black box                    | Every decision is traceable   |
-| **Evaluation**     | Manual spot checks           | Automated, CI-ready testing   |
-
-
----
-
-## Agent Evaluation CLI
-
-Eval is the entry point to Rippletide. Before adding memory or decision runtime, start by testing what your agent already does. Plug your agent into our CLI and Rippletide auto-generates test questions to evaluate its responses. Rippletide spots hallucinations by fact-checking each output and suggests improvements when sources are missing.
-
-**When to use it:** Before every deployment, in CI pipelines, and during development to catch regressions.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/rippletideco/rippletide/main/assets/demo.gif" alt="Agent Evaluation Demo" width="800">
-</p>
-
-
-
-### Installation
-
-Install globally via npm:
-
-```bash
-npm install -g rippletide
-```
-
-Or use directly with npx:
-
-```bash
-npx rippletide
-```
-
-### Quick Start
-
-Simply run:
-
-```bash
-rippletide
-```
-
-You'll be prompted for:
-
-1. **Agent endpoint** — Your API URL (e.g. `http://localhost:8000`)
-2. **Knowledge source** — Choose between files, Pinecone, or PostgreSQL
-
-The CLI will then:
-
-- Load your test questions
-- Send them to your agent
-- Show real-time progress
-- Display evaluation results with pass/fail and justifications
-
-### Command Line Options
-
-```bash
-rippletide eval [options]
-```
-
-
-| Option                     | Description                                      | Example                              |
-| -------------------------- | ------------------------------------------------ | ------------------------------------ |
-| `-t, --template <name>`    | Use a pre-configured template                    | `rippletide eval -t banking_analyst` |
-| `-a, --agent <url>`        | Agent endpoint URL                               | `rippletide eval -a localhost:8000`  |
-| `-k, --knowledge <source>` | Knowledge source: files, pinecone, or postgresql | `rippletide eval -k pinecone`        |
-| `--debug`                  | Show detailed error information                  | `rippletide eval --debug`            |
-| `-h, --help`               | Show help message                                | `rippletide --help`                  |
-
-
-### Data Source Options
-
-**Local Files (default):**
-
-```bash
-rippletide eval -a localhost:8000
-```
-
-Reads Q&A pairs from `qanda.json` in the current directory.
-
-**Pinecone:**
-
-```bash
-rippletide eval -a localhost:8000 -k pinecone \
-  -pu https://db.pinecone.io \
-  -pk pcsk_xxxxx
-```
-
-**PostgreSQL:**
-
-```bash
-rippletide eval -a localhost:8000 -k postgresql \
-  -pg "postgresql://user:pass@localhost:5432/db"
-```
-
-### Custom Endpoint Options
-
-For non-standard APIs:
-
-```bash
-rippletide eval -a localhost:8000 \
-  -H "Authorization: Bearer token, X-API-Key: key" \
-  -B '{"prompt": "{question}"}' \
-  -rf "data.response"
-```
-
-
-| Option                  | Description                                          |
-| ----------------------- | ---------------------------------------------------- |
-| `-H, --headers`         | Custom headers (comma-separated)                     |
-| `-B, --body`            | Request body template (use `{question}` placeholder) |
-| `-rf, --response-field` | Path to response in JSON (dot notation)              |
-
-
-### Templates
-
-Pre-built configurations for common agent use cases:
-
-
-| Template            | Description                 |
-| ------------------- | --------------------------- |
-| `banking_analyst`   | Financial Q&A agent         |
-| `customer_service`  | Support agent testing       |
-| `blog_to_linkedin`  | Content repurposing agent   |
-| `luxe_concierge`    | Luxury services agent       |
-| `local_dev`         | Local development agent     |
-| `openai_compatible` | OpenAI-compatible endpoints |
-| `project_manager`   | Project management agent    |
-
-
-```bash
-rippletide eval -t customer_service
-```
-
-→ [Full Evaluation docs](https://docs.rippletide.com/docs/evaluation_overview)
-
 ---
 
 ## Context Graph - MCP
@@ -318,10 +184,6 @@ The [Rippletide Platform](https://app.rippletide.com) brings everything together
 
 ```
 rippletide/
-├── agent-evaluation/       # TypeScript CLI for agent evaluation
-│   ├── bin/rippletide      # CLI entry point
-│   ├── src/                # Source (api, components, errors, utils)
-│   └── templates/          # Pre-built agent configs
 ├── context-graph/          # Rust MCP server for coding agents
 │   ├── src/                # Rust source
 │   └── npm/                # Multi-platform binary packages
@@ -334,12 +196,6 @@ rippletide/
 
 ```bash
 git clone https://github.com/rippletideco/rippletide.git
-
-# Agent Evaluation CLI
-cd rippletide/agent-evaluation
-npm install
-npm run build
-npm run eval         # run development version
 
 # Context Graph MCP server
 cd rippletide/context-graph

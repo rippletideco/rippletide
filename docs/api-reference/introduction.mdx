@@ -1,41 +1,19 @@
 ---
 title: API Reference
-description: Current Rippletide API surfaces for evaluation and MCP
+description: Current Rippletide API surface for MCP
 ---
 
 # API Reference
 
-Rippletide's current public integration surface is focused on evaluating and
-connecting agents that you already run.
+Rippletide's current public integration surface is focused on connecting agents
+that you already run.
 
 <Warning>
   The legacy agent-builder SDK API is no longer part of the public API
-  Reference. New integrations should use the Evaluation API or MCP.
+  Reference. New integrations should use MCP.
 </Warning>
 
 ## Current APIs
-
-### Evaluation API
-
-Use the Evaluation API when you want to run test prompts against an agent
-endpoint and store the results in Rippletide.
-
-The fastest supported path is the CLI:
-
-```bash
-npx rippletide
-```
-
-For programmatic use, the Evaluation API covers:
-
-- Checking API service health
-- Creating, listing, reading, updating, and deleting evaluation agents
-- Adding and deleting knowledge items
-- Importing source material from public URLs and PDFs
-- Adding, listing, updating, and deleting evaluation questions
-- Saving, reading, and clearing evaluation results
-
-See the **Evaluation API** section in this reference for the route details.
 
 ### MCP and Context Graph
 
@@ -66,5 +44,4 @@ explicitly confirmed that your workspace still depends on it.
 
 ## Recommended Start
 
-1. Use [the CLI](/docs/cli_guide) if you want to evaluate an agent quickly.
-2. Use [MCP](/docs/mcp/quickstart) if your agent needs persistent memory.
+Use [MCP](/docs/mcp/quickstart) if your agent needs persistent memory.

@@ -15,34 +15,12 @@ Use Rippletide to connect this agent.
 ```
 
 Then follow [Connect an existing agent](/docs/connect-agent)
-(`rippletide-package`: login → connect → status → optional evaluate).
+(`rippletide-package`: login → connect → status).
 
-<h3 className="toc-only">Evaluate agent responses (Eval CLI) </h3>
 <h3 className="toc-only">Bring the right context (Context Graph)</h3>
 <h3 className="toc-only">Make your agent deterministic (Decision runtime)</h3>
 
 <Steps>
-<Step
-  title={
-    <>
-      Don't know if your agent can move to production?
-      <br />
-      Eval: Validate before you ship
-    </>
-  }
->
-
-
-    
-    Plug your agent into our CLI and Rippletide auto-generates test questions to evaluate its responses. 
-
-    Rippletide spots hallucinations by fact-checking each output and suggests improvements when sources are missing.
-
-    **When to use it:** Before every deployment, in CI pipelines, and during development to catch regressions. Activate runtime filters once deployed.
-
-    [Get started with Eval →](/docs/evaluation_overview)
-  </Step>
-
   <Step title="Context Graph: Bring the right context for a more predictable agent">
     A persistent context graph that stores facts, decisions, preferences, and entity relationships across conversations. Your agents remember what matters without re-prompting.
 
@@ -68,19 +46,14 @@ Then follow [Connect an existing agent](/docs/connect-agent)
 | **Memory** | Lost between conversations | Persistent context graph |
 | **Guardrails** | Prompt-based, easy to bypass | Engine-level, 100% compliance |
 | **Explainability** | Black box | Every decision is traceable |
-| **Evaluation** | Manual spot checks | Automated, CI-ready testing |
 
 Rippletide demonstrated strong measured performance on a range of use cases: customer support (from 85% to 96% resolution), deterministic UI for coding agents, credit agents, project manager agents and others.
 
 ## What's Next?
 
-Explore the three pillars of Rippletide:
+Explore the two core areas of Rippletide:
 
-<CardGroup cols={3}>
-  <Card title="Eval" icon="chart-line" href="/docs/evaluation_overview">
-    Evaluate your agent hallucinations, and learn how to improve your agent
-  </Card>
-
+<CardGroup cols={2}>
   <Card title="Context Graph" icon="diagram-project" href="/docs/mcp/overview">
     Always bring the right context to your agent to make it more predictable
   </Card>
