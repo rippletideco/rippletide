@@ -1,6 +1,6 @@
 ---
 title: Connect an existing agent
-description: Short path — login, connect (heartbeat), tools. Full command reference lives in CLI.
+description: Short path — login, connect, then rules. Full command reference lives in CLI.
 ---
 
 User ask that should be enough:
@@ -18,6 +18,8 @@ Install Rippletide on this agent and connect it end-to-end.
 The coding agent should follow this page or the full
 [Rippletide CLI](/docs/cli) guide
 ([`rippletide-package` on npm](https://www.npmjs.com/package/rippletide-package)).
+
+Docs below match **`rippletide-package@0.16.0`**.
 
 <Warning>
   Install **`rippletide-package`**, not the unscoped npm package `rippletide`
@@ -39,23 +41,38 @@ npm install -g rippletide-package
 rippletide login
 cd <your-agent-repo>
 rippletide connect
+# optional readiness check:
+rippletide status
 ```
 
-**Success = heartbeat seen.** Connect then opens the Tools + rules menu.
-A separate proof turn is **not** required to finish connect.
+`connect` creates/links an agent, writes local binding + `.env`, and confirms
+declared `rippletide:sync` / `rippletide:start` adapters when present.
+Use `connect --yes` for non-interactive runs you already trust.
+
+Then author policy rules:
 
 ```bash
-rippletide                 # home / dashboard
-rippletide clear           # remove Rippletide from this repo
+rippletide rules targets
+rippletide create-rules \
+  --target <targetId> \
+  --action calendar/create_event \
+  --input "Only admins may invite external attendees." \
+  --mode observe
+rippletide rules set-mode \
+  --target <targetId> \
+  --release <releaseId> \
+  --mode observe
 ```
 
 ## What “connected” means
 
-1. Repo is bound (credentials + `.env` written)
-2. Rippletide sees a **heartbeat** from the agent
+1. Repo is bound (`.rippletide/project.json` + `.env` written)
+2. Declared inventory is synced when `rippletide:sync` succeeds
+3. Runtime worker is online when `rippletide:start` (or equivalent) is running —
+   `rippletide status` shows readiness
 
-That unlocks Tools + rules. Inventory sync and evaluation can follow later —
-they are not the connect finish line.
+Evaluation (`evaluate`) and improvement (`improve`) are day-2 — not required to
+finish connect.
 
 ## Coding-agent cheat sheet
 
@@ -64,13 +81,23 @@ they are not the connect finish line.
 | Log in (human) | `rippletide login` |
 | Log in (agent / CI) | `rippletide login --json` → open `verification_uri_complete` → wait for `status=ok` |
 | Connect | `rippletide connect` or `rippletide connect --yes` |
-| Success | Heartbeat → Tools + rules |
-| Tear down | `rippletide clear` |
+| Readiness | `rippletide status` |
+| Create a rule | `rippletide create-rules --target <id> --action <key> --input "…"` |
+| Set rule mode | `rippletide rules set-mode --target <id> --release <id> --mode disabled\|observe\|enforce` |
 
-Platform UI path: **Connect Agent** →
-`npx rippletide-package@latest login --platform` then `connect`.
+Platform UI path: open **Connect Agent**, copy the setup prompt into the coding
+agent (credentials stay in the repo `.env` from Connect / CLI).
+
+## Not in `0.16.0`
+
+These commands are **not** shipped in published `rippletide-package@0.16.0`
+(confirm with `npx rippletide-package@0.16.0 --help`):
+
+- `rippletide` / `rippletide home` interactive dashboard
+- `rippletide clear` / `disconnect`
+- `rippletide doctor`
 
 ## Next
 
-- Full CLI: install, auth, home, rules, clear, day-2 → [Rippletide CLI](/docs/cli)
+- Full CLI: install, auth, connect, rules, evaluate → [Rippletide CLI](/docs/cli)
 - npm README: [rippletide-package](https://www.npmjs.com/package/rippletide-package)

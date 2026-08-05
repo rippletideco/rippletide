@@ -1,12 +1,16 @@
 ---
 title: Rippletide CLI
-description: Install, auth, connect, home, rules, clear, and day-2 commands for rippletide-package
+description: Install, auth, connect, rules, status, evaluate, and improve for rippletide-package@0.16.0
 ---
 
-The Rippletide CLI connects an existing TypeScript/JavaScript agent repo to Rippletide Cloud, then gives you an interactive home for tools, rules, diagnostics, and evaluation.
+The Rippletide CLI connects an existing TypeScript/JavaScript agent repo to
+Rippletide Cloud, syncs inventory, and manages policy rules.
 
 Published package: [`rippletide-package`](https://www.npmjs.com/package/rippletide-package)
 (bins: `rippletide`, `rippletide-package`).
+
+This page matches **`rippletide-package@0.16.0`**
+(`npx rippletide-package@0.16.0 --help`).
 
 <Warning>
   Install **`rippletide-package`**, not the unscoped npm package `rippletide`
@@ -26,15 +30,30 @@ Published package: [`rippletide-package`](https://www.npmjs.com/package/rippleti
 npm install -g rippletide-package
 
 rippletide login
+rippletide agents
 cd <your-agent-repo>
 rippletide connect
-# Success = heartbeat seen → Tools + rules menu
-
-rippletide                 # Interactive home (dashboard when connected)
-rippletide clear           # Remove Rippletide from this repo
+rippletide status
+rippletide evaluate --generate --wait
+# optional:
+rippletide improve --wait
 ```
 
-**Connect success = heartbeat.** A separate proof turn is **not** required for MVP.
+Policy rules after you have a policy target:
+
+```bash
+rippletide rules targets
+rippletide create-rules \
+  --target <targetId> \
+  --action calendar/create_event \
+  --input "Only admins may invite external attendees." \
+  --mode observe
+rippletide rules list --target <targetId>
+rippletide rules set-mode \
+  --target <targetId> \
+  --release <releaseId> \
+  --mode enforce
+```
 
 Short coding-agent prompt that should be enough:
 
@@ -56,8 +75,8 @@ rippletide <command>
 
 # one-off without a global install:
 npx -p rippletide-package rippletide <command>
-# or:
-npx rippletide-package <command>
+# or pin the version under test:
+npx -p rippletide-package@0.16.0 rippletide <command>
 ```
 
 **Local QA** (unpublished checkout of the platform monorepo):
@@ -72,19 +91,16 @@ node path/to/rippletide-package/bin/rippletide.js <command>
 
 ```bash
 rippletide login
-# Local API:
+# Local / staging API:
 rippletide login --endpoint http://localhost:3001
-# Platform UI “Connect Agent” flow (auto-authorize when already signed in):
-rippletide login --platform
 ```
 
 | Command | Purpose |
 | --- | --- |
-| `login [--endpoint <url>] [--platform]` | Browser device-flow login → `~/.rippletide/config.json` |
+| `login [--endpoint <url>] [--json]` | Browser device-flow login → `~/.rippletide/config.json` |
 | `whoami` | Show the logged-in account |
 | `logout` | Clear local account credentials |
 | `agents` | List account agents |
-| `agents <query>` / `agent <query>` | Show one agent (id, short id, or name) |
 
 - **Humans:** run `rippletide login` (browser opens).
 - **Agents / CI:** `rippletide login --json` prints `verification_uri_complete` / `user_code` (no auto-open); complete Auth0, then wait until `status=ok`.
@@ -98,30 +114,22 @@ Run from the agent repo:
 
 ```bash
 rippletide connect
+# non-interactive (trusted repos only):
+rippletide connect --yes
 ```
 
 What happens:
 
-1. Creates or links an agent; writes `.rippletide/project.json` + `.env` (`RIPPLETIDE`, `RIPPLETIDE_PROXY_URL`)
-2. Guides coding-agent setup (Cursor / Claude Code / Codex / …) or lets you paste the setup prompt
-3. Waits for a **heartbeat** — that is connect success
-4. Opens the **Tools + rules** browser
+1. Creates or reuses an agent binding; writes `.rippletide/project.json` + `.env`
+2. Runs declared `rippletide:sync` / `rippletide:start` when present (prompts unless `--yes`)
+3. Prints connection state (`binding prepared` → `inventory synced` → `ready`)
 
 Safe to re-run to refresh credentials or retest.
 
 | Flag | When to use |
 | --- | --- |
 | `--yes` | Non-interactive: run declared `rippletide:sync` / `rippletide:start` without prompts |
-| `--agent <id>` | Bind this repo to an existing agent |
 | `--json` | Machine-readable output (agents / CI) |
-| `--wait-evidence` | Optional: also wait for full runtime evidence (heartbeat + turn). **Not required** for MVP connect |
-
-Alternate path from the platform UI (**Connect Agent**):
-
-```bash
-npx rippletide-package@latest login --platform
-npx rippletide-package@latest connect
-```
 
 ### Prerequisites
 
@@ -137,88 +145,62 @@ Compatible repos declare:
 - `rippletide:sync` — register identity, prompts, tools (inventory)
 - `rippletide:start` (optional but recommended) — keep the Runtime worker online
 
-`rippletide connect` does **not** rewrite arbitrary application code. Interactive
-connect offers a coding-agent setup prompt. For unknown layouts, the coding agent
-adds thin SDK wiring, then re-runs `connect` until a heartbeat appears.
+`rippletide connect` does **not** rewrite arbitrary application code. For unknown
+layouts, a coding agent adds thin SDK wiring + those scripts, then re-runs
+`connect` until `status` looks ready.
 
----
-
-## Home / dashboard
-
-```bash
-rippletide
-# same as:
-rippletide home
-```
-
-Interactive home covers agent overview, runtime evidence, tools/rules, evaluate, and clear.
-
-Off-TTY or `--json`: prints next-step text only (no hang).
+Also available: `rippletide verify` — prove the repo connection from `./.env`
+and read back synced inventory (no login needed when `.env` is present).
 
 ---
 
 ## Tools and policy rules
 
-After connect (heartbeat), open the tools + rules browser:
+List targets, then compile + save a rule:
 
 ```bash
-rippletide create-rules
-# alias: rippletide generate-rules
-```
-
-Or compile and save one rule non-interactively:
-
-```bash
+rippletide rules targets
 rippletide create-rules \
-  --agent <agentId> \
+  --target <targetId> \
   --action calendar/create_event \
   --input "Only admins may invite external attendees." \
-  [--context "…"] [--out rules.json] [--enable]
+  --mode observe
+# alias: rippletide generate-rules …
 ```
+
+`create-rules` requires `--target`, `--action`, and `--input`.
+Optional: `--context`, `--out <file>`, `--mode disabled|observe|enforce`
+(default `disabled`), `--json`.
 
 ### `rules` subcommands
 
-Same backend as the Rules UI (`/api/policy-targets/.../rules`). Prefer `--agent` or a connected repo; `--target` is advanced.
+Same backend as the Rules UI (`/api/policy-targets/.../rules`).
 
 | Command | Purpose |
 | --- | --- |
-| `rules targets` | List policy targets (`rules agents` is an alias) |
+| `rules targets` | List policy targets |
 | `rules show-target <targetId>` | Show one target and its action catalogue |
 | `rules create-target --agent <id>` | Create/sync a target from an agent catalogue |
 | `rules create-target --name <name> --catalog <file>` | Create from a JSON catalogue file |
-| `rules list [--agent <id>]` | List rule releases |
-| `rules compile --action <key> --input "…"` | Compile NL → RuleV1 + fingerprint |
-| `rules save --file <path>` | Save a compiled release (starts disabled) |
-| `rules enable --release <id>` | Enable a release |
-| `rules disable --release <id>` | Disable a release |
-| `rules control-mode --mode observe\|enforce` | Set target control mode |
+| `rules list --target <id>` | List rule releases |
+| `rules compile --target <id> --action <key> --input "…"` | Compile NL → RuleV1 + fingerprint |
+| `rules save --target <id> --file <path>` | Save a compiled release (starts disabled) |
+| `rules set-mode --target <id> --release <id> --mode disabled\|observe\|enforce` | Set one release’s runtime mode |
 
 ```bash
-rippletide rules list --agent <agentId>
-rippletide rules control-mode --agent <agentId> --mode observe
+rippletide rules list --target <targetId>
+rippletide rules set-mode \
+  --target <targetId> \
+  --release <releaseId> \
+  --mode observe
 ```
 
-New catalogues start in **observe**. Switch to `enforce` only after you trust observe-mode decisions.
+Saved releases start **`disabled`** unless `create-rules --mode observe|enforce`
+is passed. Move each release freely between `disabled`, `observe`, and `enforce`.
+Prefer observe until you trust decisions; switch to `enforce` only then.
 
----
-
-## Clear / disconnect
-
-```bash
-rippletide clear
-# alias: rippletide disconnect
-```
-
-Removes Rippletide from the repo: coding-agent source cleanup, local artifacts, package dep, gitignore `.env` line, and the platform agent (when logged in).
-
-| Flag | Purpose |
-| --- | --- |
-| `--yes --agent <codex\|claude\|cursor\|…>` | Skip confirmation; `--agent` is required with `--yes` |
-| `--keep-agent` | Do not delete the platform agent via API |
-| `--auth` | Also clear CLI login (`~/.rippletide/config.json`) |
-| `--json` | Machine-readable output |
-
-Also available: `rippletide verify` — prove the repo connection from `./.env` and read back synced inventory.
+There is **no** `rules control-mode`, `rules enable`, or `rules disable` in
+`0.16.0` — use `rules set-mode`.
 
 ---
 
@@ -229,20 +211,42 @@ Use these after connect when you need them — not part of the MVP finish line.
 | Command | Purpose |
 | --- | --- |
 | `status` | Account + project readiness snapshot |
-| `doctor` | Diagnose auth / project / env / inventory / runner / evidence gaps |
-| `events [--limit <n>] [--wait]` | List ingest events; `--wait` until heartbeat + turn |
-| `evaluate [--generate] [--wait] [--details]` | Start connected-agent evaluation |
+| `evaluate [--generate] [--wait]` | Start connected-agent evaluation |
 | `improve [--wait] [--yes] …` | Improvement loop (confirm before start; agents may use `--yes`) |
+| `verify` | Prove connection from `./.env` + read back inventory |
 
 ```bash
 rippletide status
-rippletide doctor
-rippletide events --limit 20
 rippletide evaluate --generate --wait
 rippletide improve --wait
 ```
 
-`improve` also accepts `--zone` / `--criterion`, `--refresh-zones`, `--scenarios`, `--max-iterations`, and `--target-score`.
+`improve` also accepts `--zone` / `--criterion`, `--refresh-zones`, `--scenarios`,
+`--max-iterations`, and `--target-score`.
+
+### Stubs (not implemented in V1)
+
+`runtime`, `events`, and `docs` exist as stubs only — they print a short “not
+implemented” message. Inspect Events/Context in the web app for live evidence.
+
+---
+
+## Not in `0.16.0`
+
+Confirmed absent from published `rippletide-package@0.16.0`
+(`npx rippletide-package@0.16.0 --help`):
+
+| Documented elsewhere / older drafts | Status in `0.16.0` |
+| --- | --- |
+| `rippletide` / `home` interactive dashboard | **Not shipped** |
+| `clear` / `disconnect` | **Not shipped** |
+| `doctor` | **Not shipped** |
+| `login --platform` | **Not shipped** |
+| `connect --agent` / `--wait-evidence` | **Not shipped** |
+| `rules control-mode` / `enable` / `disable` | **Not shipped** — use `set-mode` |
+
+If you need home/clear/doctor, restore them in the package and publish a new
+npm version — do not assume Mintlify alone makes them available.
 
 ---
 
@@ -251,8 +255,8 @@ rippletide improve --wait
 | Flag / tip | Notes |
 | --- | --- |
 | `--json` | Machine-readable output on every command (global or per-command) |
-| `--endpoint <url>` | On `login` (and accepted but ignored on `logout`) for local/staging API |
-| `--yes` | Non-interactive confirm on `connect`, `clear`, `improve` |
+| `--endpoint <url>` | On `login` for local/staging API |
+| `--yes` | Non-interactive confirm on `connect`, `improve` |
 | `rippletide help <command>` | Flags for a single command |
 | Local QA bin | `node path/to/rippletide-package/bin/rippletide.js` |
 
@@ -264,7 +268,11 @@ rippletide improve --wait
 | --- | --- | --- |
 | Account | `~/.rippletide/config.json` (mode `0600`) | endpoint + account API key |
 | Project | `.rippletide/project.json` | `agentId`, `agentName` (commit-friendly) |
-| SDK env | `.env` | `RIPPLETIDE` + `RIPPLETIDE_PROXY_URL` (do not commit) |
+| SDK env | `.env` | `RIPPLETIDE_AGENT_ID`, `RIPPLETIDE_API_KEY` (Connection key), `RIPPLETIDE_BASE_URL` (do not commit) |
+
+`connect` writes those three env keys. The SDK also accepts legacy
+`RIPPLETIDE_APP` as an alias for the agent id. Prefer the Connection key in
+`RIPPLETIDE_API_KEY` — never put a Platform (account) key in the agent `.env`.
 
 ---
 
@@ -276,16 +284,17 @@ rippletide improve --wait
 | Log in (agent / CI) | `rippletide login --json` → open `verification_uri_complete` → wait for `status=ok` |
 | Connect | `rippletide connect` (TTY) or `rippletide connect --yes` |
 | Local / staging API | `rippletide login --endpoint <url>` then connect |
-| Success | Heartbeat seen → Tools + rules |
-| Home / dashboard | `rippletide` or `rippletide home` |
-| Tear down | `rippletide clear` (`--yes` requires `--agent <codex\|claude\|cursor\|…>`) |
+| Readiness | `rippletide status` |
+| Create / mode a rule | `create-rules` → `rules set-mode --mode disabled\|observe\|enforce` |
 
-Do **not** require a proof turn to mark connect done. Do **not** invent or commit customer secrets.
+Do **not** invent or commit customer secrets.
+Do **not** call `home`, `clear`, `doctor`, or `rules control-mode` — they are
+not in `0.16.0`.
 
 | Prompt | Expected behavior |
 | --- | --- |
-| `Use Rippletide to connect this agent` | login → connect → heartbeat → tools |
-| `Create a policy rule for this action` | `create-rules` → `rules list` |
+| `Use Rippletide to connect this agent` | login → connect → status |
+| `Create a policy rule for this action` | `rules targets` → `create-rules` → `rules list` / `set-mode` |
 
 ---
 
