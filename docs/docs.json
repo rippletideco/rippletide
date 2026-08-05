@@ -38,9 +38,10 @@
             ]
           },
           {
-            "group": "Connect Agent",
+            "group": "CLI",
             "expanded": true,
             "pages": [
+              "docs/cli",
               "docs/connect-agent"
             ]
           },
@@ -78,6 +79,7 @@
                 "expanded": false,
                 "pages": [
                   "docs/trust-platform/overview",
+                  "docs/cli",
                   "docs/connect-agent"
                 ]
               },

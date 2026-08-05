@@ -1,6 +1,6 @@
 ---
 title: Connect an existing agent
-description: Tell Codex or Cursor “Use Rippletide to connect this agent” — login, connect (heartbeat), tools
+description: Short path — login, connect (heartbeat), tools. Full command reference lives in CLI.
 ---
 
 User ask that should be enough:
@@ -15,21 +15,20 @@ Or:
 Install Rippletide on this agent and connect it end-to-end.
 ```
 
-The coding agent should find this page (or the
-[`rippletide-package` npm README](https://www.npmjs.com/package/rippletide-package))
-and run the loop below. No long pasted prompt is required.
+The coding agent should follow this page or the full
+[Rippletide CLI](/docs/cli) guide
+([`rippletide-package` on npm](https://www.npmjs.com/package/rippletide-package)).
 
 <Warning>
-  This is the **Connect Agent / `rippletide-package` CLI** path for an existing
-  TypeScript or JavaScript agent repo.
+  Install **`rippletide-package`**, not the unscoped npm package `rippletide`
+  (legacy Evaluation CLI — wrong product for connect).
 
-  - Install **`rippletide-package`**, not the unscoped npm package `rippletide`
-    (legacy Evaluation CLI — wrong product for connect).
-  - Prefer `npx -p rippletide-package rippletide …` or
-    `npm install -g rippletide-package`. Do **not** run `npx rippletide` /
-    `npm install -g rippletide` for this path.
-  - For **Rippletide Code** (coding rules hooks in Claude Code via
-    `npx rippletide-code`), see [Coding Agents → Connect](/docs/coding-agents/connect).
+  Prefer `npx -p rippletide-package rippletide …` or
+  `npm install -g rippletide-package`.
+
+  Full command reference: [Rippletide CLI](/docs/cli).
+  For **Rippletide Code** (`npx rippletide-code`), see
+  [Coding Agents → Connect](/docs/coding-agents/connect).
 </Warning>
 
 ## Quickstart
@@ -45,22 +44,12 @@ rippletide connect
 **Success = heartbeat seen.** Connect then opens the Tools + rules menu.
 A separate proof turn is **not** required to finish connect.
 
-Open the home / dashboard menu anytime:
-
 ```bash
-rippletide
-# same as: rippletide home
-```
-
-Remove Rippletide from the repo:
-
-```bash
-rippletide clear
+rippletide                 # home / dashboard
+rippletide clear           # remove Rippletide from this repo
 ```
 
 ## What “connected” means
-
-For MVP connect:
 
 1. Repo is bound (credentials + `.env` written)
 2. Rippletide sees a **heartbeat** from the agent
@@ -68,135 +57,20 @@ For MVP connect:
 That unlocks Tools + rules. Inventory sync and evaluation can follow later —
 they are not the connect finish line.
 
-A copied command or a “setup complete” screen alone is not enough without a heartbeat.
-
-## Prerequisites
-
-- A TypeScript/JavaScript agent repo the coding agent can edit
-- Customer secrets the agent already needs (model key, HubSpot token, …) in the
-  environment — Rippletide does not invent or commit those
-- Computer use / controlled browser for Auth0 device login (or a human once)
-
-Default API is **production**. Do not pass a staging `--endpoint` unless you
-intentionally want staging.
-
-## Install
-
-**Published**
-
-```bash
-npm install -g rippletide-package
-# then:
-rippletide <command>
-
-# one-off (recommended form — package name is explicit):
-npx -p rippletide-package rippletide <command>
-# or:
-npx rippletide-package <command>
-```
-
-**Local QA** (developing against an unpublished checkout):
-
-```bash
-node path/to/rippletide-package/bin/rippletide.js <command>
-```
-
-## Steps
-
-```bash
-# 1) Account login (device flow). Opens the browser; complete Auth0 if needed.
-rippletide login
-
-# 2) Bind this repo. Interactive connect runs coding-agent setup and waits
-#    for a heartbeat, then opens Tools + rules.
-cd <agent-repo>
-rippletide connect
-
-# Non-interactive (CI / agents): run declared sync/start scripts without prompts
-# rippletide connect --yes
-```
-
-Humans should run `rippletide login` (browser opens). Use `rippletide login --json`
-only for coding-agent / CI automation: it prints a pending JSON line with
-`verification_uri_complete` and does **not** open the browser.
-
-Alternate path from the platform UI: open **Connect Agent**, then:
-
-```bash
-npx rippletide-package@latest login --platform
-npx rippletide-package@latest connect
-```
-
-## For coding agents
+## Coding-agent cheat sheet
 
 | Goal | Command |
 | --- | --- |
 | Log in (human) | `rippletide login` |
 | Log in (agent / CI) | `rippletide login --json` → open `verification_uri_complete` → wait for `status=ok` |
-| Connect | `rippletide connect` (TTY) or `rippletide connect --yes` |
-| Local / staging API | `rippletide login --endpoint <url>` then connect |
-| Success | Heartbeat seen → Tools + rules |
-| Home / dashboard | `rippletide` or `rippletide home` |
-| Tear down | `rippletide clear` (`--yes` requires `--agent <codex\|claude\|cursor\|…>`) |
+| Connect | `rippletide connect` or `rippletide connect --yes` |
+| Success | Heartbeat → Tools + rules |
+| Tear down | `rippletide clear` |
 
-Do **not** require a proof turn to mark connect done. Do **not** invent or commit customer secrets.
+Platform UI path: **Connect Agent** →
+`npx rippletide-package@latest login --platform` then `connect`.
 
-## CLI surface (happy path first)
+## Next
 
-| Command | Purpose |
-| --- | --- |
-| `login [--endpoint] [--platform]` | Device-flow login (`~/.rippletide`) |
-| `connect [--yes] [--agent <id>]` | Bind repo; wait for heartbeat; open tools |
-| *(no args)* / `home` | Interactive home / dashboard |
-| `clear` | Remove Rippletide from this repo |
-| `whoami` / `logout` / `agents` | Account helpers |
-| `status` / `doctor` / `events` | Day-2 readiness / diagnostics |
-| `create-rules` | Tools + rules browser, or compile one rule |
-| `evaluate` / `improve` | Day-2 evaluation and improvement loops |
-
-All commands accept `--json` for machine-readable output (agents / CI).
-
-## Policy rules (optional)
-
-After connect, author platform policy rules (same backend as the Rules UI /
-`/api/policy-targets/.../rules`). Prefer `--agent` or a connected repo.
-
-```bash
-rippletide create-rules
-# or:
-rippletide create-rules \
-  --agent <agentId> \
-  --action calendar/create_event \
-  --input "Only admins may invite external attendees."
-rippletide rules list --agent <agentId>
-rippletide rules control-mode --agent <agentId> --mode observe
-```
-
-New catalogues start in **observe**. Switch to `enforce` only after you trust observe-mode decisions.
-
-## If scripts are missing
-
-Compatible repos declare:
-
-- `rippletide:sync` — register identity, prompts, tools (inventory)
-- `rippletide:start` (optional but recommended) — keep the Runtime worker online
-
-`rippletide connect` does **not** rewrite arbitrary application code. Interactive
-connect offers a coding-agent setup prompt (auto-run or copy-paste). For unknown
-layouts, the coding agent adds thin SDK wiring, then re-runs `connect` until a
-heartbeat appears.
-
-## One-line prompts
-
-| Prompt | Expected behavior |
-| --- | --- |
-| `Use Rippletide to connect this agent` | login → connect → heartbeat → tools |
-| `Create a policy rule for this action` | `create-rules` → `rules list` |
-
-If a cold coding agent fails the short prompt, the fix is better public docs /
-npm discoverability — not a longer prompt for every user.
-
-## Package reference
-
-Full CLI and SDK reference:
-[npmjs.com/package/rippletide-package](https://www.npmjs.com/package/rippletide-package)
+- Full CLI: install, auth, home, rules, clear, day-2 → [Rippletide CLI](/docs/cli)
+- npm README: [rippletide-package](https://www.npmjs.com/package/rippletide-package)
