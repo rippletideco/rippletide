@@ -23,10 +23,13 @@ and run the loop below. No long pasted prompt is required.
   This is the **Connect Agent / `rippletide-package` CLI** path for an existing
   TypeScript or JavaScript agent repo.
 
+  - Install **`rippletide-package`**, not the unscoped npm package `rippletide`
+    (legacy Evaluation CLI — wrong product for connect).
+  - Prefer `npx -p rippletide-package rippletide …` or
+    `npm install -g rippletide-package`. Do **not** run `npx rippletide` /
+    `npm install -g rippletide` for this path.
   - For **Rippletide Code** (coding rules hooks in Claude Code via
     `npx rippletide-code`), see [Coding Agents → Connect](/docs/coding-agents/connect).
-  - For the older **Eval CLI** (`npx rippletide` hallucination eval against an
-    HTTP endpoint), see [Use the CLI](/docs/cli_guide).
 </Warning>
 
 ## Quickstart
@@ -86,7 +89,7 @@ npm install -g rippletide-package
 # then:
 rippletide <command>
 
-# one-off:
+# one-off (recommended form — package name is explicit):
 npx -p rippletide-package rippletide <command>
 # or:
 npx rippletide-package <command>

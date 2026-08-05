@@ -45,14 +45,6 @@
             ]
           },
           {
-            "group": "Agent Evaluation",
-            "expanded": false,
-            "pages": [
-              "docs/evaluation_overview",
-              "docs/cli_guide"
-            ]
-          },
-          {
             "group": "Context Graph",
             "expanded": true,
             "pages": [
@@ -114,65 +106,6 @@
             "group": "Overview",
             "pages": [
               "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Evaluation API",
-            "pages": [
-              {
-                "group": "Health",
-                "expanded": true,
-                "pages": [
-                  "api-reference/eval/health/health-check"
-                ]
-              },
-              {
-                "group": "Agents",
-                "expanded": true,
-                "pages": [
-                  "api-reference/eval/agents/list-agents",
-                  "api-reference/eval/agents/create-agent",
-                  "api-reference/eval/agents/get-agent-by-id",
-                  "api-reference/eval/agents/update-agent",
-                  "api-reference/eval/agents/delete-agent"
-                ]
-              },
-              {
-                "group": "Knowledge",
-                "expanded": true,
-                "pages": [
-                  "api-reference/eval/knowledge/list-knowledge-items",
-                  "api-reference/eval/knowledge/add-knowledge-item",
-                  "api-reference/eval/knowledge/delete-knowledge-item"
-                ]
-              },
-              {
-                "group": "Evaluation Questions",
-                "expanded": true,
-                "pages": [
-                  "api-reference/eval/test-prompts/get-test-prompts",
-                  "api-reference/eval/test-prompts/create-test-prompt",
-                  "api-reference/eval/test-prompts/update-test-prompt",
-                  "api-reference/eval/test-prompts/delete-test-prompt"
-                ]
-              },
-              {
-                "group": "Evaluation Results",
-                "expanded": true,
-                "pages": [
-                  "api-reference/eval/test-results/run-test-for-prompt",
-                  "api-reference/eval/test-results/get-test-results",
-                  "api-reference/eval/test-results/clear-test-results"
-                ]
-              },
-              {
-                "group": "Source Import",
-                "expanded": true,
-                "pages": [
-                  "api-reference/eval/knowledge-import/import-source-url",
-                  "api-reference/eval/knowledge-import/upload-pdf"
-                ]
-              }
             ]
           }
         ]

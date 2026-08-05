@@ -5,7 +5,7 @@ description: 'Build deterministic AI agents with the Rippletide hypergraph'
 
 ## What is Decision runtime?
 
-Decision runtime is the third pillar of Rippletide. After you've [evaluated your agent](/docs/evaluation_overview) and set up a [Context Graph](/docs/mcp/overview) for persistent memory, decision runtime lets you build agents that make **deterministic decisions** instead of probabilistic guesses.
+Decision runtime lets you build agents that make **deterministic decisions** instead of probabilistic guesses. Pair it with a [Context Graph](/docs/mcp/overview) when your agent also needs persistent memory.
 
 You structure your agent's knowledge as a **hypergraph** of Q&A pairs, tags, actions, and state transitions. The LLM handles language (understanding input, generating output), but all decisions are made by a deterministic reasoning engine.
 
@@ -74,7 +74,7 @@ The LLM is only used for **language** (understanding input, generating output). 
 
 <Steps>
   <Step title="Create an agent">
-    Start with an evaluated agent and define the behavior it should make deterministic.
+    Start with an existing agent and define the behavior it should make deterministic.
   </Step>
   <Step title="Add Q&A pairs">
     Populate your agent's knowledge base with questions and answers.
@@ -95,11 +95,7 @@ The LLM is only used for **language** (understanding input, generating output). 
 
 ## Next Steps
 
-<CardGroup cols={2}>
-  <Card title="Evaluate your agent" icon="vial" href="/docs/evaluation_overview">
-    Test the agent behavior before making decisions deterministic
-  </Card>
-
+<CardGroup cols={1}>
   <Card title="Add memory" icon="diagram-project" href="/docs/mcp/overview">
     Give the agent persistent context with the Context Graph
   </Card>
