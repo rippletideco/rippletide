@@ -14,13 +14,22 @@ Already have an agent in a repo? Tell Codex/Cursor:
 Use Rippletide to connect this agent.
 ```
 
-Then follow [Connect an existing agent](/docs/connect-agent)
+Then follow the [Rippletide CLI](/docs/cli)
 (`rippletide-package`: login → connect → heartbeat → tools).
+Short path: [Connect an existing agent](/docs/connect-agent).
 Do **not** install the unscoped npm package `rippletide` (legacy Eval CLI).
 <h3 className="toc-only">Bring the right context (Context Graph)</h3>
 <h3 className="toc-only">Make your agent deterministic (Decision runtime)</h3>
 
 <Steps>
+  <Step title="CLI: Connect an existing agent">
+    Install `rippletide-package`, log in, connect the repo, and land on Tools when a heartbeat is seen.
+
+    **When to use it:** You already run a TypeScript/JavaScript agent and want Rippletide evidence + policy without rebuilding it.
+
+    [Rippletide CLI →](/docs/cli)
+  </Step>
+
   <Step title="Context Graph: Bring the right context for a more predictable agent">
     A persistent context graph that stores facts, decisions, preferences, and entity relationships across conversations. Your agents remember what matters without re-prompting.
 
@@ -51,9 +60,13 @@ Rippletide demonstrated strong measured performance on a range of use cases: cus
 
 ## What's Next?
 
-Explore the two core areas of Rippletide:
+Explore Rippletide:
 
-<CardGroup cols={2}>
+<CardGroup cols={3}>
+  <Card title="CLI" icon="terminal" href="/docs/cli">
+    Connect an existing agent with rippletide-package
+  </Card>
+
   <Card title="Context Graph" icon="diagram-project" href="/docs/mcp/overview">
     Always bring the right context to your agent to make it more predictable
   </Card>
