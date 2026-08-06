@@ -1,0 +1,25 @@
+---
+title: "Runtime events"
+description: "The evidence stream: heartbeats, turns, and tool calls."
+---
+
+Runtime Events is the evidence stream: everything your agent reports while it runs, in order, as it happens.
+
+## The event types
+
+| Event | What it tells you |
+| --- | --- |
+| **Heartbeat** | The connected process is alive and reporting |
+| **Manifest** | The agent (re-)declared its identity, prompts, or tools |
+| **Turn** | The agent handled a conversation turn: the input, response, and everything in between |
+| **Tool call** | The agent invoked a tool, with its inputs, result, and any error |
+
+## What events are for
+
+- **Proof of connection.** A stored key or a completed setup screen proves configuration only. An agent is proven when it has registered, a heartbeat has arrived, a real tool call has been recorded, and a complete turn has appeared. An MCP server runs no agent loop, so its bar is registration, heartbeat, and a tool call — no turn.
+- **Understanding behavior.** Expand a turn to see what the agent saw and which tools it called before you decide what to [write rules](/docs/write-rules) about.
+- **Audit.** Events, decisions, and receipts together reconstruct what happened and why.
+
+## What is uploaded
+
+Runtime evidence includes prompts, responses, tool inputs, and tool results — bounded in size and best-effort redacted (credential-shaped values are stripped) before upload. Policy decisions are different: their parameters and trusted context are stored as raw JSON in the decision audit trail, because rules must evaluate and auditors must read the real values. Keep secrets and unrelated customer data out of prompts, tool parameters, and traced values.

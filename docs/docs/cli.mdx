@@ -1,295 +1,54 @@
 ---
-title: Rippletide CLI
-description: Install, auth, connect, home, rules, clear, and day-2 commands for rippletide-package
+title: "CLI reference"
+description: "Every platform workflow, scriptable from your terminal."
 ---
 
-The Rippletide CLI connects an existing TypeScript/JavaScript agent repo to Rippletide Cloud, then gives you an interactive home for tools, rules, diagnostics, and evaluation.
-
-Published package: [`rippletide-package`](https://www.npmjs.com/package/rippletide-package)
-(bins: `rippletide`, `rippletide-package`).
-
-<Warning>
-  Install **`rippletide-package`**, not the unscoped npm package `rippletide`
-  (legacy Evaluation CLI — wrong product).
-
-  Prefer `npm install -g rippletide-package` or
-  `npx -p rippletide-package rippletide …`.
-  Do **not** run `npx rippletide` / `npm install -g rippletide` for this path.
-
-  For **Rippletide Code** (coding-rules hooks via `npx rippletide-code`), see
-  [Coding Agents → Connect](/docs/coding-agents/connect).
-</Warning>
-
-## Happy path
+Core workflows are available from the CLI: connecting, evaluating, and rules. Install once:
 
 ```bash
 npm install -g rippletide-package
-
-rippletide login
-cd <your-agent-repo>
-rippletide connect
-# Success = heartbeat seen → Tools + rules menu
-
-rippletide                 # Interactive home (dashboard when connected)
-rippletide clear           # Remove Rippletide from this repo
 ```
 
-**Connect success = heartbeat.** A separate proof turn is **not** required for MVP.
+Every command is then `rippletide <command>`, and all commands accept `--json` for machine-readable output.
 
-Short coding-agent prompt that should be enough:
+## Commands
 
-```text
-Use Rippletide to connect this agent.
-```
-
-See also the shorter [Connect an existing agent](/docs/connect-agent) path.
-
----
-
-## Install
-
-**Published**
-
-```bash
-npm install -g rippletide-package
-rippletide <command>
-
-# one-off without a global install:
-npx -p rippletide-package rippletide <command>
-# or:
-npx rippletide-package <command>
-```
-
-**Local QA** (unpublished checkout of the platform monorepo):
-
-```bash
-node path/to/rippletide-package/bin/rippletide.js <command>
-```
-
----
-
-## Auth
-
-```bash
-rippletide login
-# Local API:
-rippletide login --endpoint http://localhost:3001
-# Platform UI “Connect Agent” flow (auto-authorize when already signed in):
-rippletide login --platform
-```
-
-| Command | Purpose |
+| Command | What it does |
 | --- | --- |
-| `login [--endpoint <url>] [--platform]` | Browser device-flow login → `~/.rippletide/config.json` |
+| `login` | Log in via your browser; reuses a valid stored Platform key |
+| `logout` | Revoke the current Platform key, then clear the local login |
 | `whoami` | Show the logged-in account |
-| `logout` | Clear local account credentials |
-| `agents` | List account agents |
-| `agents <query>` / `agent <query>` | Show one agent (id, short id, or name) |
+| `agents` | List the agents on your account |
+| `connect [--yes]` | Connect the current repository: keys, inventory sync, runtime worker |
+| `connect --print-prompt` | Print the coding-agent setup prompt and exit for headless/manual setup |
+| `verify` | Prove a wrapped repository's connection from its `.env` (no login needed) |
+| `status` | Auth, binding, inventory, worker, and evaluation readiness at a glance |
+| `evaluate [--generate] [--wait]` | Start an evaluation run, optionally waiting for the result |
+| `improve [--yes] [--wait]` | Propose and run an improvement loop (asks before running your agent) |
+| `rules discover [--source <text\|https-url\|@file>]` | Review and batch-create complete discovered rules; `--json` is read-only |
+| `rules create --target <id> --action <key> --input "…"` | Compile and save a disabled plain-English rule |
+| `rules targets` / `rules list` | Inspect policy targets and rule releases |
+| `rules decisions --agent <id> [--limit 20]` | Review recent decisions and get commands to enforce triggered observe releases |
+| `rules set-mode --release <id> --mode disabled\|observe\|enforce` | Change one rule release's mode |
 
-- **Humans:** run `rippletide login` (browser opens).
-- **Agents / CI:** `rippletide login --json` prints `verification_uri_complete` / `user_code` (no auto-open); complete Auth0, then wait until `status=ok`.
-- Default API is **production**. Pass `--endpoint` only when you intentionally want local or staging.
+`connect` executes your repository's own `rippletide:sync` and `rippletide:start` scripts, so it asks for confirmation; pass `--yes` only for a repository you trust.
 
----
+`login` validates `~/.rippletide/config.json` before starting a browser flow, so
+running it again does not accumulate keys. To replace the key or change
+accounts, run `rippletide logout` and then `rippletide login`. A validation
+failure creates nothing, while a failed logout keeps the current local
+credential so revocation can be retried.
 
-## Connect
-
-Run from the agent repo:
-
-```bash
-rippletide connect
-```
-
-What happens:
-
-1. Creates or links an agent; writes `.rippletide/project.json` + `.env` (`RIPPLETIDE`, `RIPPLETIDE_PROXY_URL`)
-2. Guides coding-agent setup (Cursor / Claude Code / Codex / …) or lets you paste the setup prompt
-3. Waits for a **heartbeat** — that is connect success
-4. Opens the **Tools + rules** browser
-
-Safe to re-run to refresh credentials or retest.
-
-| Flag | When to use |
-| --- | --- |
-| `--yes` | Non-interactive: run declared `rippletide:sync` / `rippletide:start` without prompts |
-| `--agent <id>` | Bind this repo to an existing agent |
-| `--json` | Machine-readable output (agents / CI) |
-| `--wait-evidence` | Optional: also wait for full runtime evidence (heartbeat + turn). **Not required** for MVP connect |
-
-Alternate path from the platform UI (**Connect Agent**):
-
-```bash
-npx rippletide-package@latest login --platform
-npx rippletide-package@latest connect
-```
-
-### Prerequisites
-
-- A TypeScript/JavaScript agent repo the coding agent can edit
-- Customer secrets the agent already needs (model key, HubSpot token, …) in the
-  environment — Rippletide does not invent or commit those
-- Computer use / controlled browser for Auth0 device login (or a human once)
-
-### If scripts are missing
-
-Compatible repos declare:
-
-- `rippletide:sync` — register identity, prompts, tools (inventory)
-- `rippletide:start` (optional but recommended) — keep the Runtime worker online
-
-`rippletide connect` does **not** rewrite arbitrary application code. Interactive
-connect offers a coding-agent setup prompt. For unknown layouts, the coding agent
-adds thin SDK wiring, then re-runs `connect` until a heartbeat appears.
-
----
-
-## Home / dashboard
-
-```bash
-rippletide
-# same as:
-rippletide home
-```
-
-Interactive home covers agent overview, runtime evidence, tools/rules, evaluate, and clear.
-
-Off-TTY or `--json`: prints next-step text only (no hang).
-
----
-
-## Tools and policy rules
-
-After connect (heartbeat), open the tools + rules browser:
-
-```bash
-rippletide create-rules
-# alias: rippletide generate-rules
-```
-
-Or compile and save one rule non-interactively:
-
-```bash
-rippletide create-rules \
-  --agent <agentId> \
-  --action calendar/create_event \
-  --input "Only admins may invite external attendees." \
-  [--context "…"] [--out rules.json] [--enable]
-```
-
-### `rules` subcommands
-
-Same backend as the Rules UI (`/api/policy-targets/.../rules`). Prefer `--agent` or a connected repo; `--target` is advanced.
-
-| Command | Purpose |
-| --- | --- |
-| `rules targets` | List policy targets (`rules agents` is an alias) |
-| `rules show-target <targetId>` | Show one target and its action catalogue |
-| `rules create-target --agent <id>` | Create/sync a target from an agent catalogue |
-| `rules create-target --name <name> --catalog <file>` | Create from a JSON catalogue file |
-| `rules list [--agent <id>]` | List rule releases |
-| `rules compile --action <key> --input "…"` | Compile NL → RuleV1 + fingerprint |
-| `rules save --file <path>` | Save a compiled release (starts disabled) |
-| `rules enable --release <id>` | Enable a release |
-| `rules disable --release <id>` | Disable a release |
-| `rules control-mode --mode observe\|enforce` | Set target control mode |
-
-```bash
-rippletide rules list --agent <agentId>
-rippletide rules control-mode --agent <agentId> --mode observe
-```
-
-New catalogues start in **observe**. Switch to `enforce` only after you trust observe-mode decisions.
-
----
-
-## Clear / disconnect
-
-```bash
-rippletide clear
-# alias: rippletide disconnect
-```
-
-Removes Rippletide from the repo: coding-agent source cleanup, local artifacts, package dep, gitignore `.env` line, and the platform agent (when logged in).
-
-| Flag | Purpose |
-| --- | --- |
-| `--yes --agent <codex\|claude\|cursor\|…>` | Skip confirmation; `--agent` is required with `--yes` |
-| `--keep-agent` | Do not delete the platform agent via API |
-| `--auth` | Also clear CLI login (`~/.rippletide/config.json`) |
-| `--json` | Machine-readable output |
-
-Also available: `rippletide verify` — prove the repo connection from `./.env` and read back synced inventory.
-
----
-
-## Day-2 commands
-
-Use these after connect when you need them — not part of the MVP finish line.
-
-| Command | Purpose |
-| --- | --- |
-| `status` | Account + project readiness snapshot |
-| `doctor` | Diagnose auth / project / env / inventory / runner / evidence gaps |
-| `events [--limit <n>] [--wait]` | List ingest events; `--wait` until heartbeat + turn |
-| `evaluate [--generate] [--wait] [--details]` | Start connected-agent evaluation |
-| `improve [--wait] [--yes] …` | Improvement loop (confirm before start; agents may use `--yes`) |
-
-```bash
-rippletide status
-rippletide doctor
-rippletide events --limit 20
-rippletide evaluate --generate --wait
-rippletide improve --wait
-```
-
-`improve` also accepts `--zone` / `--criterion`, `--refresh-zones`, `--scenarios`, `--max-iterations`, and `--target-score`.
-
----
-
-## Global flags and tips
-
-| Flag / tip | Notes |
-| --- | --- |
-| `--json` | Machine-readable output on every command (global or per-command) |
-| `--endpoint <url>` | On `login` (and accepted but ignored on `logout`) for local/staging API |
-| `--yes` | Non-interactive confirm on `connect`, `clear`, `improve` |
-| `rippletide help <command>` | Flags for a single command |
-| Local QA bin | `node path/to/rippletide-package/bin/rippletide.js` |
-
----
-
-## Local files
+## Where configuration lives
 
 | Scope | Path | Contents |
 | --- | --- | --- |
-| Account | `~/.rippletide/config.json` (mode `0600`) | endpoint + account API key |
-| Project | `.rippletide/project.json` | `agentId`, `agentName` (commit-friendly) |
-| SDK env | `.env` | `RIPPLETIDE` + `RIPPLETIDE_PROXY_URL` (do not commit) |
+| Account | `~/.rippletide/config.json` | Endpoint and Platform key |
+| Project | `.rippletide/project.json` | Agent ID and name (safe to commit) |
+| Runtime | `.env` | `RIPPLETIDE` Connection string and `RIPPLETIDE_PROXY_URL` (never commit) |
 
----
-
-## For coding agents
-
-| Goal | Command |
-| --- | --- |
-| Log in (human) | `rippletide login` |
-| Log in (agent / CI) | `rippletide login --json` → open `verification_uri_complete` → wait for `status=ok` |
-| Connect | `rippletide connect` (TTY) or `rippletide connect --yes` |
-| Local / staging API | `rippletide login --endpoint <url>` then connect |
-| Success | Heartbeat seen → Tools + rules |
-| Home / dashboard | `rippletide` or `rippletide home` |
-| Tear down | `rippletide clear` (`--yes` requires `--agent <codex\|claude\|cursor\|…>`) |
-
-Do **not** require a proof turn to mark connect done. Do **not** invent or commit customer secrets.
-
-| Prompt | Expected behavior |
-| --- | --- |
-| `Use Rippletide to connect this agent` | login → connect → heartbeat → tools |
-| `Create a policy rule for this action` | `create-rules` → `rules list` |
-
----
-
-## Package reference
-
-Full CLI and SDK reference:
-[npmjs.com/package/rippletide-package](https://www.npmjs.com/package/rippletide-package)
+After removing Rippletide instrumentation, disconnect a repository by deleting
+`.rippletide/project.json`, removing only `RIPPLETIDE` and
+`RIPPLETIDE_PROXY_URL` from `.env`, and revoking its Connection key in the
+Platform. `rippletide logout` is separate account-level cleanup: it revokes the
+CLI Platform key and clears the local account login.

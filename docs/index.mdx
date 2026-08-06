@@ -1,77 +1,45 @@
 ---
-title: Welcome
-description: Introduction to Rippletide
+title: "What is Rippletide?"
+description: "Start here: what Rippletide does, and how teams adopt it safely."
 ---
 
-Rippletide adds an authority layer that validates, constrains, or blocks agent actions at runtime before they impact real systems or customers.
-![Rippletide Hypergraph](/img/Rippletide_Docs.png)
+Rippletide turns business context into enforceable rules for AI agents.
 
-## Quick Start with Rippletide
+Connect your agent or MCP server, add rules, and enforce them before any tool call, API call, data query, or other action your agent can take.
 
-Already have an agent in a repo? Tell Codex/Cursor:
+This helps ensure your agent follows those instructions and prevents costly mistakes before an irreversible action.
 
-```text
-Use Rippletide to connect this agent.
-```
+Teams use Rippletide with coding agents, customer-support agents, and finance agents to prevent unapproved refunds, sensitive customer-data access, or production API calls without the required evidence or approval.
 
-Then follow the [Rippletide CLI](/docs/cli)
-(`rippletide-package`: login → connect → heartbeat → tools).
-Short path: [Connect an existing agent](/docs/connect-agent).
-Do **not** install the unscoped npm package `rippletide` (legacy Eval CLI).
-<h3 className="toc-only">Bring the right context (Context Graph)</h3>
-<h3 className="toc-only">Make your agent deterministic (Decision runtime)</h3>
 
-<Steps>
-  <Step title="CLI: Connect an existing agent">
-    Install `rippletide-package`, log in, connect the repo, and land on Tools when a heartbeat is seen.
+{/* start-options:start */}
 
-    **When to use it:** You already run a TypeScript/JavaScript agent and want Rippletide evidence + policy without rebuilding it.
+## Choose how to start
 
-    [Rippletide CLI →](/docs/cli)
-  </Step>
+- [**Set up with a coding agent**](/docs/connect-agent): give Codex, Claude Code, or another coding agent the setup prompt.
+- [**Set up with the CLI**](/docs/cli): connect and manage Rippletide from your repository.
+- [**Set up in the app**](https://app.rippletide.com): connect through the Rippletide UI.
 
-  <Step title="Context Graph: Bring the right context for a more predictable agent">
-    A persistent context graph that stores facts, decisions, preferences, and entity relationships across conversations. Your agents remember what matters without re-prompting.
+{/* start-options:end */}
 
-    **When to use it:** When your agents need to recall past interactions, share context across sessions, or maintain structured knowledge about users, products, or projects.
+## The three questions Rippletide answers
 
-    [Explore the Context Graph →](/docs/mcp/overview)
-  </Step>
+1. **What is my harness made of?** Rippletide shows you what the model sees: prompts, tools, and third parties.
+2. **What actions are allowed?** Rippletide compiles rules into versioned, auditable policy releases. Rippletide suggests rules that are relevant to each agent, or lets you define them manually.
+3. **What happens at runtime?** Before an important action, Rippletide evaluates your rules and returns a decision with a full audit trail: allow, escalate, or block.
 
-  <Step title="Decision runtime: Build deterministic agents">
-    Structure your agent's knowledge as a hypergraph of Q&A pairs, tags, actions, and state transitions. Decisions are handled by a deterministic reasoning engine, not probabilistic generation.
+## Monitor first, enforce deliberately
 
-    **When to use it:** When you need less than 1% hallucination rates, full explainability, and 100% guardrail compliance.
+Rippletide is built for a careful rollout. Nothing is ever blocked until you explicitly say so.
 
-    [Build an agent →](/docs/hypergraph_overview)
-  </Step>
-</Steps>
+1. **Connect** your agent and inspect its harness: prompts, tools, data connections etc.
+2. **Define your rules** against the actions your agent can take.
+3. **Observe** real runtime behavior. A rule in observe mode reports *would block*; your agent is never interrupted.
+4. **Enforce** once you trust a rule. Move that release to enforce mode and matching actions are actually prevented, with a receipt of what happened.
 
-## Why Rippletide?
+Your agent stays exactly where it is today: your code, your infrastructure, your credentials. Rippletide never hosts, launches, or rewrites it.
 
-| | Without Rippletide | With Rippletide |
-|---|---|---|
-| **Hallucinations** | Variable, hard to control | Less than 1% by design |
-| **Memory** | Lost between conversations | Persistent context graph |
-| **Guardrails** | Prompt-based, easy to bypass | Engine-level, 100% compliance |
-| **Explainability** | Black box | Every decision is traceable |
+## Where to go next
 
-Rippletide demonstrated strong measured performance on a range of use cases: customer support (from 85% to 96% resolution), deterministic UI for coding agents, credit agents, project manager agents and others.
-
-## What's Next?
-
-Explore Rippletide:
-
-<CardGroup cols={3}>
-  <Card title="CLI" icon="terminal" href="/docs/cli">
-    Connect an existing agent with rippletide-package
-  </Card>
-
-  <Card title="Context Graph" icon="diagram-project" href="/docs/mcp/overview">
-    Always bring the right context to your agent to make it more predictable
-  </Card>
-
-  <Card title="Decision runtime" icon="wand-magic-sparkles" href="/docs/hypergraph_overview">
-    Build deterministic agents with less than 1% hallucination rate
-  </Card>
-</CardGroup>
+- [Quickstart](/docs/quickstart): connect your first agent in minutes.
+- [Write rules](/docs/write-rules): turn plain-English policies into enforceable releases.

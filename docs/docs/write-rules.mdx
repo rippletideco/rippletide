@@ -1,0 +1,44 @@
+---
+title: "Write rules"
+description: "Plain-English policies compiled into versioned releases."
+---
+
+Rules tell your agent which actions are allowed. Write the rule in plain English; Rippletide applies it to the tools and actions your agent can actually use.
+
+## Create a rule
+
+1. Open **Rules** in the Rippletide app.
+2. Choose the action to control, such as `calendar/create_event`.
+3. Describe the rule in plain English.
+4. Review what Rippletide will match, then save it.
+
+For example:
+
+> Only admins may invite external attendees to calendar events.
+
+## Review and enable it
+
+When you save a rule, Rippletide creates a **release**: a versioned copy of that rule. You can see exactly which action it applies to before enabling it.
+
+- **Releases are immutable.** Changing a rule creates a new release; the history stays intact.
+- **New releases start disabled.** Move one to `observe` explicitly when you are ready to monitor live decisions.
+- **Releases are bound to the catalogue** they were compiled for. If your agent's tools change, active releases return to `disabled` until you recompile and explicitly change their mode again.
+
+Enable a release in **observe mode** first: Rippletide records the decision it *would* make, but never interrupts your agent. Once you trust the results, move it to **enforce mode** to prevent matching actions.
+
+## Get suggestions
+
+Rippletide can also suggest draft rules based on your agent’s available actions, any documentation you provide, and the context you care about. Review and edit every suggestion before saving it; nothing is enabled or changes mode automatically.
+
+## Use the CLI instead
+
+```bash
+rippletide rules targets
+rippletide rules create --target <targetId> --action calendar/create_event \
+  --input "Only admins may invite external attendees."
+rippletide rules set-mode --target <targetId> --release <releaseId> --mode observe
+```
+
+## Next step
+
+Learn more about [observe and enforce modes](/docs/observe-and-enforce).

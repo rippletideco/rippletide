@@ -1,76 +1,38 @@
 ---
-title: Connect an existing agent
-description: Short path — login, connect (heartbeat), tools. Full command reference lives in CLI.
+title: "Connect an agent"
+description: "Link a repository you own with a setup prompt or the CLI."
 ---
 
-User ask that should be enough:
+Connect an existing agent to Rippletide to see its prompts, tools, and live runtime evidence. Once connected, you can define rules for the actions it takes.
 
-```text
-Use Rippletide to connect this agent.
-```
+## Start with a coding agent (recommended)
 
-Or:
+1. In **Agents & integrations**, select **Connect → Agent**.
+2. Save the generated `.env` block in the root of your agent repository. It contains the agent ID and Connection key; the setup prompt contains no credentials.
+3. Give the setup prompt to Codex, Claude Code, or your preferred coding agent.
+4. Run your agent and send one message that uses a tool.
 
-```text
-Install Rippletide on this agent and connect it end-to-end.
-```
+The setup prompt installs `rippletide-package`, declares your agent's prompts and tools, and adds the scripts needed to sync the inventory and send runtime evidence.
 
-The coding agent should follow this page or the full
-[Rippletide CLI](/docs/cli) guide
-([`rippletide-package` on npm](https://www.npmjs.com/package/rippletide-package)).
-
-<Warning>
-  Install **`rippletide-package`**, not the unscoped npm package `rippletide`
-  (legacy Evaluation CLI — wrong product for connect).
-
-  Prefer `npx -p rippletide-package rippletide …` or
-  `npm install -g rippletide-package`.
-
-  Full command reference: [Rippletide CLI](/docs/cli).
-  For **Rippletide Code** (`npx rippletide-code`), see
-  [Coding Agents → Connect](/docs/coding-agents/connect).
-</Warning>
-
-## Quickstart
+## Or start with the CLI
 
 ```bash
 npm install -g rippletide-package
-
 rippletide login
-cd <your-agent-repo>
+cd your-agent-repo
 rippletide connect
+rippletide status
 ```
 
-**Success = heartbeat seen.** Connect then opens the Tools + rules menu.
-A separate proof turn is **not** required to finish connect.
+`rippletide connect` prepares the binding, writes the `.env` block, syncs your inventory, and starts the runtime worker. Use `rippletide status` to check your progress.
 
-```bash
-rippletide                 # home / dashboard
-rippletide clear           # remove Rippletide from this repo
-```
+## Verify the connection
 
-## What “connected” means
+Your agent is ready when Rippletide shows:
 
-1. Repo is bound (credentials + `.env` written)
-2. Rippletide sees a **heartbeat** from the agent
+- its prompts and tools in [Harness management](/docs/harness-management);
+- a heartbeat and a real turn in [Runtime events](/docs/runtime-events).
 
-That unlocks Tools + rules. Inventory sync and evaluation can follow later —
-they are not the connect finish line.
+Connection secret values are never uploaded. Rippletide only records the names of configured secrets.
 
-## Coding-agent cheat sheet
-
-| Goal | Command |
-| --- | --- |
-| Log in (human) | `rippletide login` |
-| Log in (agent / CI) | `rippletide login --json` → open `verification_uri_complete` → wait for `status=ok` |
-| Connect | `rippletide connect` or `rippletide connect --yes` |
-| Success | Heartbeat → Tools + rules |
-| Tear down | `rippletide clear` |
-
-Platform UI path: **Connect Agent** →
-`npx rippletide-package@latest login --platform` then `connect`.
-
-## Next
-
-- Full CLI: install, auth, home, rules, clear, day-2 → [Rippletide CLI](/docs/cli)
-- npm README: [rippletide-package](https://www.npmjs.com/package/rippletide-package)
+Need to install the SDK yourself? Follow the [manual setup](/docs/manual-setup).

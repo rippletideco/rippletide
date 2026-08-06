@@ -182,6 +182,11 @@ The [Rippletide Platform](https://app.rippletide.com) brings everything together
 
 ## Repository Structure
 
+Customer-facing documentation is maintained in [`docs/`](./docs) and published
+at [docs.rippletide.com](https://docs.rippletide.com). This directory is the
+canonical source. Mintlify must use `rippletideco/rippletide`, branch `main`,
+with `docs` as the directory containing `docs.json`.
+
 ```
 rippletide/
 ├── context-graph/          # Rust MCP server for coding agents
