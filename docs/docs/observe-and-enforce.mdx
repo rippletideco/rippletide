@@ -1,0 +1,37 @@
+---
+title: "Observe & enforce"
+description: "From would-block evidence to deliberately preventing an action."
+---
+
+Every rule release has its own mode: **disabled**, **observe**, or **enforce**. The mode decides what happens when that rule matches an action. There is no target-wide switch — each release graduates independently.
+
+## Disabled (where every release starts)
+
+A new release does nothing until you choose. It is not evaluated against your agent's traffic, so nothing can surprise you.
+
+## Observe mode
+
+Decisions are evaluated and recorded, but never interrupt anything. When the rule matches, the decision says **would block**, and the action proceeds normally.
+
+This is where you build confidence: watch the decisions arrive on the Rules page, check that the rule fires when it should and stays quiet when it shouldn't, and tune it with zero risk to your agent.
+
+## Enforce mode
+
+Enforcement is a deliberate opt-in, per rule release. Once a release is in enforce, a match returns **block**: the guarded call is prevented before it executes, and your agent receives a clear error with the reason and the rule that fired.
+
+## When your agent's tools change
+
+Releases are compiled against the action catalogue your agent declared. If the catalogue changes, releases that were active return to `disabled` — a rule never silently applies to a catalogue it wasn't compiled for. Recompile them, then explicitly set their mode again.
+
+## Decisions and receipts
+
+Every decision is recorded with its input, the rules that matched, and the outcome. After the action runs or is prevented, the runtime reports back what actually happened: **executed** or **prevented**. That receipt closes the loop, so the audit trail shows not just what Rippletide decided but what the agent actually did.
+
+## If Rippletide is unreachable
+
+Monitoring never breaks your agent:
+
+- Evidence reporting is fire-and-forget. A failed upload never fails your agent.
+- If a decision can't be reached because of a network problem or an outage, the action proceeds.
+- Deterministic problems, such as a bad key or a malformed request, are rejected before the tool runs, so misconfiguration surfaces immediately instead of silently skipping policy.
+- A valid **block** in enforce mode is always honored.

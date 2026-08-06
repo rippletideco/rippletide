@@ -1,0 +1,108 @@
+---
+title: "Manual setup"
+description: "The full integration by hand, wire by wire."
+---
+
+The setup prompt and the CLI do all of this for you. If you prefer to see every wire, or your repository does not fit the automated path, here is the full integration by hand.
+
+This page also covers an MCP server connected by hand, with a narrower footprint: follow steps 1 to 3, declare **tools only** in step 4 (an MCP server declares no prompts or connections, and runs no worker), then guard the dispatcher as in step 7 — returning policy errors to the MCP client as a normal `isError: true` tool result, never a protocol error or a crashed server.
+
+## 1. Install the SDK
+
+```bash
+npm install rippletide-package@latest
+```
+
+## 2. Add the credentials
+
+Save the `.env` block from the Connect dialog at the root of your repository:
+
+```bash
+RIPPLETIDE_AGENT_ID=<your agent id>
+RIPPLETIDE_API_KEY=<your Connection key>
+```
+
+Never commit this file. The key itself tells the SDK which environment to talk to, so there are no URLs to configure.
+
+## 3. Create the client
+
+```ts
+import Rippletide from "rippletide-package";
+
+const rippletide = new Rippletide({
+  agentId: process.env.RIPPLETIDE_AGENT_ID,
+  apiKey: process.env.RIPPLETIDE_API_KEY,
+  name: "Customer Support Copilot",
+});
+```
+
+## 4. Declare what your agent is made of
+
+This is what fills [Harness management](/docs/harness-management): prompts, tools, and third-party connections.
+
+```ts
+await rippletide.prompt("system", { fallback: systemPrompt });
+await rippletide.tools("core", tools);
+await rippletide.connection("crm", { env: { token: "CRM_API_TOKEN" } });
+```
+
+Connection secret values are never uploaded; Rippletide only learns which secret names are configured.
+
+## 5. Record runtime evidence
+
+Wrap your model client and trace the functions that matter:
+
+```ts
+const openai = rippletide.wrapOpenAI(new OpenAI());
+const search = rippletide.traced(searchCustomerRecords, { name: "search_customer_records" });
+```
+
+For a short-lived script or worker, call `await rippletide.flush()` before it exits so pending evidence is sent.
+
+## 6. Start the runtime worker
+
+The worker is what lets [Evaluate & improve](/docs/evaluate-improve) run scenarios against your real agent. It polls outbound only and never opens a port.
+
+```ts
+const worker = rippletide.runtime({
+  surfaces: {
+    prompts: { system: { type: "text", value: () => systemPrompt } },
+    toolsets: { core: () => tools },
+  },
+  runScenario: async ({ prompt, design }) => {
+    return agent.invoke({
+      input: prompt,
+      systemPrompt: design.prompt("system", systemPrompt),
+      tools: design.tools("core", tools),
+    });
+  },
+});
+
+worker.start();
+```
+
+## 7. Guard important tool calls
+
+Install one guard at your real tool-dispatch boundary so [rules](/docs/write-rules) can decide before an action runs:
+
+```ts
+return rippletide.guardToolCall(
+  {
+    toolset: "core",
+    tool: toolName,
+    params: toolArgs,
+    getTrustedUserContext: () => getTrustedUserContext(authenticatedUser),
+  },
+  (params) => toolHandlers[toolName](params),
+);
+```
+
+`getTrustedUserContext()` must read identity facts from your authenticated application, never from model output or tool arguments.
+
+## 8. Optional: make the repo CLI-friendly
+
+Declare `rippletide:sync` and `rippletide:start` package scripts that run your declaration code and your worker. `rippletide connect`, `verify`, and `status` then work out of the box for anyone on the team.
+
+## Verify
+
+Run your agent and send one message that uses a tool. [Harness management](/docs/harness-management) should show your inventory, and [Runtime Events](/docs/runtime-events) should show a heartbeat, the tool call, and the complete turn. That is the proof the wiring is complete.

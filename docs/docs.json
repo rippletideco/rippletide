@@ -1,138 +1,74 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "Rippletide Documentation",
+  "description": "Connect agents to Rippletide, inspect runtime evidence, and enforce rules before important actions execute.",
   "theme": "mint",
-  "topbarCtaButton": {
-    "name": "Get Started",
-    "url": "/docs"
-  },
-  "logo": {
-    "light": "/img/rippletide_logo_navy_text_bg.svg",
-    "dark": "/img/logo-rippletide 2_contrastlight.svg"
-  },
-  "favicon": "/img/favicon.ico",
   "colors": {
-    "primary": "#fca5bf",
-    "light": "#fca5bf",
-    "dark": "#000"
-  },
-  "anchors": [
-    {
-      "name": "Discord",
-      "icon": "discord",
-      "url": "https://discord.gg/zUPTRH5eFv"
-    }
-  ],
-  "primaryTab": {
-    "name": "Documentation"
+    "primary": "#E996AE",
+    "light": "#E996AE",
+    "dark": "#262656"
   },
   "navigation": {
-    "tabs": [
+    "groups": [
       {
-        "tab": "Documentation",
-        "groups": [
-          {
-            "group": "Welcome",
-            "pages": [
-              "index"
-            ]
-          },
-          {
-            "group": "CLI",
-            "expanded": true,
-            "pages": [
-              "docs/cli",
-              "docs/connect-agent"
-            ]
-          },
-          {
-            "group": "Context Graph",
-            "expanded": true,
-            "pages": [
-              "docs/mcp/overview",
-              "docs/mcp/quickstart",
-              "docs/mcp/configuration",
-              "docs/mcp/tools",
-              "docs/mcp/try-it-yourself",
-              {
-                "group": "Coding Agents (Use case)",
-                "expanded": false,
-                "pages": [
-                  "docs/coding-agents/overview",
-                  "docs/coding-agents/connect",
-                  "docs/coding-agents/coding-session",
-                  "docs/coding-agents/rule-management",
-                  "docs/coding-agents/rule-sharing",
-                  "docs/coding-agents/planning",
-                  "docs/coding-agents/team-governance"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Decision Runtime",
-            "expanded": true,
-            "pages": [
-              "docs/hypergraph_overview",
-              {
-                "group": "Rippletide Platform",
-                "expanded": false,
-                "pages": [
-                  "docs/trust-platform/overview",
-                  "docs/cli",
-                  "docs/connect-agent"
-                ]
-              },
-              {
-                "group": "Integrations",
-                "expanded": false,
-                "pages": [
-                  "docs/trust-platform/integrations/amazon-bedrock",
-                  "docs/trust-platform/integrations/mcp"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Community",
-            "pages": [
-              "docs/community"
-            ]
-          }
+        "group": "Getting started",
+        "pages": ["index", "docs/quickstart"]
+      },
+      {
+        "group": "Connect",
+        "pages": [
+          "docs/connect-agent",
+          "docs/connect-mcp-server",
+          "docs/manual-setup",
+          "docs/api-keys"
         ]
       },
       {
-        "tab": "API Reference",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          }
-        ]
+        "group": "Rules",
+        "pages": ["docs/write-rules", "docs/observe-and-enforce"]
+      },
+      {
+        "group": "Observe",
+        "pages": ["docs/harness-management", "docs/runtime-events"]
+      },
+      {
+        "group": "Improve",
+        "pages": ["docs/evaluate-improve"]
+      },
+      {
+        "group": "Reference",
+        "pages": ["docs/cli"]
       }
     ]
   },
-  "css": [
-    "/css/custom.css"
+  "redirects": [
+    { "source": "/docs/introduction", "destination": "/" },
+    { "source": "/docs/cli_guide", "destination": "/docs/cli" },
+    { "source": "/docs/mcp/overview", "destination": "/docs/connect-mcp-server" },
+    { "source": "/docs/mcp/quickstart", "destination": "/docs/connect-mcp-server" },
+    { "source": "/docs/mcp/configuration", "destination": "/docs/manual-setup" },
+    { "source": "/docs/mcp/tools", "destination": "/docs/harness-management" },
+    { "source": "/docs/mcp/try-it-yourself", "destination": "/docs/quickstart" },
+    { "source": "/docs/hypergraph_overview", "destination": "/" },
+    { "source": "/docs/trust-platform/overview", "destination": "/" },
+    { "source": "/docs/trust-platform/integrations/mcp", "destination": "/docs/connect-mcp-server" },
+    { "source": "/docs/trust-platform/integrations/amazon-bedrock", "destination": "/docs/manual-setup" },
+    { "source": "/docs/coding-agents/overview", "destination": "/docs/connect-agent" },
+    { "source": "/docs/coding-agents/connect", "destination": "/docs/connect-agent" },
+    { "source": "/docs/coding-agents/coding-session", "destination": "/docs/runtime-events" },
+    { "source": "/docs/coding-agents/rule-management", "destination": "/docs/write-rules" },
+    { "source": "/docs/coding-agents/rule-sharing", "destination": "/docs/write-rules" },
+    { "source": "/docs/coding-agents/planning", "destination": "/docs/evaluate-improve" },
+    { "source": "/docs/coding-agents/team-governance", "destination": "/docs/write-rules" },
+    { "source": "/docs/community", "destination": "/" },
+    { "source": "/api-reference/introduction", "destination": "/docs/manual-setup" }
   ],
   "contextual": {
-    "options": [
-      "copy",
-      "view",
-      "chatgpt",
-      "claude",
-      "perplexity",
-      "mcp",
-      "cursor",
-      "vscode"
-    ]
+    "options": ["copy", "view", "chatgpt", "claude", "perplexity", "mcp", "cursor", "vscode"]
   },
   "footer": {
     "socials": {
-      "discord": "https://discord.gg/zUPTRH5eFv" ,
-      "github": "https://github.com/rippletideco/starter",
+      "github": "https://github.com/rippletideco/rippletide",
       "linkedin": "https://linkedin.com/company/rippletide"
     }
   }

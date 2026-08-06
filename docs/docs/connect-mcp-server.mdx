@@ -1,0 +1,26 @@
+---
+title: "Connect an MCP server"
+description: "Rules only: inventory its tools and guard their execution."
+---
+
+Connect an MCP server to inventory its tools and apply rules before a tool can take an action. MCP servers are rules-only subjects: evaluation and improvement apply to full agents, not MCP servers.
+
+## Start with a coding agent (recommended)
+
+1. In **Agents & integrations**, select **Connect → MCP**.
+2. Save the generated `.env` block in the root of your MCP server repository.
+3. Give the setup prompt to Codex, Claude Code, or your preferred coding agent.
+4. Run the server and make a tool call.
+
+The setup prompt installs the SDK, declares the server's tools, loads the Connection key from the environment, and adds a guard at the tool dispatcher — the place every tool call passes through.
+
+## Verify the connection
+
+Your MCP server is ready when Rippletide shows:
+
+- its tool inventory in [Harness management](/docs/harness-management);
+- the decision for a real tool call in [Runtime events](/docs/runtime-events).
+
+Then [write rules for the server's tools](/docs/write-rules) and start in [observe mode](/docs/observe-and-enforce). Nothing is blocked until you explicitly move a rule to enforce mode.
+
+Need to wire the server yourself? Follow the [manual setup](/docs/manual-setup).

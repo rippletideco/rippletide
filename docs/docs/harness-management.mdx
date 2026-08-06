@@ -1,0 +1,23 @@
+---
+title: "Harness management"
+description: "The live inventory: identity, prompts, tools, and connections."
+---
+
+Harness management is the live inventory of a connected agent: what it is, what it can do, and what it is wired to. If Runtime Events answers "what did my agent do?", this page answers "what *is* my agent?".
+
+## What you see
+
+- **Identity and status**: the agent's name, description, and connection stage.
+- **Prompts**: the system prompts and instructions the agent declared, with their configuration.
+- **Tools**: every toolset and tool schema the agent registered. These become the action catalogue your [rules](/docs/write-rules) bind to.
+- **Connections**: the third-party services the agent uses, with credential *status* only. Rippletide knows which secret names are configured, never their values.
+
+For MCP servers, this page shows the tool inventory, the part that matters for a rules-only subject.
+
+## Keeping it current
+
+The inventory reflects what the SDK last declared. It re-syncs when the agent starts, or on demand with `rippletide connect` / the `rippletide:sync` script. If you add a tool in code, the catalogue updates on the next sync, and rules compiled against the old catalogue will tell you they need attention.
+
+## Setup evidence vs. runtime proof
+
+A visible inventory proves your agent is *configured* correctly. It does not prove the agent is running; that is what the heartbeat, tool calls, and live turns in [Runtime Events](/docs/runtime-events) are for. The two pages together tell you both halves of the story.

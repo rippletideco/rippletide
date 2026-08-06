@@ -1,0 +1,79 @@
+---
+title: "Quickstart"
+description: "Connect your first agent and see live evidence in about five minutes."
+---
+
+In 5 minutes, connect an existing JavaScript or TypeScript agent, run one real tool-using turn, and see exactly what it observed and did. Then add a rule in Observe mode and see what Rippletide would have blocked, without interrupting your agent.
+
+> **Supported today**: existing **Node.js 18+** JavaScript/TypeScript agents and MCP servers. Python and other runtimes are not supported by this connection path yet.
+
+This page walks the agent path; an MCP server follows the same motion with the [MCP guide](/docs/connect-mcp-server).
+
+## Coding-agent set up
+
+Move into the repository that contains your agent or MCP server, open Codex, Claude Code, or Cursor there, then paste this prompt:
+
+```text
+Install npm rippletide-package@latest and use its CLI to connect to Rippletide.
+```
+
+The CLI owns the setup complexity and guides the coding agent through the connection.
+
+## 1. Create the connection and its key
+
+In **Agents & integrations**, click **Connect → Agent** (or **Connect → MCP**). Rippletide creates the agent and mints its **Connection key** — copy the generated `.env` block immediately into a `.env` file at the root of your repository; the full key is shown only once:
+
+```bash
+RIPPLETIDE_API_KEY=rt_...
+RIPPLETIDE_AGENT_ID=...
+```
+
+This is the agent-scoped Connection key, **not** the Platform API key from Settings — never put a Platform key in an agent repository. Keep `.env` git-ignored. The dialog also gives you a setup prompt for step 2.
+
+## 2. Wire up your repository
+
+The fastest path is to let a coding agent (Cursor, Codex, Claude Code…) do the wiring: with the `.env` saved, paste the setup prompt into the coding agent. It installs the SDK, declares your agent's prompts and tools, and starts the runtime worker. This should take 3 to 5 minutes.
+
+If you'd rather stay in a terminal, the CLI does the same thing:
+
+```bash
+npm install -g rippletide-package
+rippletide login
+cd your-agent-repo
+rippletide connect
+```
+
+Either way, the details are in [Connect an agent](/docs/connect-agent).
+
+## 3. Run one real turn
+
+Start your agent the way you always do — the wiring changes nothing about how it runs, and it still needs its own secrets (model keys, tool credentials) in place. Send it one message that makes it use a tool.
+
+## 4. Verify
+
+- Open **Harness management**: you should see your agent's identity, prompts, tools, and connections.
+- Open **Runtime Events**: the proof completes when the agent has registered, a heartbeat has arrived, and a tool-using turn has been recorded. (MCP servers run no agent loop, so a tool call is enough — no turn.)
+
+## 5. Your first decision
+
+This is the moment the product clicks:
+
+1. On the **Rules** page, pick the tool your agent just used and write a rule that would forbid what it just did.
+2. Save it and set the release to **Observe** mode.
+3. Send your agent the same message again.
+
+The action goes through untouched — and the Rules page shows a **would block** decision with the rule that fired. You have just seen what enforcement *would* do, with zero risk to your agent. When you trust the rule, switch that release to Enforce: see [observe vs enforce](/docs/observe-and-enforce).
+
+## If something doesn't appear
+
+- **Node version**: the SDK needs Node.js 18 or newer.
+- **`.env` location**: it must sit at the repository root (of the package that owns the agent, in a monorepo), and stay git-ignored.
+- **Your agent's own secrets**: Rippletide adds none — model keys and tool credentials must be configured as before.
+- **Is the process actually running?** Evidence only flows while your agent (or its worker) is running.
+- **Check the wiring** from the repository root:
+
+```bash
+npx rippletide-package verify
+```
+
+It reads the `.env` exactly like the SDK and prints PASS with what the platform can see. If you're stuck, report it to your Rippletide contact with the `verify` output — never share the key itself.

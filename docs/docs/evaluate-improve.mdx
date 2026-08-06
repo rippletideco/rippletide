@@ -1,0 +1,32 @@
+---
+title: "Evaluate & improve"
+description: "Test your agent against scenarios and act on what you learn."
+---
+
+Beyond watching your agent run, Rippletide can test it against realistic scenarios and propose improvements. Both need a connected agent with its runtime worker online (they do not apply to MCP servers).
+
+## Evaluate
+
+Evaluation runs your agent against a set of scenarios and grades each result.
+
+1. On the **Evaluate** page, generate scenarios from your agent's declared behavior, or write your own.
+2. Start the run. Your local worker executes each scenario against the real agent.
+3. Review the graded results on the same page.
+
+```bash
+rippletide evaluate --generate --wait
+```
+
+## Improve
+
+Improvement is an experiment loop on top of evaluation:
+
+1. Rippletide proposes an improvement zone, for example a weakness in the system prompt.
+2. It prepares scenarios and a deterministic check, and shows you the plan.
+3. After you confirm, your worker runs the real agent through candidate prompt and tool variations and compares the results.
+
+```bash
+rippletide improve --wait
+```
+
+A kept candidate is a **recommendation**, not a deployment. Your code stays the source of truth: nothing is edited or shipped until you apply the change yourself.

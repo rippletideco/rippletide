@@ -1,0 +1,27 @@
+---
+title: "API keys"
+description: "Platform keys and Connection keys, and why they never mix."
+---
+
+Rippletide has two kinds of keys, deliberately separate.
+
+| Key | Scope | Where it belongs |
+| --- | --- | --- |
+| **Platform key** | Your whole account: management APIs and the CLI | Your own scripts, CI, or terminal; managed in **Settings** |
+| **Connection key** | Exactly one agent or MCP server | That connection's runtime, as `RIPPLETIDE_API_KEY`; managed on its **Connection** page |
+
+## The rules that keep you safe
+
+- **Never install a Platform key in an agent.** An agent's environment should only ever hold its own Connection key.
+- **A Connection key cannot cross boundaries.** It cannot administer your account or act on behalf of another connection, no matter what request data it sends.
+- **Full secrets are shown once**, when a key is created or replaced. Rippletide stores only metadata and a hash; there is no way to read a key back later.
+
+## Environments are in the key
+
+Keys are environment-marked: a plain `rt_…` key talks to production and an `rt_staging_…` key talks to staging. The SDK and CLI resolve the right endpoint from the key itself, so there are no URLs to configure.
+
+## Rotation and expiry
+
+- **Connection keys**: replace from the Connection page and update `RIPPLETIDE_API_KEY` where the agent runs. The previous key is revoked the moment the replacement is created.
+- **Platform keys in Settings**: creating a new key does **not** revoke the old one — revoke it yourself once you have switched over.
+- **CLI Platform key**: a repeated `rippletide login` reuses the valid stored key. To replace it or change accounts, run `rippletide logout` and then `rippletide login`. Logout revokes the current key before clearing local credentials and keeps the local login when revocation cannot be confirmed. Keys created by CLI login expire after 90 days.
