@@ -8,7 +8,7 @@ Rippletide has two kinds of keys, deliberately separate.
 | Key | Scope | Where it belongs |
 | --- | --- | --- |
 | **Platform key** | Your whole account: management APIs and the CLI | Your own scripts, CI, or terminal; managed in **Settings** |
-| **Connection key** | Exactly one agent or MCP server | That connection's runtime, as `RIPPLETIDE_API_KEY`; managed on its **Connection** page |
+| **Connection key** | Exactly one agent or MCP server | That connection's runtime; managed on its **Connection** page |
 
 ## The rules that keep you safe
 
@@ -20,8 +20,15 @@ Rippletide has two kinds of keys, deliberately separate.
 
 Keys are environment-marked: a plain `rt_…` key talks to production and an `rt_staging_…` key talks to staging. The SDK and CLI resolve the right endpoint from the key itself, so there are no URLs to configure.
 
+## Use the configuration format from your setup path
+
+- **CLI connection**: `rippletide connect` writes `RIPPLETIDE` and `RIPPLETIDE_PROXY_URL` in the repository's git-ignored `.env`.
+- **App-based or manual setup**: the Connection page supplies `RIPPLETIDE_AGENT_ID` and `RIPPLETIDE_API_KEY` in the repository's git-ignored `.env`.
+
+Both use the same connection-scoped key. Do not merge the two blocks in one repository; rerun the setup path you chose to refresh its configuration.
+
 ## Rotation and expiry
 
-- **Connection keys**: replace from the Connection page and update `RIPPLETIDE_API_KEY` where the agent runs. The previous key is revoked the moment the replacement is created.
+- **Connection keys**: replace from the Connection page and update the configuration created by your setup path. For an app-based/manual setup, that is `RIPPLETIDE_API_KEY`; for a CLI setup, rerun `rippletide connect`. The previous key is revoked the moment the replacement is created.
 - **Platform keys in Settings**: creating a new key does **not** revoke the old one — revoke it yourself once you have switched over.
 - **CLI Platform key**: a repeated `rippletide login` reuses the valid stored key. To replace it or change accounts, run `rippletide logout` and then `rippletide login`. Logout revokes the current key before clearing local credentials and keeps the local login when revocation cannot be confirmed. Keys created by CLI login expire after 90 days.

@@ -19,9 +19,10 @@ Every command is then `rippletide <command>`, and all commands accept `--json` f
 | `logout` | Revoke the current Platform key, then clear the local login |
 | `whoami` | Show the logged-in account |
 | `agents` | List the agents on your account |
-| `connect [--yes]` | Connect the current repository: keys, inventory sync, runtime worker |
-| `connect --print-prompt` | Print the coding-agent setup prompt and exit for headless/manual setup |
-| `verify` | Prove a wrapped repository's connection from its `.env` (no login needed) |
+| `connect [--yes]` | Create or link the current repository, write its CLI connection configuration, and present its setup prompt |
+| `connect --print-prompt` | Create or link the repository, write its CLI connection configuration, and print the setup prompt for a coding agent |
+| `verify` | Check a repository's CLI configuration and synced inventory from its `.env` (no login needed) |
+| `events --wait` | Wait for complete observed runtime evidence: manifest, heartbeat, and turn; MCP also needs a tool call |
 | `status` | Auth, binding, inventory, worker, and evaluation readiness at a glance |
 | `evaluate [--generate] [--wait]` | Start an evaluation run, optionally waiting for the result |
 | `improve [--yes] [--wait]` | Propose and run an improvement loop (asks before running your agent) |
@@ -31,7 +32,7 @@ Every command is then `rippletide <command>`, and all commands accept `--json` f
 | `rules decisions --agent <id> [--limit 20]` | Review recent decisions and get commands to enforce triggered observe releases |
 | `rules set-mode --release <id> --mode disabled\|observe\|enforce` | Change one rule release's mode |
 
-`connect` executes your repository's own `rippletide:sync` and `rippletide:start` scripts, so it asks for confirmation; pass `--yes` only for a repository you trust.
+`connect` can execute your repository's own `rippletide:sync` and `rippletide:start` scripts, so it asks for confirmation; pass `--yes` only for a repository you trust. It does not launch a coding agent or create those scripts for you. Apply the generated setup prompt in the coding agent you use for the repository.
 
 `login` validates `~/.rippletide/config.json` before starting a browser flow, so
 running it again does not accumulate keys. To replace the key or change
@@ -46,6 +47,8 @@ credential so revocation can be retried.
 | Account | `~/.rippletide/config.json` | Endpoint and Platform key |
 | Project | `.rippletide/project.json` | Agent ID and name (safe to commit) |
 | Runtime | `.env` | `RIPPLETIDE` Connection string and `RIPPLETIDE_PROXY_URL` (never commit) |
+
+The CLI configuration is distinct from the app-based/manual configuration documented in [API keys](/docs/api-keys). Do not add `RIPPLETIDE_AGENT_ID` and `RIPPLETIDE_API_KEY` to a `.env` already managed by `rippletide connect`.
 
 After removing Rippletide instrumentation, disconnect a repository by deleting
 `.rippletide/project.json`, removing only `RIPPLETIDE` and

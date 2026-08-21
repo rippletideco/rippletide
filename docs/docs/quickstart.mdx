@@ -1,60 +1,65 @@
 ---
 title: "Quickstart"
-description: "Connect your first agent and see live evidence in about five minutes."
+description: "Install the CLI, connect an agent repository, and verify its first observed run."
 ---
 
-In 5 minutes, connect an existing JavaScript or TypeScript agent, run one real tool-using turn, and see exactly what it observed and did. Then add a rule in Observe mode and see what Rippletide would have blocked, without interrupting your agent.
+Connect an existing JavaScript or TypeScript agent, run one real tool-using turn, and see exactly what Rippletide observed. Then add a rule in Observe mode and see what it would have blocked, without interrupting your agent.
 
 > **Supported today**: existing **Node.js 18+** JavaScript/TypeScript agents and MCP servers. Python and other runtimes are not supported by this connection path yet.
 
-This page walks the agent path; an MCP server follows the same motion with the [MCP guide](/docs/connect-mcp-server).
+This page is the standard CLI path for an agent repository. An MCP server follows the same starting point with the [MCP guide](/docs/connect-mcp-server).
 
-## Coding-agent set up
+## 1. Install and sign in
 
-Move into the repository that contains your agent or MCP server, open Codex, Claude Code, or Cursor there, then paste this prompt:
-
-```text
-Install npm rippletide-package@latest and use its CLI to connect to Rippletide.
-```
-
-The CLI owns the setup complexity and guides the coding agent through the connection.
-
-## 1. Create the connection and its key
-
-In **Agents & integrations**, click **Connect → Agent** (or **Connect → MCP**). Rippletide creates the agent and mints its **Connection key** — copy the generated `.env` block immediately into a `.env` file at the root of your repository; the full key is shown only once:
+From the repository that contains the agent, install the CLI and sign in. Signing in is an operator step: it opens your browser and must be completed by a person with access to the Rippletide account.
 
 ```bash
-RIPPLETIDE_API_KEY=rt_...
-RIPPLETIDE_AGENT_ID=...
-```
-
-This is the agent-scoped Connection key, **not** the Platform API key from Settings — never put a Platform key in an agent repository. Keep `.env` git-ignored. The dialog also gives you a setup prompt for step 2.
-
-## 2. Wire up your repository
-
-The fastest path is to let a coding agent (Cursor, Codex, Claude Code…) do the wiring: with the `.env` saved, paste the setup prompt into the coding agent. It installs the SDK, declares your agent's prompts and tools, and starts the runtime worker. This should take 3 to 5 minutes.
-
-If you'd rather stay in a terminal, the CLI does the same thing:
-
-```bash
+cd your-agent-repo
 npm install -g rippletide-package
 rippletide login
-cd your-agent-repo
+```
+
+## 2. Create the connection and get the repository-specific prompt
+
+```bash
 rippletide connect
 ```
 
-Either way, the details are in [Connect an agent](/docs/connect-agent).
+The CLI creates or links the agent, saves the project binding, writes the CLI connection configuration in a git-ignored `.env`, and gives you the exact setup prompt for this repository. It is safe to run again.
 
-## 3. Run one real turn
+> **Use the generated prompt, not a generic installation prompt.** It reflects the repository and tells the coding agent what to add. The CLI does not launch Codex, Claude Code, or Cursor for you.
+
+For a headless coding-agent session, the human signs in first. The coding agent can then request the setup prompt from the repository root:
+
+```bash
+npx -p rippletide-package rippletide connect --print-prompt
+```
+
+## 3. Apply the generated prompt
+
+Paste the prompt from the CLI into Codex, Claude Code, Cursor, or your preferred coding agent. It installs `rippletide-package`, adds the repository-specific instrumentation, and declares the agent inventory.
+
+The prompt never contains your Connection key. Keep `.env` git-ignored and never replace a CLI-created `.env` with a block from another setup path.
+
+See [Connect an agent](/docs/connect-agent) for the app-based alternative and troubleshooting.
+
+## 4. Run one real turn
 
 Start your agent the way you always do — the wiring changes nothing about how it runs, and it still needs its own secrets (model keys, tool credentials) in place. Send it one message that makes it use a tool.
 
-## 4. Verify
+## 5. Verify
 
 - Open **Harness management**: you should see your agent's identity, prompts, tools, and connections.
 - Open **Runtime Events**: the proof completes when the agent has registered, a heartbeat has arrived, and a tool-using turn has been recorded. (MCP servers run no agent loop, so a tool call is enough — no turn.)
 
-## 5. Your first decision
+From the repository, check both the configuration and the observed evidence:
+
+```bash
+rippletide verify
+rippletide events --wait
+```
+
+## 6. Your first decision
 
 This is the moment the product clicks:
 
@@ -70,10 +75,10 @@ The action goes through untouched — and the Rules page shows a **would block**
 - **`.env` location**: it must sit at the repository root (of the package that owns the agent, in a monorepo), and stay git-ignored.
 - **Your agent's own secrets**: Rippletide adds none — model keys and tool credentials must be configured as before.
 - **Is the process actually running?** Evidence only flows while your agent (or its worker) is running.
-- **Check the wiring** from the repository root:
+- **Check the configuration** from the repository root:
 
 ```bash
 npx rippletide-package verify
 ```
 
-It reads the `.env` exactly like the SDK and prints PASS with what the platform can see. If you're stuck, report it to your Rippletide contact with the `verify` output — never share the key itself.
+It reads the `.env` exactly like the SDK and checks the synced inventory. Use `rippletide events --wait` to wait for the complete runtime proof. If you're stuck, report the command output to your Rippletide contact — never share the key itself.

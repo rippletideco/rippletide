@@ -1,30 +1,34 @@
 ---
 title: "Connect an agent"
-description: "Link a repository you own with a setup prompt or the CLI."
+description: "Connect an agent repository with the CLI, then apply its generated setup prompt."
 ---
 
 Connect an existing agent to Rippletide to see its prompts, tools, and live runtime evidence. Once connected, you can define rules for the actions it takes.
 
-## Start with a coding agent (recommended)
-
-1. In **Agents & integrations**, select **Connect → Agent**.
-2. Save the generated `.env` block in the root of your agent repository. It contains the agent ID and Connection key; the setup prompt contains no credentials.
-3. Give the setup prompt to Codex, Claude Code, or your preferred coding agent.
-4. Run your agent and send one message that uses a tool.
-
-The setup prompt installs `rippletide-package`, declares your agent's prompts and tools, and adds the scripts needed to sync the inventory and send runtime evidence.
-
-## Or start with the CLI
+## Standard path: CLI, then coding agent
 
 ```bash
+cd your-agent-repo
 npm install -g rippletide-package
 rippletide login
-cd your-agent-repo
 rippletide connect
-rippletide status
 ```
 
-`rippletide connect` prepares the binding, writes the `.env` block, syncs your inventory, and starts the runtime worker. Use `rippletide status` to check your progress.
+`rippletide connect` creates or links the agent, writes the CLI connection configuration, and presents a repository-specific setup prompt. Paste that prompt into Codex, Claude Code, or your preferred coding agent. The coding agent adds the SDK and instrumentation; Rippletide does not launch it for you.
+
+The CLI can run existing `rippletide:sync` or `rippletide:start` scripts after confirmation. It does not invent those scripts or start an agent runtime on its own.
+
+For a non-interactive coding-agent session, sign in first, then run this from the agent repository:
+
+```bash
+npx -p rippletide-package rippletide connect --print-prompt
+```
+
+## App-based alternative
+
+In **Agents & integrations**, select **Connect → Agent**, save the generated `.env` block, then give the generated setup prompt to a coding agent. This app-based path uses `RIPPLETIDE_AGENT_ID` and `RIPPLETIDE_API_KEY` in `.env`.
+
+Do not combine that block with a CLI-created `.env`, which uses `RIPPLETIDE` and `RIPPLETIDE_PROXY_URL`. Choose one path for a repository.
 
 ## Verify the connection
 
@@ -32,6 +36,13 @@ Your agent is ready when Rippletide shows:
 
 - its prompts and tools in [Harness management](/docs/harness-management);
 - a heartbeat and a real turn in [Runtime events](/docs/runtime-events).
+
+You can check the same conditions from the repository:
+
+```bash
+rippletide verify
+rippletide events --wait
+```
 
 Connection secret values are never uploaded. Rippletide only records the names of configured secrets.
 
