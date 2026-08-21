@@ -3,7 +3,7 @@ title: "Manual setup"
 description: "The full integration by hand, wire by wire."
 ---
 
-The setup prompt and the CLI do all of this for you. If you prefer to see every wire, or your repository does not fit the automated path, here is the full integration by hand.
+The setup prompt and the CLI do all of this for you. Use this page only when you need to wire the SDK by hand, or when your repository does not fit the automated path. Do not replace a CLI-created `.env` with the manual block below.
 
 This page also covers an MCP server connected by hand, with a narrower footprint: follow steps 1 to 3, declare **tools only** in step 4 (an MCP server declares no prompts or connections, and runs no worker), then guard the dispatcher as in step 7 — returning policy errors to the MCP client as a normal `isError: true` tool result, never a protocol error or a crashed server.
 
@@ -13,7 +13,7 @@ This page also covers an MCP server connected by hand, with a narrower footprint
 npm install rippletide-package@latest
 ```
 
-## 2. Add the credentials
+## 2. Add the credentials for the manual path
 
 Save the `.env` block from the Connect dialog at the root of your repository:
 
@@ -23,6 +23,8 @@ RIPPLETIDE_API_KEY=<your Connection key>
 ```
 
 Never commit this file. The key itself tells the SDK which environment to talk to, so there are no URLs to configure.
+
+This is the app-based/manual configuration format. A repository connected with `rippletide connect` instead uses `RIPPLETIDE` and `RIPPLETIDE_PROXY_URL`; do not combine the two formats.
 
 ## 3. Create the client
 

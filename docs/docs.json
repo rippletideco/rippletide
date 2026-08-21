@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "Rippletide Documentation",
-  "description": "Connect agents to Rippletide, inspect runtime evidence, and enforce rules before important actions execute.",
+  "description": "Install rippletide-package, connect an agent repository, inspect runtime evidence, and enforce rules before important actions execute.",
   "theme": "mint",
   "colors": {
     "primary": "#E996AE",
