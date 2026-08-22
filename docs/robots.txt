@@ -1,0 +1,13 @@
+User-agent: OAI-SearchBot
+Disallow: /docs/agent_api_reference
+Disallow: /docs/hypergraph_overview
+Disallow: /docs/mcp/
+Disallow: /api-reference/
+
+User-agent: *
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
+Disallow: /cdn-cgi/
+Allow: /_next/image
+Disallow: /_next/
+
+Sitemap: https://docs.rippletide.com/sitemap.xml
