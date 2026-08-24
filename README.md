@@ -267,7 +267,7 @@ Customer-facing documentation is maintained in `docs/` and published at [docs.ri
 
 ```text
 rippletide/
-├── context-graph/    # Rippletide packages and runtime components
+├── context-graph/    # Rust and npm sources for the rippletide-code coding-rules CLI
 └── docs/             # Public documentation
 ```
 
