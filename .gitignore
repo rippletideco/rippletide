@@ -1,5 +1,5 @@
 .DS_Store
 cli/node_modules
 cli/dist
-context-graph/examples/coding-agent/target
-context-graph/examples/flow-animation-preview.js
+rippletide-code/examples/coding-agent/target
+rippletide-code/examples/flow-animation-preview.js
