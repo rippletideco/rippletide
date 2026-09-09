@@ -3,7 +3,7 @@ title: "CLI reference"
 description: "Every platform workflow, scriptable from your terminal."
 ---
 
-Core workflows are available from the CLI: connecting, evaluating, and rules. Install once:
+Core workflows are available from the CLI: connecting, inspecting runtime evidence, and managing rules. Install once:
 
 ```bash
 npm install -g rippletide-package
@@ -23,9 +23,7 @@ Every command is then `rippletide <command>`, and all commands accept `--json` f
 | `connect --print-prompt` | Create or link the repository, write its CLI connection configuration, and print the setup prompt for a coding agent |
 | `verify` | Check a repository's CLI configuration and synced inventory from its `.env` (no login needed) |
 | `events --wait` | Wait for complete observed runtime evidence: manifest, heartbeat, and turn; MCP also needs a tool call |
-| `status` | Auth, binding, inventory, worker, and evaluation readiness at a glance |
-| `evaluate [--generate] [--wait]` | Start an evaluation run, optionally waiting for the result |
-| `improve [--yes] [--wait]` | Propose and run an improvement loop (asks before running your agent) |
+| `status` | Account login, project binding, inventory, and runtime evidence at a glance |
 | `rules discover [--source <text\|https-url\|@file>]` | Review and batch-create complete discovered rules; `--json` is read-only |
 | `rules create --target <id> --action <key> --input "…"` | Compile and save a disabled plain-English rule |
 | `rules targets` / `rules list` | Inspect policy targets and rule releases |
@@ -39,6 +37,8 @@ running it again does not accumulate keys. To replace the key or change
 accounts, run `rippletide logout` and then `rippletide login`. A validation
 failure creates nothing, while a failed logout keeps the current local
 credential so revocation can be retried.
+
+To try rule scenarios, follow [Test your rules](/docs/evaluate-improve). Generate prompts in the app, run them in your own runtime, and inspect their decisions.
 
 ## Where configuration lives
 

@@ -25,15 +25,11 @@
       },
       {
         "group": "Rules",
-        "pages": ["docs/write-rules", "docs/observe-and-enforce"]
+        "pages": ["docs/write-rules", "docs/evaluate-improve", "docs/observe-and-enforce"]
       },
       {
         "group": "Observe",
         "pages": ["docs/harness-management", "docs/runtime-events"]
-      },
-      {
-        "group": "Improve",
-        "pages": ["docs/evaluate-improve"]
       },
       {
         "group": "Reference",
