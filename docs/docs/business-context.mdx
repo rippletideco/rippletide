@@ -35,3 +35,33 @@ If the analysis fails, the new document version may already be stored. Use **Ret
 Select the source's trash icon and review the confirmation, then choose **Archive source**. This also disables and archives the current rules that depend on it.
 
 The source leaves Business context and future rule discovery. Earlier documents and rule history remain retained for audit.
+
+## From the CLI
+
+Run from your connected repository, or add `--agent <id>`:
+
+```bash
+rippletide business-context upload policy.pdf
+rippletide business-context list --json
+rippletide business-context discover --out proposals.json
+rippletide business-context apply proposals.json --select <proposalId>
+```
+
+Upload accepts the same document types, up to 10 MB. Discovery uses readable
+active documents, up to eight at a time. Add `--source <id>` to choose them.
+
+To update a document, use the version shown in `list` or `history <sourceId>`:
+
+```bash
+rippletide business-context update <sourceId> policy.pdf --expected-version 1
+rippletide business-context analyze <sourceId> --from 1 --to 2 --out review.json
+rippletide business-context apply review.json --select <changeId>
+```
+
+Review the file before applying changes. Repeat `--select` to choose more than
+one; use `--config '{"<id>":{"limit":100}}'` for any required settings. New rules
+start Disabled and replacements start Observe. A review cannot be applied after
+its document version changes. If some changes fail, retry only those changes.
+
+Use `rippletide business-context archive <sourceId> --yes` to archive a document
+and disable its dependent rules.

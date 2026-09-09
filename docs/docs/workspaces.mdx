@@ -28,6 +28,25 @@ An Admin can rename it under **Settings → Workspace**.
 
 Admins can change roles, remove members, or revoke pending invitations under **Settings → Workspace**. The workspace creator must remain an Admin.
 
+## From the CLI
+
+```bash
+rippletide whoami
+rippletide workspaces use
+rippletide workspaces members
+rippletide workspaces invite teammate@example.com --role editor
+```
+
+`whoami` shows your workspace and role. `workspaces use` opens browser approval
+for the workspace you choose; it keeps your old login until the new one is
+saved. This does not switch your platform browser's workspace. An Admin must
+authorize the CLI.
+
+Invitations produce a link to share. The recipient can open it or run
+`rippletide workspaces accept "<link>"` to accept it in their browser.
+Use `rippletide workspaces --help` for renaming, role changes, removal, and
+revoking invitations. These actions require Admin access.
+
 ## Next step
 
 Add [business context](/docs/business-context) to turn your team's policies into rule suggestions.

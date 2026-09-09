@@ -1,6 +1,6 @@
 ---
 title: "CLI reference"
-description: "Every platform workflow, scriptable from your terminal."
+description: "Connect agents, inspect evidence, and manage rules and workspaces."
 ---
 
 Core workflows are available from the CLI: connecting, inspecting runtime evidence, and managing rules. Install once:
@@ -17,15 +17,21 @@ Every command is then `rippletide <command>`, and all commands accept `--json` f
 | --- | --- |
 | `login` | Log in via your browser; reuses a valid stored Platform key |
 | `logout` | Revoke the current Platform key, then clear the local login |
-| `whoami` | Show the logged-in account |
+| `whoami` | Show your account, current workspace, and role |
 | `agents` | List the agents on your account |
 | `connect [--yes]` | Create or link the current repository, write its CLI connection configuration, and present its setup prompt |
 | `connect --print-prompt` | Create or link the repository, write its CLI connection configuration, and print the setup prompt for a coding agent |
 | `verify` | Check a repository's CLI configuration and synced inventory from its `.env` (no login needed) |
+| `events [<traceId>] [--agent <id>] [--cursor <cursor>]` | List traces, open one, or read the next page |
 | `events --wait` | Wait for complete observed runtime evidence: manifest, heartbeat, and turn; MCP also needs a tool call |
 | `status` | Account login, project binding, inventory, and runtime evidence at a glance |
 | `rules discover [--source <text\|https-url\|@file>]` | Review and batch-create complete discovered rules; `--json` is read-only |
-| `rules create --target <id> --action <key> --input "…"` | Compile and save a disabled plain-English rule |
+| `rules create --agent <id> --action <key> --effect ALLOW\|BLOCK --input "…"` | Compile and save a disabled plain-English rule |
+| `rules discover --agent <id> --activity --include-raw-values --out proposals.json` | Suggest rules from recorded activity, with evidence and replay results |
+| `rules save --agent <id> --file proposals.json --proposal <id> [--config '<JSON>']` | Complete any required settings and save a selected suggestion Disabled |
+| `business-context <command>` | Upload and version documents, discover rules, and review selected changes |
+| `workspaces <command>` | Check your workspace and manage its members and invitations |
+| `workspaces use [<id>]` | Choose a workspace through browser approval |
 | `rules targets` / `rules list` | Inspect policy targets and rule releases |
 | `rules decisions --agent <id> [--limit 20]` | Review recent decisions and get commands to enforce triggered observe releases |
 | `rules set-mode --release <id> --mode disabled\|observe\|enforce` | Change one rule release's mode |
@@ -37,6 +43,25 @@ running it again does not accumulate keys. To replace the key or change
 accounts, run `rippletide logout` and then `rippletide login`. A validation
 failure creates nothing, while a failed logout keeps the current local
 credential so revocation can be retried.
+
+## Read evidence and create rules
+
+`rippletide events <traceId> --json` returns the complete retained trace. Content
+that was not captured or was redacted remains unavailable. Use `--cursor` with
+the next cursor from the previous response to read older traces.
+
+Use `--effect ALLOW` for an Allow rule or `--effect BLOCK` for a Block rule.
+Block is the default. Allow applies before an action; rules on results or
+responses use Block. If the compiler asks a question, repeat the original
+command and add your answer with `--context "…"`.
+
+Activity discovery uses captured inputs and outputs. `--include-raw-values`
+gives permission to use them for that request. Review the saved proposals and
+supply any required settings through `--config` before saving. New rules start
+Disabled.
+
+See [Workspaces](/docs/workspaces#from-the-cli) and
+[Business context](/docs/business-context#from-the-cli) for command examples.
 
 To try rule scenarios, follow [Test your rules](/docs/evaluate-improve). Generate prompts in the app, run them in your own runtime, and inspect their decisions.
 
