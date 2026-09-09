@@ -57,7 +57,8 @@
     { "source": "/docs/coding-agents/planning", "destination": "/docs/evaluate-improve" },
     { "source": "/docs/coding-agents/team-governance", "destination": "/docs/write-rules" },
     { "source": "/docs/community", "destination": "/" },
-    { "source": "/api-reference/introduction", "destination": "/docs/manual-setup" }
+    { "source": "/api-reference/introduction", "destination": "/docs/manual-setup" },
+    { "source": "/api-reference/openapi.json", "destination": "/docs/manual-setup" }
   ],
   "contextual": {
     "options": ["copy", "view", "chatgpt", "claude", "perplexity", "mcp", "cursor", "vscode"]
