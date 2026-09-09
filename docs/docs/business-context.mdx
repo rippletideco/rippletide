@@ -1,0 +1,37 @@
+---
+title: "Business context"
+description: "Add policy documents, review suggested rules, and keep them current."
+---
+
+Business context holds the policies and procedures you want an agent to follow. Upload a document, then choose which rule suggestions to create. Uploading alone does not change your rules.
+
+Use an Editor or Admin role in the right [workspace](/docs/workspaces). Open a connected agent and select **Business context**. Its tools must be visible in Rippletide before you can add sources.
+
+## Add a document
+
+1. Choose **Connect source → Upload documents**.
+2. Select **Choose documents** and add PDF, Word (`.docx`), Markdown, or text files.
+3. Select **Upload** and wait until the sources are ready.
+
+## Review suggested rules
+
+1. Choose **Discover Rules**, select the documents to use, then start discovery.
+2. Read each suggestion, its supporting passage, and the action it would control. Review any **needs setup** explanation before proceeding.
+3. Select the ready suggestions you want to create. Choose **Disabled** to save them for later, or **Observe** to record decisions while letting the agent continue.
+4. Create the selected rules, then [test them](/docs/evaluate-improve). An Admin can move a reviewed rule to [Enforce](/docs/observe-and-enforce).
+
+Each source lists the rules that use it. Select **View Rules** to review them.
+
+## Update a document
+
+1. Select **Update** beside the source and choose its replacement file.
+2. Select **Store & analyze update**. Rippletide keeps the earlier version and proposes changes to the related rules.
+3. Review the proposals and apply only the selected changes you want. Updated rules return to Observe; new rules use your chosen Disabled or Observe mode. Check the results before enabling Enforce again.
+
+If the analysis fails, the new document version may already be stored. Use **Retry impact analysis** to continue the review.
+
+## Archive a document
+
+Select the source's trash icon and review the confirmation, then choose **Archive source**. This also disables and archives the current rules that depend on it.
+
+The source leaves Business context and future rule discovery. Earlier documents and rule history remain retained for audit.
