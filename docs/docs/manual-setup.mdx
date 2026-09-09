@@ -5,7 +5,7 @@ description: "The full integration by hand, wire by wire."
 
 The setup prompt and the CLI do all of this for you. Use this page only when you need to wire the SDK by hand, or when your repository does not fit the automated path. Do not replace a CLI-created `.env` with the manual block below.
 
-This page also covers an MCP server connected by hand, with a narrower footprint: follow steps 1 to 3, declare **tools only** in step 4 (an MCP server declares no prompts or connections, and runs no worker), then guard the dispatcher as in step 7 — returning policy errors to the MCP client as a normal `isError: true` tool result, never a protocol error or a crashed server.
+This page also covers an MCP server connected by hand, with a narrower footprint: follow steps 1 to 3, declare **tools only** in step 4 (an MCP server declares no prompts or connections), then guard the dispatcher as in step 6 — returning policy errors to the MCP client as a normal `isError: true` tool result, never a protocol error or a crashed server.
 
 ## 1. Install the SDK
 
@@ -61,29 +61,7 @@ const search = rippletide.traced(searchCustomerRecords, { name: "search_customer
 
 For a short-lived script or worker, call `await rippletide.flush()` before it exits so pending evidence is sent.
 
-## 6. Start the runtime worker
-
-The worker is what lets [Evaluate & improve](/docs/evaluate-improve) run scenarios against your real agent. It polls outbound only and never opens a port.
-
-```ts
-const worker = rippletide.runtime({
-  surfaces: {
-    prompts: { system: { type: "text", value: () => systemPrompt } },
-    toolsets: { core: () => tools },
-  },
-  runScenario: async ({ prompt, design }) => {
-    return agent.invoke({
-      input: prompt,
-      systemPrompt: design.prompt("system", systemPrompt),
-      tools: design.tools("core", tools),
-    });
-  },
-});
-
-worker.start();
-```
-
-## 7. Guard important tool calls
+## 6. Guard important tool calls
 
 Install one guard at your real tool-dispatch boundary so [rules](/docs/write-rules) can decide before an action runs:
 
@@ -101,9 +79,9 @@ return rippletide.guardToolCall(
 
 `getTrustedUserContext()` must read identity facts from your authenticated application, never from model output or tool arguments.
 
-## 8. Optional: make the repo CLI-friendly
+## 7. Run your agent
 
-Declare `rippletide:sync` and `rippletide:start` package scripts that run your declaration code and your worker. `rippletide connect`, `verify`, and `status` then work out of the box for anyone on the team.
+Start your instrumented agent through its normal application entrypoint. To try representative rule scenarios, follow [Test your rules](/docs/evaluate-improve) and run the prompts in your own test environment.
 
 ## Verify
 

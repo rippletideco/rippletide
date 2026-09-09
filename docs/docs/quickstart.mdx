@@ -74,7 +74,7 @@ The action goes through untouched — and the Rules page shows a **would block**
 - **Node version**: the SDK needs Node.js 18 or newer.
 - **`.env` location**: it must sit at the repository root (of the package that owns the agent, in a monorepo), and stay git-ignored.
 - **Your agent's own secrets**: Rippletide adds none — model keys and tool credentials must be configured as before.
-- **Is the process actually running?** Evidence only flows while your agent (or its worker) is running.
+- **Is the process actually running?** Evidence only flows while your instrumented agent is running.
 - **Check the configuration** from the repository root:
 
 ```bash

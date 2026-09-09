@@ -1,32 +1,26 @@
 ---
-title: "Evaluate & improve"
-description: "Test your agent against scenarios and act on what you learn."
+title: "Test your rules"
+description: "Try rule scenarios in your own runtime and review the recorded decisions."
 ---
 
-Beyond watching your agent run, Rippletide can test it against realistic scenarios and propose improvements. Both need a connected agent with its runtime worker online (they do not apply to MCP servers).
+Use the **Rules** page to generate test prompts for a rule, run them through your connected agent, and inspect the resulting decisions. You run the agent through its normal application lifecycle.
 
-## Evaluate
+## Try a rule
 
-Evaluation runs your agent against a set of scenarios and grades each result.
+1. [Create a rule](/docs/write-rules), review it, and set its release to **Observe**.
+2. Open the rule and select **Testing**. Review the generated **Test prompts**, or choose **Generate tests** if none are available.
+3. Check that the prompts represent cases you expect to allow and cases you expect to block. Generated scenarios are suggestions to review.
+4. Run the prompts as separate turns in a test environment with safe tool effects. Observe mode lets actions continue, including cases that would be blocked in Enforce.
+5. Review the run in [Runtime Events](/docs/runtime-events) and the recorded decisions on the **Rules** page. Confirm both the rule matches and the cases that should pass.
 
-1. On the **Evaluate** page, generate scenarios from your agent's declared behavior, or write your own.
-2. Start the run. Your local worker executes each scenario against the real agent.
-3. Review the graded results on the same page.
+For an MCP server, invoke its guarded tools through your MCP client with representative inputs, then review the same decision evidence.
 
-```bash
-rippletide evaluate --generate --wait
-```
-
-## Improve
-
-Improvement is an experiment loop on top of evaluation:
-
-1. Rippletide proposes an improvement zone, for example a weakness in the system prompt.
-2. It prepares scenarios and a deterministic check, and shows you the plan.
-3. After you confirm, your worker runs the real agent through candidate prompt and tool variations and compares the results.
+You can also inspect recent decisions from the CLI:
 
 ```bash
-rippletide improve --wait
+rippletide rules decisions --agent <agentId> --limit 20
 ```
 
-A kept candidate is a **recommendation**, not a deployment. Your code stays the source of truth: nothing is edited or shipped until you apply the change yourself.
+## Refine and verify
+
+If a decision differs from your expectation, inspect the rule, action inputs, and trusted context. Revise the rule or your integration as needed, then repeat the cases. Move a release to [Enforce](/docs/observe-and-enforce) only after reviewing its evidence. For a before-action rule, verify that a blocked call does not invoke the protected tool.
