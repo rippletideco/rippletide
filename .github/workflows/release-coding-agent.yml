@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 env:
-  WORKING_DIR: context-graph
+  WORKING_DIR: rippletide-code
 
 jobs:
   prepare:
@@ -104,7 +104,7 @@ jobs:
           python-version: "3.12"
 
       - name: Set CLI package version
-        run: python context-graph/scripts/set_coding_agent_version.py "${{ needs.prepare.outputs.cli_version }}"
+        run: python rippletide-code/scripts/set_coding_agent_version.py "${{ needs.prepare.outputs.cli_version }}"
 
       - name: Install cross-compilation tools (Linux ARM64)
         if: matrix.target == 'aarch64-unknown-linux-gnu'
@@ -157,7 +157,7 @@ jobs:
           python-version: "3.12"
 
       - name: Set CLI package version
-        run: python context-graph/scripts/set_coding_agent_version.py "${{ needs.prepare.outputs.cli_version }}"
+        run: python rippletide-code/scripts/set_coding_agent_version.py "${{ needs.prepare.outputs.cli_version }}"
 
       - uses: actions/setup-node@v4
         with:

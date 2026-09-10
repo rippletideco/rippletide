@@ -8,13 +8,13 @@ from pathlib import Path
 
 
 PACKAGE_JSON_PATHS = [
-    Path("context-graph/npm/rippletide-code/package.json"),
-    Path("context-graph/npm/rippletide-code-darwin-arm64/package.json"),
-    Path("context-graph/npm/rippletide-code-darwin-x64/package.json"),
-    Path("context-graph/npm/rippletide-code-linux-arm64/package.json"),
-    Path("context-graph/npm/rippletide-code-linux-x64/package.json"),
-    Path("context-graph/npm/rippletide-code-win32-arm64/package.json"),
-    Path("context-graph/npm/rippletide-code-win32-x64/package.json"),
+    Path("rippletide-code/npm/rippletide-code/package.json"),
+    Path("rippletide-code/npm/rippletide-code-darwin-arm64/package.json"),
+    Path("rippletide-code/npm/rippletide-code-darwin-x64/package.json"),
+    Path("rippletide-code/npm/rippletide-code-linux-arm64/package.json"),
+    Path("rippletide-code/npm/rippletide-code-linux-x64/package.json"),
+    Path("rippletide-code/npm/rippletide-code-win32-arm64/package.json"),
+    Path("rippletide-code/npm/rippletide-code-win32-x64/package.json"),
 ]
 
 
@@ -68,7 +68,7 @@ def update_package_json(path: Path, version: str) -> None:
 def main() -> None:
     args = parse_args()
     repo_root = args.root.resolve()
-    update_cargo_toml(repo_root / "context-graph/Cargo.toml", args.version)
+    update_cargo_toml(repo_root / "rippletide-code/Cargo.toml", args.version)
     for relative_path in PACKAGE_JSON_PATHS:
         update_package_json(repo_root / relative_path, args.version)
 
