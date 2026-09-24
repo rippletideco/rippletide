@@ -1,59 +1,79 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "name": "Rippletide Documentation",
+  "name": "Rippletide Docs",
   "description": "Connect existing agents, inspect runtime evidence, and apply reviewed business rules at action and response boundaries.",
-  "theme": "mint",
+  "theme": "maple",
   "colors": {
-    "primary": "#E996AE",
+    "primary": "#9A3F60",
     "light": "#E996AE",
-    "dark": "#262656"
+    "dark": "#9A3F60"
   },
   "navigation": {
-    "groups": [
+    "tabs": [
       {
-        "group": "Getting started",
-        "pages": [
-          "index",
-          "docs/quickstart",
-          "docs/fleet",
-          "docs/workspaces"
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "index",
+              "docs/quickstart"
+            ]
+          },
+          {
+            "group": "Connect",
+            "pages": [
+              "docs/connect-agent",
+              "docs/connect-python",
+              "docs/connect-mcp-server",
+              "docs/connect-codex"
+            ]
+          },
+          {
+            "group": "Rules and sources",
+            "pages": [
+              "docs/write-rules",
+              "docs/business-context",
+              "docs/evaluate-improve",
+              "docs/observe-and-enforce",
+              "docs/result-filtering"
+            ]
+          },
+          {
+            "group": "Inspect evidence",
+            "pages": [
+              "docs/fleet",
+              "docs/harness-management",
+              "docs/runtime-events"
+            ]
+          },
+          {
+            "group": "Workspace",
+            "pages": [
+              "docs/workspaces",
+              "docs/privacy"
+            ]
+          }
         ]
       },
       {
-        "group": "Connect",
-        "pages": [
-          "docs/connect-agent",
-          "docs/connect-python",
-          "docs/connect-mcp-server",
-          "docs/connect-codex",
-          "docs/manual-setup",
-          "docs/manual-python-setup"
-        ]
-      },
-      {
-        "group": "Rules and sources",
-        "pages": [
-          "docs/write-rules",
-          "docs/business-context",
-          "docs/evaluate-improve",
-          "docs/observe-and-enforce",
-          "docs/result-filtering"
-        ]
-      },
-      {
-        "group": "Inspect evidence",
-        "pages": [
-          "docs/harness-management",
-          "docs/runtime-events"
-        ]
-      },
-      {
-        "group": "Reference",
-        "pages": [
-          "docs/cli",
-          "docs/policy-api",
-          "docs/api-keys",
-          "docs/privacy"
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "CLI and API",
+            "pages": [
+              "docs/cli",
+              "docs/policy-api",
+              "docs/api-keys"
+            ]
+          },
+          {
+            "group": "SDK setup",
+            "pages": [
+              "docs/manual-setup",
+              "docs/manual-python-setup"
+            ]
+          }
         ]
       }
     ]
@@ -160,6 +180,22 @@
     "socials": {
       "github": "https://github.com/rippletideco/rippletide",
       "linkedin": "https://linkedin.com/company/rippletide"
+    }
+  },
+  "fonts": {
+    "family": "Inter"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "styling": {
+    "eyebrows": "breadcrumbs",
+    "codeblocks": "system"
+  },
+  "background": {
+    "color": {
+      "light": "#FFFFFF",
+      "dark": "#101112"
     }
   }
 }

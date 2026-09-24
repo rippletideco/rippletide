@@ -58,6 +58,8 @@ npx mint dev
 
 Check examples against the current published SDK/CLI and actual platform contracts before editing. Preserve existing public URLs or add redirects in `docs/docs.json`. Keep support limits, capture defaults and required runtime proof explicit. A successful documentation build does not by itself validate the integration described.
 
+Keep the presentation on native Mintlify components: `docs.json` owns the shared theme and Guides/Reference navigation, and `docs/style.css` only adjusts the text wordmark; use `Steps` for sequential procedures and tables for comparisons. Preserve existing section anchors when changing Markdown headings into components. Do not embed UI screenshots: they drift with the product. Add a small, source-maintained diagram only when it explains a stable relationship more clearly than prose. Check the introduction, a procedure, and a table/code-heavy reference at desktop and phone widths in both light and dark mode after presentation changes.
+
 ## Contributing and support
 
 Read [Contributing](./CONTRIBUTING.md), [Code of Conduct](./CODE_OF_CONDUCT.md), and [Security](./SECURITY.md).

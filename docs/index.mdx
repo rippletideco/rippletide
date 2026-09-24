@@ -7,6 +7,10 @@ Rippletide connects to agents you already run. It shows their declared instructi
 
 Start by observing. Review which rules match real activity, then deliberately enable enforcement for the releases you trust. Your agent keeps its existing model provider, application lifecycle, credentials, and infrastructure.
 
+<Card title="Quickstart" icon="arrow-right" href="/docs/quickstart" horizontal>
+  Connect a JavaScript or TypeScript agent, verify a real run, and observe your first Rule.
+</Card>
+
 ## Choose your connection
 
 | What you run | Start here | Supported boundary |
@@ -21,11 +25,27 @@ Using a coding agent to instrument your application and connecting Codex itself 
 
 ## From evidence to enforcement
 
-1. **Connect and prove a real run.** Inspect **Context & actions**, then confirm the required evidence in **Traces**. Saving credentials alone does not prove a connection.
-2. **Find an action worth controlling.** Use the [fleet](/docs/fleet), action risks, and recorded interventions to choose a concrete problem.
-3. **Write or propose a Rule.** Start from plain English, [Business context](/docs/business-context), or captured traces. Review its scope, evidence, and required setup.
-4. **Test in Observe.** A blocking match records **Would block**, while the action continues. An Allow rule records an explicit allowance.
-5. **Enforce deliberately.** An enforced blocking match must prevent the protected effect. Check the receipt to see what the caller reports actually happened.
+<Steps>
+  <Step title="Connect and prove a real run">
+    Inspect **Context & actions**, then confirm the required evidence in **Traces**. Saving credentials alone does not prove a connection.
+  </Step>
+
+  <Step title="Find an action worth controlling">
+    Use the [fleet](/docs/fleet), action risks, and recorded interventions to choose a concrete problem.
+  </Step>
+
+  <Step title="Write or propose a Rule">
+    Start from plain English, [Business context](/docs/business-context), or captured traces. Review its scope, evidence, and required setup.
+  </Step>
+
+  <Step title="Test in Observe">
+    A blocking match records **Would block**, while the action continues. An Allow rule records an explicit allowance.
+  </Step>
+
+  <Step title="Enforce deliberately">
+    An enforced blocking match must prevent the protected effect. Check the receipt to see what the caller reports actually happened.
+  </Step>
+</Steps>
 
 The generic action/response dispositions are **Allow**, **Would block**, and **Block**. Human reviews and approvals can be recorded from your runtime; they are not a separate generic `Escalate` disposition returned by the policy API.
 
