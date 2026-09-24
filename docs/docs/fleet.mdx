@@ -1,0 +1,20 @@
+---
+title: "Fleet overview"
+description: "Prioritize incomplete connections, risky action calls and repeated human interventions."
+---
+
+The workspace's agents and integrations overview helps you decide which connection needs attention next. Check the selected workspace before interpreting its totals.
+
+| Measure | What it means | Useful next step |
+| --- | --- | --- |
+| Human interventions | Traces involving a recorded human review or approval over the last 30 days | Inspect the recurring situations and their underlying traces |
+| Risky actions | Calls to actions classified as high risk over the last 30 days | Inspect the action, evidence and existing Rules |
+| Needs attention | Incomplete setup or missing active Rules | Finish runtime verification or review appropriate Rules |
+
+Pending risk analysis and unavailable activity are shown explicitly. They are not zero risk or zero activity. A high-risk label is classification guidance, not proof that a call was unauthorized or blocked.
+
+Select an agent to inspect **Context & actions**, **Business context**, **Rules**, and **Traces**. A declared inventory and a verified runtime are different states; use the connection's actual evidence requirements.
+
+Recorded human interventions and Rippletide Rule activations measure different things. A trace may contain both. Rule match totals also count individual matching decisions, not simply one count per trace.
+
+Use the fleet to choose a concrete case, inspect the exact evidence, propose a Rule, and verify it in Observe before enabling Enforce. For collaboration and access, see [Workspaces](/docs/workspaces).

@@ -1,0 +1,122 @@
+---
+title: "Policy API"
+description: "Call scoped decision endpoints and report what your application actually applied."
+---
+
+Use the runtime policy API when your application implements its own enforcement boundary. The [SDK](/docs/manual-setup) handles guards, correlation and receipts for supported runtimes. Calling the API alone does not execute, stop or deliver anything.
+
+## Authentication and target setup
+
+Runtime requests use `x-api-key` with a **Connection key** bound to one agent or API integration. The key selects the target; the body cannot switch it. Management requests use a workspace-authorized **Platform key**, which must never be installed in an agent.
+
+Use the API base URL supplied by your connection. A `RIPPLETIDE` connection string contains its API host. With raw HTTP, set the base URL and Connection key explicitly; keep production and staging aligned. The examples below assume `RIPPLETIDE_BASE_URL` and `RIPPLETIDE_API_KEY` are already set securely.
+
+For an agent, Connect and inventory sync create its policy target. For a direct API integration, use the management API or CLI to declare the full catalogue first:
+
+```bash
+rippletide rules create-target --name "Calendar integration" --catalog catalog.json
+```
+
+`catalog.json` contains the catalogue, for example:
+
+```json
+{
+  "formatVersion": 1,
+  "actions": [{
+    "key": "calendar/create_event",
+    "name": "create_event",
+    "paramsSchema": {
+      "type": "object",
+      "properties": { "title": { "type": "string" } },
+      "required": ["title"],
+      "additionalProperties": false
+    }
+  }]
+}
+```
+
+The management routes are:
+
+| Method and path | Purpose |
+| --- | --- |
+| `POST /api/policy-targets` | Create an integration with `kind`, `name` and `actionCatalog` |
+| `GET /api/policy-targets` | List authorized targets |
+| `GET /api/policy-targets/:targetId` | Inspect catalogue and risk assessment |
+| `PUT /api/policy-targets/:targetId/catalog` | Replace the complete catalogue using `actionCatalog` |
+| `POST /api/policy-targets/:targetId/runtime-key` | Create a Connection key for an API-owned integration |
+
+For runtime-key creation send a name and optional `expiresInDays`; the secret is returned once in `runtimeKey.apiKey`. Keep its `apiKeyId` for revocation through `DELETE /api/api-keys/:apiKeyId`. Agent-owned targets use their Connect credentials instead. Direct-integration replacement keys overlap until explicitly revoked.
+
+## Before an action
+
+Call immediately before the protected effect. The action and inputs must match the target's declared catalogue; context facts come from your trusted application.
+
+```bash
+curl "$RIPPLETIDE_BASE_URL/v1/policy/decide" \
+  -H "content-type: application/json" \
+  -H "x-api-key: $RIPPLETIDE_API_KEY" \
+  -d '{
+    "invocationId": "calendar-job-42-attempt-1",
+    "action": "calendar/create_event",
+    "params": {"title": "Quarterly review"},
+    "context": {}
+  }'
+```
+
+The response includes `decisionId`, `invocationId`, the immutable Rule snapshot and effective `disposition`:
+
+- `ALLOW`: the effect may run.
+- `WOULD_BLOCK`: blocking matches were Observe-only; allow the effect and retain the evidence.
+- `BLOCK`: an enforced release blocked; do not invoke the effect.
+
+Native Rule outcomes may include Undetermined. Apply the effective disposition instead of treating every match as a block or treating an Allow match as overriding another Rule's Block.
+
+## Before a response
+
+`POST /v1/policy/decide-response` accepts:
+
+```json
+{
+  "invocationId": "support-turn-42-response-1",
+  "request": {"message": "Show my account"},
+  "response": "The candidate response",
+  "context": {}
+}
+```
+
+It returns the same action/response dispositions. On `BLOCK`, suppress the candidate before the actual delivery callback. Do not invent a tool action for this response boundary.
+
+## After an action result
+
+`POST /v1/policy/decide-result` accepts `invocationId`, `action`, `params`, the complete `result`, and trusted `context`. The action must declare the collection as described in [Result filtering](/docs/result-filtering).
+
+The returned plan identifies items by ordered index, unique ID and fingerprint. Its aggregate disposition is `ALLOW`, `WOULD_FILTER` or `FILTER`. Preserve order; exclude only enforced-blocked items. Validate the complete plan against the evaluated result before delivery. Never apply a plan to a modified result.
+
+The capability endpoint `GET /v1/policy/capabilities` identifies supported contracts, including `beforeResponse` and `afterActionResults`. Do not assume an older server exposes every additive endpoint.
+
+## Report the actual outcome
+
+After applying a decision, call `POST /v1/policy/decisions/:decisionId/receipt` with the same target's Connection key:
+
+```json
+{
+  "outcome": "EXECUTED",
+  "occurredAt": "2026-09-24T10:00:00Z"
+}
+```
+
+Use the actual occurrence time. For actions, `EXECUTED` means the handler was invoked, even if it failed; `PREVENTED` means it was not invoked. For responses use `DELIVERED` or `SUPPRESSED`.
+
+For result plans, report `RESULT_DELIVERED` or `RESULT_FILTERED`, the returned `resultPlanFingerprint`, and the exact ascending `deliveredItemIndexes` / `excludedItemIndexes` covering the entire plan. No raw item bodies are needed in the receipt.
+
+Authorization without a completion report remains unconfirmed. Do not submit an Executed receipt merely because you received Allow.
+
+## Retries, failures and limits
+
+- Use a new invocation ID for every real attempt and a distinct ID for its result or response boundary. An identical retry replays the original decision. Reusing the ID with different input returns `409 INVOCATION_CONFLICT`.
+- Replaying a decision does not make your business side effect idempotent. Implement that separately.
+- Receipt retries must be identical. Contradictory reports return `409 RECEIPT_CONFLICT`; a result partition inconsistent with its plan is rejected.
+- Missing authentication, wrong target credentials and invalid schemas are errors, not Allow decisions. Handle transport/server failures deliberately; do not invent a successful policy result.
+- Runtime bodies are limited to 256 KB, with bounded catalogue, rule and result-item budgets. Unsupported schema keywords or excessive evaluation budgets are rejected rather than silently evaluated partially.
+
+Read [Privacy & capture](/docs/privacy) before choosing policy inputs. Management history endpoints under `/api/policy-targets/:targetId/decisions` and `/result-decisions` expose decisions and reported outcomes, with separate detail routes ending in `/:decisionId`. They deliberately exclude raw sensitive policy payloads. Use the [CLI reference](/docs/cli) for Rules and history operations.

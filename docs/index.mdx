@@ -1,47 +1,32 @@
 ---
 title: "What is Rippletide?"
-description: "Start here: what Rippletide does, and how teams adopt it safely."
+description: "Connect an existing agent, understand its actions, and apply rules with runtime evidence."
 ---
 
-Rippletide turns business context into enforceable rules for AI agents.
+Rippletide connects to agents you already run. It shows their declared instructions and tools, records runtime evidence, and evaluates business rules at the boundaries where actions or responses happen.
 
-Connect your agent or MCP server, add rules, and enforce them before any tool call, API call, data query, or other action your agent can take.
+Start by observing. Review which rules match real activity, then deliberately enable enforcement for the releases you trust. Your agent keeps its existing model provider, application lifecycle, credentials, and infrastructure.
 
-This helps ensure your agent follows those instructions and prevents costly mistakes before an irreversible action.
+## Choose your connection
 
-Teams use Rippletide with coding agents, customer-support agents, and finance agents to prevent unapproved refunds, sensitive customer-data access, or production API calls without the required evidence or approval.
+| What you run | Start here | Supported boundary |
+| --- | --- | --- |
+| JavaScript or TypeScript agent, Node.js 18+ | [Connect an agent](/docs/connect-agent) | Guarded actions, declared result collections, and response delivery |
+| Python agent, Python 3.10+ | [Connect Python](/docs/connect-python) | Synchronous actions, declared result collections, and response delivery |
+| JavaScript or TypeScript MCP server | [Connect an MCP server](/docs/connect-mcp-server) | The server's guarded tool dispatcher |
+| OpenAI Codex with supported local hooks | [Connect Codex](/docs/connect-codex) | Tool calls covered by Codex's hooks |
+| An application that calls policy APIs directly | [Policy API](/docs/policy-api) | The enforcement boundary your application implements |
 
+Using a coding agent to instrument your application and connecting Codex itself are different paths. Choose the application guide for the former and the Codex guide for the latter.
 
-{/* start-options:start */}
+## From evidence to enforcement
 
-## Choose how to start
+1. **Connect and prove a real run.** Inspect **Context & actions**, then confirm the required evidence in **Traces**. Saving credentials alone does not prove a connection.
+2. **Find an action worth controlling.** Use the [fleet](/docs/fleet), action risks, and recorded interventions to choose a concrete problem.
+3. **Write or propose a Rule.** Start from plain English, [Business context](/docs/business-context), or captured traces. Review its scope, evidence, and required setup.
+4. **Test in Observe.** A blocking match records **Would block**, while the action continues. An Allow rule records an explicit allowance.
+5. **Enforce deliberately.** An enforced blocking match must prevent the protected effect. Check the receipt to see what the caller reports actually happened.
 
-- [**Set up with a coding agent**](/docs/connect-agent): give Codex, Claude Code, or another coding agent the setup prompt.
-- [**Set up with the CLI**](/docs/cli): connect and manage Rippletide from your repository.
-- [**Set up in the app**](https://app.rippletide.com): connect through the Rippletide UI.
+The generic action/response dispositions are **Allow**, **Would block**, and **Block**. Human reviews and approvals can be recorded from your runtime; they are not a separate generic `Escalate` disposition returned by the policy API.
 
-{/* start-options:end */}
-
-## The three questions Rippletide answers
-
-1. **What is my harness made of?** Rippletide shows you what the model sees: prompts, tools, and third parties.
-2. **What actions are allowed?** Rippletide compiles rules into versioned, auditable policy releases. Rippletide suggests rules that are relevant to each agent, or lets you define them manually.
-3. **What happens at runtime?** Before an important action, Rippletide evaluates your rules and returns a decision with a full audit trail: allow, escalate, or block.
-
-## Monitor first, enforce deliberately
-
-Rippletide is built for a careful rollout. Nothing is ever blocked until you explicitly say so.
-
-1. **Connect** your agent and inspect its harness: prompts, tools, data connections etc.
-2. **Define your rules** against the actions your agent can take.
-3. **Observe** real runtime behavior. A rule in observe mode reports *would block*; your agent is never interrupted.
-4. **Enforce** once you trust a rule. Move that release to enforce mode and matching actions are actually prevented, with a receipt of what happened.
-
-Your agent stays exactly where it is today: your code, your infrastructure, your credentials. Rippletide never hosts, launches, or rewrites it.
-
-## Where to go next
-
-- [Quickstart](/docs/quickstart): connect your first agent in minutes.
-- [Workspaces](/docs/workspaces): share agents and evidence with your team.
-- [Business context](/docs/business-context): add policy documents and review suggested rules.
-- [Write rules](/docs/write-rules): turn plain-English policies into enforceable releases.
+Read [Observe & enforce](/docs/observe-and-enforce) for policy behavior and [Privacy & capture](/docs/privacy) before choosing which content to export.

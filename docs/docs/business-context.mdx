@@ -1,37 +1,63 @@
 ---
 title: "Business context"
-description: "Add policy documents, review suggested rules, and keep them current."
+description: "Connect policy sources, propose Rules from documents and traces, and review the impact of updates."
 ---
 
-Business context holds the policies and procedures you want an agent to follow. Upload a document, then choose which rule suggestions to create. Uploading alone does not change your rules.
+Business context connects your team's documents and recorded activity to the Rules they inform. Uploading or syncing a source does not automatically change active Rules. Use an Editor or Admin in the right workspace to manage sources and proposals.
 
-Use an Editor or Admin role in the right [workspace](/docs/workspaces). Open a connected agent and select **Business context**. Its tools must be visible in Rippletide before you can add sources.
+## Overview and Sources
 
-## Add a document
+Open **Business context** on the agent or integration. **Overview** connects sources to current Rules; select either to inspect its recorded associations. A Rule linked to several sources appears once in the overview. Sources and Rules without an association remain visible.
+
+**Sources** contains documents, versions, connectors and saved Activity sources. These links record authoring provenance, not proof that a source was consulted or a Rule covered a particular runtime action.
+
+## Connect a document
 
 1. Choose **Connect source → Upload documents**.
-2. Select **Choose documents** and add PDF, Word (`.docx`), Markdown, or text files.
-3. Select **Upload** and wait until the sources are ready.
+2. Select PDF, Word (`.docx`), Markdown or text files, up to 10 MB each.
+3. Upload and wait until the sources are ready.
 
-## Review suggested rules
+A source may receive a short business-purpose label; its original filename and version remain available. If a label cannot be generated, the filename remains the fallback.
 
-1. Choose **Discover Rules**, select the documents to use, then start discovery.
-2. Read each suggestion, its supporting passage, and the action it would control. Review any **needs setup** explanation before proceeding.
-3. Select the ready suggestions you want to create. Choose **Disabled** to save them for later, or **Observe** to record decisions while letting the agent continue.
-4. Create the selected rules, then [test them](/docs/evaluate-improve). An Admin can move a reviewed rule to [Enforce](/docs/observe-and-enforce).
+Open a document to read the imported text in the side panel. Saved passages associated with current Rules are highlighted. Select a passage to see its Rules, or a Rule to locate its passages. The reader is version-specific: missing excerpts or references to another version are not inferred.
 
-Each source lists the rules that use it. Select **View Rules** to review them.
+## Connect Notion
 
-## Update a document
+1. Choose **Connect source → Notion** and authorize the pages your integration may read.
+2. Select one shared page. Only that page is stored as a versioned snapshot.
+3. Review the imported source and choose whether to propose Rules from it.
+4. Use the source's sync action when you want to check for updates; review any resulting Rule changes before applying them.
 
-1. Select **Update** beside the source and choose its replacement file.
-2. Select **Store & analyze update**. Rippletide keeps the earlier version and proposes changes to the related rules.
-3. Review the proposals and apply only the selected changes you want. Updated rules return to Observe; new rules use your chosen Disabled or Observe mode. Check the results before enabling Enforce again.
+Disconnecting Notion stops its connection to that source; use the separate archive action when you intend to archive the source and its dependent Rules. If Notion is not configured in your environment, the app explains that it is unavailable.
 
-If the analysis fails, the new document version may already be stored. Use **Retry impact analysis** to continue the review.
+Google Drive and SharePoint are disabled **Preview** entries. They do not connect accounts or import documents.
 
-## Archive a document
+## Propose a Rule
 
-Select the source's trash icon and review the confirmation, then choose **Archive source**. This also disables and archives the current rules that depend on it.
+Choose **Propose a Rule**. Select documents, captured Activity, or both, then start analysis.
 
-The source leaves Business context and future rule discovery. Earlier documents and rule history remain retained for audit.
+- **Documents** contribute the selected versions and supporting passages.
+- **Activity** contributes retained runtime cases. Selecting it and starting discovery permits analysis of captured values. It is available for connected agents even without uploaded documents; direct integrations retain the document path.
+- Selecting both analyses does not automatically establish corroboration between them.
+
+Review each proposal's scope, evidence, replay, counterexamples and setup requirements. Complete required configuration before saving. Document discovery offers Disabled or Observe; Activity proposals in the web start Observe. No Rule is created until you apply your selection.
+
+Saved Activity proposals retain a frozen source containing the analysis window and exact trace/span references. They do not copy raw argument values into that source. Missing original traces are shown as unavailable. Review snapshots can expire; analyze again when prompted rather than applying a stale proposal.
+
+## Update a document and review impact
+
+1. In **Sources**, select **Update** and choose the replacement file.
+2. Choose **Store & analyze update**. The new version is stored before Rule changes are applied.
+3. Review the full-page impact view: proposed updates, new Rules, archived Rules and unchanged Rules. Select a node to inspect its passages, required configuration or recorded calls.
+4. Select the changes you want and complete required settings. Review the recalculated before/after preview and the new-Rule Disabled/Observe choice.
+5. Apply the reviewed selection. Updated Rules return to Observe; new Rules use the chosen mode.
+
+The preview compares current and proposed Rules on the same bounded set of captured tool inputs. It is not historical enforcement or measured agent adaptation. Missing inputs/context and unsupported evaluation paths produce inconclusive results. Counts describe the returned cohort, not all stored activity; groups can contain overlapping traces.
+
+Leaving the review keeps the stored document and leaves Rules unchanged. If analysis fails, use **Retry impact analysis**. Expired reviews, changed Rules or a newer source version require reanalysis. During recalculation the app prevents applying stale results. The web apply operation commits the reviewed selection together; after an unconfirmed response, follow the retry guidance for that same preview.
+
+## Archive a source
+
+Use the source's delete/archive action, inspect the confirmation and choose **Archive source**. This disables and archives the current Rules that depend on it. The source leaves future discovery, while earlier versions and Rule history remain for audit.
+
+For scripted upload, versioning, discovery and selected updates, see [Business context commands](/docs/cli#business-context). CLI reviews have their own apply flow and report per-change results; do not assume they share the web preview's transaction behavior.

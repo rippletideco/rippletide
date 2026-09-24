@@ -28,6 +28,22 @@ An Admin can rename it under **Settings → Workspace**.
 
 Admins can change roles, remove members, or revoke pending invitations under **Settings → Workspace**. The workspace creator must remain an Admin.
 
+## Workspaces in the CLI
+
+A Workspace Admin authorizes the CLI. Its selected workspace is independent of the workspace open in the browser.
+
+```bash
+rippletide workspaces current
+rippletide workspaces list
+rippletide workspaces use
+```
+
+`use` opens browser approval and preserves the current login until the replacement is approved and saved. Pass a workspace ID to select it explicitly. Management keys are workspace-scoped.
+
+Admins can use `members`, `invite`, `set-role`, `remove-member`, `invitations`, `revoke-invitation` and `rename`. `workspaces accept "<invitation link>"` verifies the recipient in the browser; then authorize CLI access with `workspaces use` if appropriate. Invitations create a link to share; they do not send an email.
+
+See the [CLI reference](/docs/cli#workspaces) for arguments and confirmation flags.
+
 ## Next step
 
 Add [business context](/docs/business-context) to turn your team's policies into rule suggestions.

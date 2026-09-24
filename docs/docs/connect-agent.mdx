@@ -1,49 +1,49 @@
 ---
 title: "Connect an agent"
-description: "Connect an agent repository with the CLI, then apply its generated setup prompt."
+description: "Instrument an existing JavaScript or TypeScript agent through its generated setup prompt."
 ---
 
-Connect an existing agent to Rippletide to see its prompts, tools, and live runtime evidence. Once connected, you can define rules for the actions it takes.
+Use this guide for an existing JavaScript or TypeScript agent on Node.js 18+. The agent continues to run in your infrastructure. [Python](/docs/connect-python), [MCP servers](/docs/connect-mcp-server), and [Codex itself](/docs/connect-codex) have separate guides.
 
-## Standard path: CLI, then coding agent
+## CLI connection
+
+Run from the repository that owns the agent:
 
 ```bash
-cd your-agent-repo
 npm install -g rippletide-package
 rippletide login
-rippletide connect
+rippletide connect --kind agent
 ```
 
-`rippletide connect` creates or links the agent, writes the CLI connection configuration, and presents a repository-specific setup prompt. Paste that prompt into Codex, Claude Code, or your preferred coding agent. The coding agent adds the SDK and instrumentation; Rippletide does not launch it for you.
+A Workspace Admin approves CLI access in the browser. The CLI creates or links the agent, saves `.rippletide/project.json`, writes `RIPPLETIDE` in a git-ignored `.env`, and presents a repository-specific instrumentation prompt.
 
-The CLI can run existing `rippletide:sync` or `rippletide:start` scripts after confirmation. It does not invent those scripts or start an agent runtime on its own.
+Apply that prompt with your coding agent. It adds inventory registration, causal tracing, tool guards and a response-delivery guard at the existing call sites. It does not replace the agent or its provider.
 
-For a non-interactive coding-agent session, sign in first, then run this from the agent repository:
+For a headless coding-agent session, the human signs in first:
 
 ```bash
-npx -p rippletide-package rippletide connect --print-prompt
+npx -p rippletide-package rippletide connect --kind agent --print-prompt
 ```
 
-## App-based alternative
+Use `--agent <agentId>` to link an existing agent. Re-running `connect` reuses the saved connection kind and can refresh setup. The CLI can run an existing `rippletide:sync` script after confirmation; `--yes` permits that script in a trusted repository. It does not invent the script, run `rippletide:start`, or start the agent.
 
-In **Agents & integrations**, select **Connect → Agent**, save the generated `.env` block, then give the generated setup prompt to a coding agent. This app-based path uses `RIPPLETIDE_AGENT_ID` and `RIPPLETIDE_API_KEY` in `.env`.
+## App-based connection
 
-Do not combine that block with a CLI-created `.env`, which uses `RIPPLETIDE` and `RIPPLETIDE_PROXY_URL`. Choose one path for a repository.
+Choose **Connect → Agent** and the JavaScript/TypeScript option in the app. Save its generated `.env` credentials and apply its generated prompt in your repository.
 
-## Verify the connection
+The app/manual path uses `RIPPLETIDE_AGENT_ID` and `RIPPLETIDE_API_KEY`. The CLI path uses one `RIPPLETIDE` connection string. Use the configuration your chosen path generates; see [API keys](/docs/api-keys) for rotation and precedence.
 
-Your agent is ready when Rippletide shows:
+## Prove the connection
 
-- its prompts and tools in [Harness management](/docs/harness-management);
-- a heartbeat and a real turn in [Runtime events](/docs/runtime-events).
-
-You can check the same conditions from the repository:
+Start your application and send a real request that uses a tool and delivers a response. Run:
 
 ```bash
 rippletide verify
 rippletide events --wait
 ```
 
-Connection secret values are never uploaded. Rippletide only records the names of configured secrets.
+The server validates the current inventory, heartbeat, expected tool call, turn and before-response evidence. In **Context & actions**, inspect the inventory. In **Traces**, open the run and inspect its tool calls and response outcome. A copied prompt or stored key proves setup only.
 
-Need to install the SDK yourself? Follow the [manual setup](/docs/manual-setup).
+A missing delivery receipt is not fixed by creating another agent. Check the instrumentation at the real response sink, using [Manual TypeScript setup](/docs/manual-setup). Run `rippletide doctor` for configuration and evidence gaps.
+
+Review [Privacy & capture](/docs/privacy) before exporting runtime content. Declaring a third-party connection reports credential names/status, not the secret values.

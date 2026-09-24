@@ -1,0 +1,42 @@
+---
+title: "Connect a Python agent"
+description: "Install the Python SDK, apply the generated setup prompt, and verify your first live turn."
+---
+
+`rippletide-python` supports existing Python 3.10+ agents with synchronous call sites. It has no model-provider dependencies: keep your provider and wrap its existing call sites. Python MCP servers, asynchronous execution and response streaming are not supported by this integration.
+
+## Install and connect
+
+Use your project's existing Python environment. If it has none, create one:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install rippletide-python
+```
+
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Record the dependency in your project's dependency manifest.
+
+In the app, choose **Connect → Agent (Python)**, save the generated credentials in a git-ignored `.env`, and apply the generated prompt with your coding agent.
+
+The Node.js CLI can also create the Python connection:
+
+```bash
+npm install -g rippletide-package
+rippletide login
+rippletide connect --kind agent --language python --print-prompt
+```
+
+The CLI writes `RIPPLETIDE=rippletide://…` in the connected repository's `.env`. It does not install the Python package into your Python environment for you.
+
+## Apply the setup prompt
+
+Paste the generated prompt into your coding agent in the connected repository. It guides the instrumentation of your existing model calls, tool dispatcher and response delivery.
+
+Prefer to add the instrumentation yourself? Follow [Manual Python setup](/docs/manual-python-setup).
+
+Runtime capture defaults to **metadata**. See [Privacy & capture](/docs/privacy) before enabling content capture.
+
+## Verify a real run
+
+Run a turn that uses a guarded tool and delivers a response. Check `rippletide verify`, then `rippletide events --wait`. The app must show the inventory, heartbeat, tool and turn evidence, and the response-delivery outcome in **Traces**. Recording only a model candidate does not prove delivery.

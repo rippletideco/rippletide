@@ -1,26 +1,39 @@
 ---
 title: "Test your rules"
-description: "Try rule scenarios in your own runtime and review the recorded decisions."
+description: "Test matching and non-matching cases, inspect the applied outcome, and review replay limits."
 ---
 
-Use the **Rules** page to generate test prompts for a rule, run them through your connected agent, and inspect the resulting decisions. You run the agent through its normal application lifecycle.
+Test in your agent's normal runtime. Generated prompts and replay are evidence to review, not a substitute for checking the real protected action.
 
-## Try a rule
+## Try a Rule
 
-1. [Create a rule](/docs/write-rules), review it, and set its release to **Observe**.
-2. Open the rule and select **Testing**. Review the generated **Test prompts**, or choose **Generate tests** if none are available.
-3. Check that the prompts represent cases you expect to allow and cases you expect to block. Generated scenarios are suggestions to review.
-4. Run the prompts as separate turns in a test environment with safe tool effects. Observe mode lets actions continue, including cases that would be blocked in Enforce.
-5. Review the run in [Runtime Events](/docs/runtime-events) and the recorded decisions on the **Rules** page. Confirm both the rule matches and the cases that should pass.
+1. [Create the Rule](/docs/write-rules), finish any required setup and set its release to **Observe**.
+2. Open its detail panel and select **Testing**. Review **Test prompts**, or select **Generate tests**.
+3. Include cases that should match and cases that should not. For an Allow rule, a match means Allow, not Would block.
+4. Run each prompt as a separate turn in a safe test environment. Observe permits the real action even when it would block.
+5. Open the run in **Traces**. Inspect which Rule matched, the effective decision and the reported execution or delivery outcome.
 
-For an MCP server, invoke its guarded tools through your MCP client with representative inputs, then review the same decision evidence.
+A non-match for this Rule does not guarantee an Allow decision: another active Rule may block. A match does not imply execution succeeded. Keep those expectations separate.
 
-You can also inspect recent decisions from the CLI:
+For an MCP server, invoke guarded tools through the MCP client. For a response Rule, inspect the actual response sink. For a result Rule, check exactly which items are delivered and excluded. Codex can test only boundaries covered by its [hooks](/docs/connect-codex).
+
+## Inspect decisions
 
 ```bash
 rippletide rules decisions --agent <agentId> --limit 20
+rippletide events <traceId> --agent <agentId> --json
+rippletide rules result-decisions --agent <agentId> --limit 20
+rippletide rules result-decisions show <decisionId> --agent <agentId>
 ```
 
-## Refine and verify
+Trace details expose only content that was actually retained; metadata/redacted capture cannot reconstruct missing raw values. Decision-history views also limit sensitive fields.
 
-If a decision differs from your expectation, inspect the rule, action inputs, and trusted context. Revise the rule or your integration as needed, then repeat the cases. Move a release to [Enforce](/docs/observe-and-enforce) only after reviewing its evidence. For a before-action rule, verify that a blocked call does not invoke the protected tool.
+## Use replay carefully
+
+Activity discovery and [source-update review](/docs/business-context) can compare proposed Rules with retained recorded inputs. Review the cases, supporting evidence, counterexamples and **inconclusive** outcomes.
+
+Replay is a counterfactual on a bounded cohort: it does not prove the historical action was blocked or predict how the agent would adapt to a different result. Missing capture/context, unsupported predicates, truncated evidence or evaluation failures can prevent a conclusion. Changing selections or required configuration may recalculate the preview.
+
+## Verify Enforce
+
+After reviewing Observe evidence, an Admin can enable Enforce for the release. Repeat a blocking example and confirm the real callback was not invoked, the response was suppressed, or the expected result items were excluded. Check the matching receipt. Refine the Rule or integration when the observed behavior differs from the intended policy.

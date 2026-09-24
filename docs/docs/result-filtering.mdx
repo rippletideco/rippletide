@@ -1,0 +1,90 @@
+---
+title: "Filter tool results"
+description: "Apply Rules to each item in a declared collection before delivering the tool result."
+---
+
+An after-action Rule filters one ordered collection returned by a tool. The tool has already run: filtering prevents delivery of selected items, not the original action or its side effects.
+
+Use this for a homogeneous collection such as products or records, where each item has a unique string ID. The catalogue must declare the full `resultSchema` and a `resultCollection` identifying the array and its item IDs. This is a single-result operation, not streaming filtering.
+
+## Declare the collection
+
+The following extends your existing provider tool definitions with a result contract:
+
+```ts
+await rippletide.tools("catalog", tools, {
+  results: {
+    list_products: {
+      resultSchema: {
+        type: "object",
+        properties: {
+          products: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string" },
+                eligible: { type: "boolean" },
+              },
+              required: ["id", "eligible"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["products"],
+        additionalProperties: false,
+      },
+      resultCollection: { itemsPath: ["products"], itemIdPath: ["id"] },
+    },
+  },
+});
+```
+
+`tools` must include the actual `list_products` tool and its input schema. Match the result schema to the complete real provider response rather than removing fields to fit this example.
+
+## Apply the plan at the delivery boundary
+
+This fragment belongs inside the existing tool handler:
+
+```ts
+const result = await listProducts(params);
+return rippletide.guard(
+  {
+    trigger: "after_action",
+    action: "catalog/list_products",
+    params,
+    result,
+    resultItems: result.products,
+    getTrustedUserContext: () => trustedContext,
+  },
+  ({ result: evaluatedResult, deliveredItems }) => ({
+    ...evaluatedResult,
+    products: deliveredItems,
+  }),
+);
+```
+
+Use the callback's evaluated snapshot and preserve the native response shape. `trustedContext` comes from authenticated application state and must match the declared context schema.
+
+For Python, use `guard_tool_result(..., allow_result_export=True, apply=...)` after declaring the same contract with `tools(..., results=...)`. The default is no result export; this opt-in needs the owner's approval and is not silently added by the setup prompt.
+
+## Read the decision and receipt
+
+| Aggregate disposition | What to deliver |
+| --- | --- |
+| `ALLOW` | All items |
+| `WOULD_FILTER` | All items; some would be excluded if the blocking Rules were enforced |
+| `FILTER` | Preserve order and exclude exactly the items with enforced `BLOCK` dispositions |
+
+Each item has its own decision. The SDK validates result/item/plan fingerprints before applying it and reports **Result delivered** or **Result filtered**. Direct API callers must apply and report the exact index partition themselves.
+
+Transient policy failures or malformed/mismatched plans fall back to the original items in the SDK. An older server missing the result endpoint also falls back; deterministic request or permission errors still surface. Test both normal filtering and the integration's fallback path before relying on it.
+
+```bash
+rippletide rules create --after-action catalog/list_products \
+  --input "Exclude products whose eligible field is false."
+rippletide rules result-decisions --agent <agentId> --limit 20
+rippletide rules result-decisions show <decisionId> --agent <agentId>
+```
+
+See [Policy API](/docs/policy-api) for direct callers and [Privacy & capture](/docs/privacy) for the difference between transient result evaluation and stored trace content. Codex's post-tool hook is too late to enforce this delivery callback.
