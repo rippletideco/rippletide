@@ -26,7 +26,8 @@
           "docs/connect-python",
           "docs/connect-mcp-server",
           "docs/connect-codex",
-          "docs/manual-setup"
+          "docs/manual-setup",
+          "docs/manual-python-setup"
         ]
       },
       {
