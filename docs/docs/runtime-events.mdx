@@ -1,25 +1,58 @@
 ---
-title: "Runtime events"
-description: "The evidence stream: heartbeats, turns, and tool calls."
+title: "Traces"
+description: "Read runs, tool calls, policy decisions and reported outcomes without overstating the evidence."
 ---
 
-Runtime Events is the evidence stream: everything your agent reports while it runs, in order, as it happens.
+**Traces** presents recorded runs and their outcomes. It contains what the integration actually reported, with the content allowed by its [capture mode](/docs/privacy).
 
-## The event types
+## Find a run or situation
 
-| Event | What it tells you |
+The Traces list is the default. Use filters to inspect human interventions, matching Rules, or a particular action. **Situations** groups related recorded cases to help identify repeated work that could benefit from a Rule.
+
+Counts in a loaded list describe the loaded traces; older traces may be available. Human interventions include recorded reviews and approvals. Rippletide activations include matching Rules in Observe or Enforce. The same trace can appear in both categories.
+
+## Inspect the details
+
+Open a trace in the detail panel:
+
+- **Flow** presents recorded business steps and their outcomes.
+- **Full trace** presents the technical span structure: runs, agents, model calls, tools, policy checks and response delivery when reported.
+- Correlation links connect a protected invocation to its decision and actual reported outcome.
+
+Full trace is a view, not a guarantee that raw content was captured. A metadata/redacted trace cannot recover values that were withheld. A missing span or receipt is unavailable evidence, not a successful action.
+
+## Read outcomes precisely
+
+| Evidence | Meaning |
 | --- | --- |
-| **Heartbeat** | The connected process is alive and reporting |
-| **Manifest** | The agent (re-)declared its identity, prompts, or tools |
-| **Turn** | The agent handled a conversation turn: the input, response, and everything in between |
-| **Tool call** | The agent invoked a tool, with its inputs, result, and any error |
+| Heartbeat | A connected process reported being alive |
+| Inventory/manifest | The integration declared configuration |
+| Run/turn | A request or conversation turn was recorded |
+| Tool call | A tool attempt and any captured result/error |
+| Policy decision | The Rules' decision at the protected boundary |
+| Executed / Prevented | The handler was invoked / was not invoked |
+| Delivered / Suppressed | The candidate response was delivered / withheld |
+| Result delivered / Result filtered | The caller reports applying the collection plan |
+| Unconfirmed / unknown | The actual outcome has not been proven by a report |
 
-## What events are for
+An executed handler can still fail. A model candidate is not a delivered response. Authorization without a completion event is not proof of execution.
 
-- **Proof of connection.** A stored key or a completed setup screen proves configuration only. An agent is proven when it has registered, a heartbeat has arrived, a real tool call has been recorded, and a complete turn has appeared. An MCP server runs no agent loop, so its bar is registration, heartbeat, and a tool call — no turn.
-- **Understanding behavior.** Expand a turn to see what the agent saw and which tools it called before you decide what to [write rules](/docs/write-rules) about.
-- **Audit.** Events, decisions, and receipts together reconstruct what happened and why.
+## Connection evidence differs by integration
 
-## What is uploaded
+| Integration | Runtime proof |
+| --- | --- |
+| TypeScript or Python SDK agent | Current inventory, heartbeat, expected tool call, turn and before-response evidence |
+| JavaScript/TypeScript MCP server | Inventory, heartbeat and tool call; no turn or response boundary |
+| Codex hooks | Inventory, heartbeat, covered tool call and turn when activity is enabled; no before-response gate |
 
-Runtime evidence includes prompts, responses, tool inputs, and tool results — bounded in size and best-effort redacted (credential-shaped values are stripped) before upload. Policy decisions are different: their parameters and trusted context are stored as raw JSON in the decision audit trail, because rules must evaluate and auditors must read the real values. Keep secrets and unrelated customer data out of prompts, tool parameters, and traced values.
+Codex with activity disabled can still produce policy decisions while its activity-based status remains declared. Imported Codex history is backdated evidence, not proof that those turns were governed.
+
+## Inspect from the CLI
+
+```bash
+rippletide events --agent <agentId> --limit 20
+rippletide events <traceId> --agent <agentId> --json
+rippletide events --agent <agentId> --cursor <nextCursor> --json
+```
+
+`events --wait` checks live readiness and cannot be combined with a trace ID or cursor. Use [Rule testing](/docs/evaluate-improve) and [Business context](/docs/business-context) to turn inspected evidence into a reviewed policy change.

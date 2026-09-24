@@ -1,46 +1,68 @@
 ---
 title: "Write rules"
-description: "Plain-English policies compiled into versioned releases."
+description: "Choose a boundary and scope, review required setup, and create a versioned Rule."
 ---
 
-Rules tell your agent which actions are allowed. Write the rule in plain English; Rippletide applies it to the tools and actions your agent can actually use.
+A Rule expresses business policy against a declared action, result collection or candidate response. Write it in plain English, review the compiled behavior and required facts, then choose when it should observe or enforce.
 
-## Create a rule
+## Choose the protected boundary
 
-1. Open **Rules** in the Rippletide app.
-2. Choose the action to control, such as `calendar/create_event`.
-3. Describe the rule in plain English.
-4. Review what Rippletide will match, then save it.
+| Boundary | Scope | Example |
+| --- | --- | --- |
+| Before action | One action, selected actions, or all actions | Block refunds above an approved limit |
+| Before response | The connected target's candidate response | Suppress a response containing credentials |
+| After action | One action's declared result collection | Exclude products not available in the customer's country |
 
-For example:
+After-action rules require `resultSchema` and `resultCollection` on that action. They filter returned items; they do not undo the tool call. Before-response rules require a real delivery guard. [Codex hooks](/docs/connect-codex) do not provide that boundary.
 
-> Only admins may invite external attendees to calendar events.
+## Create and review
 
-## Review and enable it
+1. Open **Rules** for the agent or integration and start rule creation.
+2. Choose the trigger and scope. For a before-action Rule, choose **Allow** or **Block**.
+3. Describe the policy and answer any clarification questions.
+4. Review the generated wording, action scope, required context and readiness.
+5. Save the Rule, then [test in Observe](/docs/evaluate-improve) before enabling Enforce.
 
-When you save a rule, Rippletide creates a **release**: a versioned copy of that rule. You can see exactly which action it applies to before enabling it.
+For example: “Block calendar invitations to external attendees unless the authenticated user is an admin.” The identity fact must come from your application, not the model's claim that a user is an admin.
 
-- **Releases are immutable.** Changing a rule creates a new release; the history stays intact.
-- **New releases start disabled.** Move one to `observe` explicitly when you are ready to monitor live decisions.
-- **Releases are bound to the catalogue** they were compiled for. If your agent's tools change, active releases return to `disabled` until you recompile and explicitly change their mode again.
+## When setup is missing
 
-Enable a release in **observe mode** first: Rippletide records the decision it *would* make, but never interrupts your agent. Once you trust the results, move it to **enforce mode** to prevent matching actions.
+A policy needing undeclared trusted facts can become a **Draft** in the Current list. Open **Review setup** and **Setup details** to see the required schema and agent instructions. Update the integration and sync its inventory, then finish the draft and use **Save as disabled**. A draft is not an active release and does not govern traffic.
 
-## Get suggestions
+Saved draft wording and scope may be read-only during setup; archive and create a new draft when those need to change. Use the Rule detail panel for configuration, code, testing and version history.
 
-Rippletide can also suggest draft rules based on your agent’s available actions, any documentation you provide, and the context you care about. Review and edit every suggestion before saving it; nothing is enabled or changes mode automatically.
+## Releases and activation
 
-Follow [Business context](/docs/business-context) to upload policy documents and keep their related rules up to date.
+Releases are immutable. Editing a Rule produces a new release and preserves history. Basic manual/CLI creation starts Disabled. Discovery can explicitly create in Observe; Activity proposals in the web use Observe, and replacing a Rule through source-update review returns it to Observe. Review the mode shown before applying a batch.
 
-## Use the CLI instead
+Each release records the contract dependencies it was compiled against. A changed dependency disables the affected release; an unrelated catalogue edit does not disable every Rule. Review, recompile and deliberately reactivate affected releases.
+
+An Admin enables Enforce. See [Observe & enforce](/docs/observe-and-enforce) for Allow/Block behavior and failure handling.
+
+## Propose from evidence
+
+Use **Propose a Rule** in [Business context](/docs/business-context) to select documents, captured activity, or both. Review supporting passages, recorded cases, counterexamples and any configuration still required. Combining sources does not itself prove they corroborate each other.
+
+The action catalogue can also support suggestions. Risk classification and proposed Rules are guidance; neither enables enforcement automatically.
+
+## Archive or restore
+
+Archiving a Rule family disables and hides all its releases from the active set. Restoring the family leaves its releases Disabled. Review and explicitly re-enable the desired release.
+
+For action and response Rules, match counters count decisions where that release actually matched, not every evaluation or entire trace. Result Rules have related-result counts and should not be interpreted as the same per-Rule attribution.
+
+## CLI examples
+
+From a connected repository:
 
 ```bash
-rippletide rules targets
-rippletide rules create --target <targetId> --action calendar/create_event \
-  --input "Only admins may invite external attendees."
-rippletide rules set-mode --target <targetId> --release <releaseId> --mode observe
+rippletide rules create --actions calendar/create_event \
+  --input "Block external invitations unless the authenticated user is an admin."
+rippletide rules create --all-actions --effect ALLOW \
+  --input "Allow actions approved by the authenticated administrator."
+rippletide rules create --before-response \
+  --input "Suppress responses containing credentials."
+rippletide rules set-mode --release <releaseId> --mode observe
 ```
 
-## Next step
-
-Learn more about [observe and enforce modes](/docs/observe-and-enforce).
+If compilation asks a question, repeat the original input and effect and add `--context "your answer"`. See the [CLI reference](/docs/cli) for discovery, saving proposals and lifecycle commands.

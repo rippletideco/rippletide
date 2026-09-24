@@ -1,84 +1,61 @@
 ---
 title: "Quickstart"
-description: "Install the CLI, connect an agent repository, and verify its first observed run."
+description: "Connect an agent, verify a tool-using run and response delivery, then observe your first Rule."
 ---
 
-Connect an existing JavaScript or TypeScript agent, run one real tool-using turn, and see exactly what Rippletide observed. Then add a rule in Observe mode and see what it would have blocked, without interrupting your agent.
-
-> **Supported today**: existing **Node.js 18+** JavaScript/TypeScript agents and MCP servers. Python and other runtimes are not supported by this connection path yet.
-
-This page is the standard CLI path for an agent repository. An MCP server follows the same starting point with the [MCP guide](/docs/connect-mcp-server).
+This path connects an existing JavaScript or TypeScript agent on Node.js 18+. For another runtime, use [Python](/docs/connect-python), [MCP](/docs/connect-mcp-server), or [Codex](/docs/connect-codex).
 
 ## 1. Install and sign in
 
-From the repository that contains the agent, install the CLI and sign in. Signing in is an operator step: it opens your browser and must be completed by a person with access to the Rippletide account.
+From the repository containing your agent:
 
 ```bash
-cd your-agent-repo
 npm install -g rippletide-package
 rippletide login
+rippletide connect --kind agent
 ```
 
-## 2. Create the connection and get the repository-specific prompt
+A Workspace Admin authorizes the CLI in the browser. `connect` creates or links the agent, writes its connection string to the repository's git-ignored `.env`, and gives you a setup prompt. Check that you are in the intended workspace with `rippletide workspaces current`.
+
+## 2. Apply the generated prompt
+
+Paste the prompt into the coding agent you use for that repository. It adds the SDK at your existing model, tool, and response-delivery boundaries. The CLI does not launch the coding agent or start your application.
+
+For a session without an interactive terminal, sign in first and request the prompt explicitly:
 
 ```bash
-rippletide connect
+npx -p rippletide-package rippletide connect --kind agent --print-prompt
 ```
 
-The CLI creates or links the agent, saves the project binding, writes the CLI connection configuration in a git-ignored `.env`, and gives you the exact setup prompt for this repository. It is safe to run again.
+Keep `--kind agent` on the first connection: the CLI does not guess whether the repository contains an agent or an MCP server. The prompt contains no Connection key. Keep the generated `.env` git-ignored.
 
-> **Use the generated prompt, not a generic installation prompt.** It reflects the repository and tells the coding agent what to add. The CLI does not launch Codex, Claude Code, or Cursor for you.
+## 3. Run a real turn
 
-For a headless coding-agent session, the human signs in first. The coding agent can then request the setup prompt from the repository root:
+Start the application normally, with its own provider and tool credentials. Send a request that uses a tool and delivers a response to its normal recipient.
 
-```bash
-npx -p rippletide-package rippletide connect --print-prompt
-```
+Before using customer data, choose the appropriate [capture mode](/docs/privacy). The TypeScript SDK captures bounded content in `full` mode by default; `metadata` and `redacted` are available.
 
-## 3. Apply the generated prompt
-
-Paste the prompt from the CLI into Codex, Claude Code, Cursor, or your preferred coding agent. It installs `rippletide-package`, adds the repository-specific instrumentation, and declares the agent inventory.
-
-The prompt never contains your Connection key. Keep `.env` git-ignored and never replace a CLI-created `.env` with a block from another setup path.
-
-See [Connect an agent](/docs/connect-agent) for the app-based alternative and troubleshooting.
-
-## 4. Run one real turn
-
-Start your agent the way you always do — the wiring changes nothing about how it runs, and it still needs its own secrets (model keys, tool credentials) in place. Send it one message that makes it use a tool.
-
-## 5. Verify
-
-- Open **Harness management**: you should see your agent's identity, prompts, tools, and connections.
-- Open **Runtime Events**: the proof completes when the agent has registered, a heartbeat has arrived, and a tool-using turn has been recorded. (MCP servers run no agent loop, so a tool call is enough — no turn.)
-
-From the repository, check both the configuration and the observed evidence:
+## 4. Verify the complete connection
 
 ```bash
 rippletide verify
 rippletide events --wait
 ```
 
-## 6. Your first decision
+`verify` checks local configuration and declared inventory. `events --wait` checks the server's evidence contract. For an SDK agent this includes inventory, heartbeat, a tool call when required, a turn, and a proven **before-response delivery boundary**.
 
-This is the moment the product clicks:
+In the app, inspect **Context & actions** for instructions, actions, and connections. Open **Traces** for the run, tool calls, policy decisions, and delivery outcome. A model response is a candidate until the delivery callback runs.
 
-1. On the **Rules** page, pick the tool your agent just used and write a rule that would forbid what it just did.
-2. Save it and set the release to **Observe** mode.
-3. Send your agent the same message again.
+If `before_response` is missing, check that `deliverResponse()` stays inside the causal `run()` and wraps the actual delivery callback. See [Manual TypeScript setup](/docs/manual-setup).
 
-The action goes through untouched — and the Rules page shows a **would block** decision with the rule that fired. You have just seen what enforcement *would* do, with zero risk to your agent. When you trust the rule, switch that release to Enforce: see [observe vs enforce](/docs/observe-and-enforce).
+## 5. Observe your first Rule
 
-## If something doesn't appear
+1. Open **Rules** and describe a restriction on the tool you just used.
+2. Review its action scope and setup, then save and set its release to **Observe**.
+3. Repeat the tool-using request in a safe test environment.
+4. Inspect the recorded match and **Would block** disposition. The action still runs in Observe.
+5. Follow [Test your rules](/docs/evaluate-improve) before an Admin enables **Enforce**.
 
-- **Node version**: the SDK needs Node.js 18 or newer.
-- **`.env` location**: it must sit at the repository root (of the package that owns the agent, in a monorepo), and stay git-ignored.
-- **Your agent's own secrets**: Rippletide adds none — model keys and tool credentials must be configured as before.
-- **Is the process actually running?** Evidence only flows while your instrumented agent is running.
-- **Check the configuration** from the repository root:
+## If evidence is missing
 
-```bash
-npx rippletide-package verify
-```
-
-It reads the `.env` exactly like the SDK and checks the synced inventory. Use `rippletide events --wait` to wait for the complete runtime proof. If you're stuck, report the command output to your Rippletide contact — never share the key itself.
+Run `rippletide doctor`. Check the repository binding, `.env` location, current workspace, and whether the instrumented process is running. Provider credentials are still your application's responsibility. Share diagnostic messages with your Rippletide contact, never the key or the `.env` itself.

@@ -1,26 +1,33 @@
 ---
 title: "Connect an MCP server"
-description: "Rules only: inventory its tools and guard their execution."
+description: "Declare a JavaScript or TypeScript MCP server and guard its real tool dispatcher."
 ---
 
-Connect an MCP server to inventory its tools and apply rules before a tool can take an action. [Test its rules](/docs/evaluate-improve) by invoking guarded tools through your MCP client and inspecting the decisions.
+Connect a JavaScript or TypeScript MCP server to inventory its tools and apply Rules before tool execution. This is a tools-only subject: it has no agent response loop to instrument. Python MCP servers are not supported by this path.
 
-## Start with a coding agent (recommended)
+## Connect
 
-1. In **Agents & integrations**, select **Connect → MCP**.
-2. Save the generated `.env` block in the root of your MCP server repository.
-3. Give the setup prompt to Codex, Claude Code, or your preferred coding agent.
-4. Run the server and make a tool call.
+From the server repository:
 
-The setup prompt installs the SDK, declares the server's tools, loads the Connection key from the environment, and adds a guard at the tool dispatcher — the place every tool call passes through.
+```bash
+npm install -g rippletide-package
+rippletide login
+rippletide connect --kind mcp --print-prompt
+```
 
-## Verify the connection
+Alternatively, choose **Connect → MCP** in the app and save its generated credentials. Apply the generated setup prompt with your coding agent. It declares the server's tools and guards the actual dispatcher, where every protected call passes before reaching its handler.
 
-Your MCP server is ready when Rippletide shows:
+A manual integration uses the [TypeScript SDK](/docs/manual-setup): declare tools only, and guard the dispatcher. Do not invent prompts, a model client or response-delivery events for an MCP server. Return policy errors to the MCP client as a normal `isError: true` tool result, rather than crashing the server or sending a protocol error.
 
-- its tool inventory in [Harness management](/docs/harness-management);
-- the decision for a real tool call in [Runtime events](/docs/runtime-events).
+## Verify
 
-Then [write rules for the server's tools](/docs/write-rules) and start in [observe mode](/docs/observe-and-enforce). Nothing is blocked until you explicitly move a rule to enforce mode.
+Start the server normally and call a guarded tool through your MCP client:
 
-Need to wire the server yourself? Follow the [manual setup](/docs/manual-setup).
+```bash
+rippletide verify
+rippletide events --wait
+```
+
+The MCP evidence contract requires registration, inventory, heartbeat and a tool call. **It does not require a turn or before-response delivery evidence.** Inspect Actions in **Context & actions** and the call's decision/outcome in **Traces**.
+
+[Write a Rule](/docs/write-rules), start in Observe, and [test representative inputs](/docs/evaluate-improve). An enforced blocking match must prevent the handler from executing. A server registered in the catalogue is not protected unless the caller actually goes through the guard.

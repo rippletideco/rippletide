@@ -1,0 +1,69 @@
+---
+title: "Connect OpenAI Codex"
+description: "Install local Codex hooks, choose what to record, and understand the limits of tool governance."
+---
+
+This path governs **Codex itself**, using its local hooks. It does not add SDK code to the repositories Codex edits. To use Codex to instrument another agent, follow [Connect an agent](/docs/connect-agent) instead.
+
+## Requirements and setup
+
+Install Codex first. Rippletide's adapter requires Codex 0.154.0 or later; it has been verified with CLI versions 0.154.0 and 0.155.1. Recheck hook registration after upgrading Codex. Desktop builds must support and trust the same hooks; desktop behavior is not covered by the CLI verification alone.
+
+On the machine that runs Codex:
+
+```bash
+npm install -g rippletide-package
+rippletide codex setup
+```
+
+The command signs in through the browser if needed and can create the Codex agent. A Workspace Admin must authorize CLI access. You can also choose **Connect → Codex** in the app and run its generated `rippletide codex setup --session <token>` command, or use `--agent <agentId>` for an existing agent.
+
+Setup stores the Connection key in `~/.rippletide/codex.env`, merges the hooks into `~/.codex/hooks.json`, and registers their trust in `~/.codex/config.toml`. It backs up both Codex files and preserves other hooks. Codex silently skips untrusted hooks: if setup cannot register trust, follow its `/hooks` instructions before relying on enforcement.
+
+## Choose what to store
+
+Setup asks separately whether to:
+
+- **Store activity:** tool calls and their outcomes become traces. The default is **No**, including in a non-interactive terminal. `--traces` or `--no-traces` selects explicitly. With traces off, decisions and receipts are still recorded, but the activity-based connection status may remain declared.
+- **Import history:** only offered when storing activity. Default **No**. `--backfill` imports past sessions once; `--no-backfill` declines.
+
+Recorded activity defaults to `redacted` capture. Raw prompts and content need explicit `full` capture; see [Privacy & capture](/docs/privacy). Run a new Codex session with a tool call to verify the live hooks and its decision receipt. A historical import does not prove that a live hook is installed.
+
+## What the hooks can govern
+
+| Surface | Coverage |
+| --- | --- |
+| Shell/unified exec, `apply_patch`, MCP tools, declared local function tools | Policy check before the call, when Codex routes it through the supported hook path |
+| Completion of a tool call | Post-tool evidence and execution receipt |
+| Hosted tools such as `WebSearch` | Not governed by local hooks |
+| `write_stdin` into an open exec session | Not governed or recorded by the hook |
+| The JavaScript body of an `exec` cell | No hook on the cell; covered nested tool calls are checked |
+| Final response delivery | No `before_response` gate |
+| Tool result filtering | Cannot be enforced after the effect through the post-tool hook |
+
+Shell payloads expose the command but not every execution flag or working directory. Some subagent message bodies are encrypted by Codex and unavailable for matching. Unknown or changed tool payloads require compatibility verification. These hooks are a guardrail, not complete coverage of everything Codex can do.
+
+An enforced `BLOCK` becomes a native deny before the covered call. Availability failures such as network outages, rate limits, 5xx and timeouts fail open. Deterministic policy rejections and arguments too large/deep to evaluate are refused. A missing, untrusted or crashed hook can leave a call ungoverned.
+
+Check `~/.rippletide/codex-hook.log` and recent decision receipts when diagnosing coverage. An authorized call with no post-tool evidence has an unknown outcome; authorization alone is not proof it executed.
+
+## Import past sessions explicitly
+
+```bash
+rippletide codex backfill --dry-run --stats
+rippletide codex backfill --since 2026-09-01
+```
+
+Backfill reads Codex's own sessions under `~/.codex/sessions` and imports them as backdated evidence. Review the dry run first. Capture defaults to redacted; `--capture full` explicitly exports raw content. Re-runs skip already imported sessions using local state.
+
+Historical turns are not re-evaluated against today's Rules and do not prove earlier enforcement. They can show **No policy check**. Keep historical evidence separate from proof that a live guard blocked an action.
+
+## Maintain or remove
+
+Run `rippletide codex catalog` to rebuild the declared tool catalogue. Re-run setup to repair registration or change the traces choice. To remove the integration:
+
+```bash
+rippletide codex setup --uninstall
+```
+
+Review the uninstall summary for local cleanup. Previously stored server evidence is not erased by removing local hooks. `rippletide logout` separately revokes the CLI's Platform key.

@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "Rippletide Documentation",
-  "description": "Install rippletide-package, connect an agent repository, inspect runtime evidence, and enforce rules before important actions execute.",
+  "description": "Connect existing agents, inspect runtime evidence, and apply reviewed business rules at action and response boundaries.",
   "theme": "mint",
   "colors": {
     "primary": "#E996AE",
@@ -12,56 +12,148 @@
     "groups": [
       {
         "group": "Getting started",
-        "pages": ["index", "docs/quickstart", "docs/workspaces"]
+        "pages": [
+          "index",
+          "docs/quickstart",
+          "docs/fleet",
+          "docs/workspaces"
+        ]
       },
       {
         "group": "Connect",
         "pages": [
           "docs/connect-agent",
+          "docs/connect-python",
           "docs/connect-mcp-server",
-          "docs/manual-setup",
-          "docs/api-keys"
+          "docs/connect-codex",
+          "docs/manual-setup"
         ]
       },
       {
-        "group": "Rules",
-        "pages": ["docs/business-context", "docs/write-rules", "docs/evaluate-improve", "docs/observe-and-enforce"]
+        "group": "Rules and sources",
+        "pages": [
+          "docs/write-rules",
+          "docs/business-context",
+          "docs/evaluate-improve",
+          "docs/observe-and-enforce",
+          "docs/result-filtering"
+        ]
       },
       {
-        "group": "Observe",
-        "pages": ["docs/harness-management", "docs/runtime-events"]
+        "group": "Inspect evidence",
+        "pages": [
+          "docs/harness-management",
+          "docs/runtime-events"
+        ]
       },
       {
         "group": "Reference",
-        "pages": ["docs/cli"]
+        "pages": [
+          "docs/cli",
+          "docs/policy-api",
+          "docs/api-keys",
+          "docs/privacy"
+        ]
       }
     ]
   },
   "redirects": [
-    { "source": "/docs/introduction", "destination": "/" },
-    { "source": "/docs/cli_guide", "destination": "/docs/cli" },
-    { "source": "/docs/mcp/overview", "destination": "/docs/connect-mcp-server" },
-    { "source": "/docs/mcp/quickstart", "destination": "/docs/connect-mcp-server" },
-    { "source": "/docs/mcp/configuration", "destination": "/docs/manual-setup" },
-    { "source": "/docs/mcp/tools", "destination": "/docs/harness-management" },
-    { "source": "/docs/mcp/try-it-yourself", "destination": "/docs/quickstart" },
-    { "source": "/docs/hypergraph_overview", "destination": "/" },
-    { "source": "/docs/trust-platform/overview", "destination": "/" },
-    { "source": "/docs/trust-platform/integrations/mcp", "destination": "/docs/connect-mcp-server" },
-    { "source": "/docs/trust-platform/integrations/amazon-bedrock", "destination": "/docs/manual-setup" },
-    { "source": "/docs/coding-agents/overview", "destination": "/docs/connect-agent" },
-    { "source": "/docs/coding-agents/connect", "destination": "/docs/connect-agent" },
-    { "source": "/docs/coding-agents/coding-session", "destination": "/docs/runtime-events" },
-    { "source": "/docs/coding-agents/rule-management", "destination": "/docs/write-rules" },
-    { "source": "/docs/coding-agents/rule-sharing", "destination": "/docs/write-rules" },
-    { "source": "/docs/coding-agents/planning", "destination": "/docs/evaluate-improve" },
-    { "source": "/docs/coding-agents/team-governance", "destination": "/docs/write-rules" },
-    { "source": "/docs/community", "destination": "/" },
-    { "source": "/api-reference/introduction", "destination": "/docs/manual-setup" },
-    { "source": "/api-reference/openapi.json", "destination": "/docs/manual-setup" }
+    {
+      "source": "/docs/introduction",
+      "destination": "/"
+    },
+    {
+      "source": "/docs/cli_guide",
+      "destination": "/docs/cli"
+    },
+    {
+      "source": "/docs/mcp/overview",
+      "destination": "/docs/connect-mcp-server"
+    },
+    {
+      "source": "/docs/mcp/quickstart",
+      "destination": "/docs/connect-mcp-server"
+    },
+    {
+      "source": "/docs/mcp/configuration",
+      "destination": "/docs/manual-setup"
+    },
+    {
+      "source": "/docs/mcp/tools",
+      "destination": "/docs/harness-management"
+    },
+    {
+      "source": "/docs/mcp/try-it-yourself",
+      "destination": "/docs/quickstart"
+    },
+    {
+      "source": "/docs/hypergraph_overview",
+      "destination": "/"
+    },
+    {
+      "source": "/docs/trust-platform/overview",
+      "destination": "/"
+    },
+    {
+      "source": "/docs/trust-platform/integrations/mcp",
+      "destination": "/docs/connect-mcp-server"
+    },
+    {
+      "source": "/docs/trust-platform/integrations/amazon-bedrock",
+      "destination": "/docs/manual-setup"
+    },
+    {
+      "source": "/docs/coding-agents/overview",
+      "destination": "/docs/connect-agent"
+    },
+    {
+      "source": "/docs/coding-agents/connect",
+      "destination": "/docs/connect-agent"
+    },
+    {
+      "source": "/docs/coding-agents/coding-session",
+      "destination": "/docs/runtime-events"
+    },
+    {
+      "source": "/docs/coding-agents/rule-management",
+      "destination": "/docs/write-rules"
+    },
+    {
+      "source": "/docs/coding-agents/rule-sharing",
+      "destination": "/docs/write-rules"
+    },
+    {
+      "source": "/docs/coding-agents/planning",
+      "destination": "/docs/evaluate-improve"
+    },
+    {
+      "source": "/docs/coding-agents/team-governance",
+      "destination": "/docs/write-rules"
+    },
+    {
+      "source": "/docs/community",
+      "destination": "/"
+    },
+    {
+      "source": "/api-reference/introduction",
+      "destination": "/docs/policy-api"
+    },
+    {
+      "source": "/api-reference/openapi.json",
+      "destination": "/docs/manual-setup"
+    }
   ],
   "contextual": {
-    "options": ["copy", "view", "chatgpt", "claude", "perplexity", "mcp", "cursor", "vscode"]
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {

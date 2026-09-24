@@ -1,37 +1,50 @@
 ---
 title: "Observe & enforce"
-description: "From would-block evidence to deliberately preventing an action."
+description: "Understand Rule modes, Allow/Block decisions, and the evidence of an applied outcome."
 ---
 
-Every rule release has its own mode: **disabled**, **observe**, or **enforce**. The mode decides what happens when that rule matches an action. There is no target-wide switch — each release graduates independently.
+Every Rule release has a mode: **Disabled**, **Observe**, or **Enforce**. There is no target-wide mode switch. Mode and effect are different: an Allow rule can match without asking for a block.
 
-## Disabled (where every release starts)
+## Modes
 
-A new release does nothing until you choose. It is not evaluated against your agent's traffic, so nothing can surprise you.
+| Mode | Behavior |
+| --- | --- |
+| Disabled | The release does not participate in runtime evaluation |
+| Observe | Matches are recorded; a blocking match alone returns Would block and lets the protected callback run |
+| Enforce | A blocking match prevents the protected callback; an Allow match does not block it |
 
-## Observe mode
+Basic manual/CLI creation starts Disabled. Discovery may explicitly create in Observe. Web Activity proposals use Observe, and source-update replacements return to Observe. Check the mode shown before saving or applying a review.
 
-Decisions are evaluated and recorded, but never interrupt anything. When the rule matches, the decision says **would block**, and the action proceeds normally.
+## Allow and Block
 
-This is where you build confidence: watch the decisions arrive on the Rules page, check that the rule fires when it should and stays quiet when it shouldn't, and tune it with zero risk to your agent.
+Before-action rules can express **ALLOW** or **BLOCK**. Actions normally use `block-only`: no blocking match means the action can proceed. Creating an Allow rule moves its covered actions to `allow-block`, which records explicit Allow, Block or **Undetermined** outcomes. Only an enforced Block prevents execution; Undetermined is not an enforced deny.
 
-## Enforce mode
+An Allow match does not override an enforced Block from another applicable Rule. When only Observe releases block, the effective disposition is **Would block**; if an Enforce release blocks, it is **Block**. Test the combined active set as well as the Rule you are reviewing.
 
-Enforcement is a deliberate opt-in, per rule release. Once a release is in enforce, a match returns **block**: the guarded call is prevented before it executes, and your agent receives a clear error with the reason and the rule that fired.
+Allow rules apply before actions, not as an Allow authoring option for response or result rules. An action with an active Allow rule cannot return to block-only until that covering Rule is disabled or archived.
 
-## When your agent's tools change
+## Decisions need an enforcement boundary
 
-Releases are compiled against the action catalogue your agent declared. If the catalogue changes, releases that were active return to `disabled` — a rule never silently applies to a catalogue it wasn't compiled for. Recompile them, then explicitly set their mode again.
+The policy API returns a decision. Your SDK callback or direct integration must honor it before the effect. A guard on one path cannot protect another path that bypasses it.
 
-## Decisions and receipts
+| Boundary | Blocking behavior | Reported outcome |
+| --- | --- | --- |
+| Before action | Do not invoke the protected handler | Executed or Prevented |
+| Before response | Do not deliver the candidate | Delivered or Suppressed |
+| After action | Exclude only enforced-blocked collection items | Result delivered or Result filtered |
 
-Every decision is recorded with its input, the rules that matched, and the outcome. After the action runs or is prevented, the runtime reports back what actually happened: **executed** or **prevented**. That receipt closes the loop, so the audit trail shows not just what Rippletide decided but what the agent actually did.
+An Executed receipt means the handler was invoked, not necessarily that it succeeded. No receipt means the applied outcome is unconfirmed. [Traces](/docs/runtime-events) combine policy evidence with actual runtime reports.
 
-## If Rippletide is unreachable
+## When the contract changes
 
-Monitoring never breaks your agent:
+Only releases whose contract dependencies changed are disabled. Unrelated action catalogue changes do not disable every release. Review affected Rules, recompile and explicitly choose a mode again. Restoring an archived Rule family also leaves it Disabled.
 
-- Evidence reporting is fire-and-forget. A failed upload never fails your agent.
-- If a decision can't be reached because of a network problem or an outage, the action proceeds.
-- Deterministic problems, such as a bad key or a malformed request, are rejected before the tool runs, so misconfiguration surfaces immediately instead of silently skipping policy.
-- A valid **block** in enforce mode is always honored.
+## Failure behavior
+
+Evidence upload is best effort and must not fail the host agent. SDK policy guards permit execution on availability failures such as network errors, timeouts, 5xx or rate limits. They do not silently ignore deterministic authentication or malformed-request failures. A valid enforced Block is honored.
+
+A client with no Connection key is disabled and executes unguarded. Some additive endpoints have compatibility fallbacks on older servers; see [Result filtering](/docs/result-filtering), [Python](/docs/connect-python), and [Codex](/docs/connect-codex) for their exact boundaries. Verify the integration you use rather than assuming every runtime has the same failure semantics.
+
+## Promote with evidence
+
+Use a safe test environment, check matching and non-matching examples, then let an Admin enable Enforce for that release. Repeat a blocked example and verify the protected callback did not run. A Rule's mode alone does not prove that its enforcement boundary is installed.

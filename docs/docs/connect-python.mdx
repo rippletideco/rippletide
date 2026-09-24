@@ -1,0 +1,87 @@
+---
+title: "Connect a Python agent"
+description: "Install rippletide-python and instrument synchronous model, tool, and response call sites."
+---
+
+`rippletide-python` supports existing Python 3.10+ agents with synchronous call sites. It has no model-provider dependencies: keep your provider and wrap its existing call sites. Python MCP servers, asynchronous execution and response streaming are not supported by this integration.
+
+## Install and connect
+
+Use your project's existing Python environment. If it has none, create one:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install rippletide-python
+```
+
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Record the dependency in your project's dependency manifest.
+
+In the app, choose **Connect → Agent (Python)**, save the generated credentials in a git-ignored `.env`, and apply the generated prompt with your coding agent.
+
+The Node.js CLI can also create the Python connection:
+
+```bash
+npm install -g rippletide-package
+rippletide login
+rippletide connect --kind agent --language python --print-prompt
+```
+
+The CLI writes `RIPPLETIDE=rippletide://…` in the connected repository's `.env`. It does not install the Python package into your Python environment for you.
+
+## Instrument your existing request handler
+
+This fragment belongs inside your application. `SYSTEM_PROMPT`, `TOOLS`, `raw_model_call`, `run_existing_agent`, `trusted_context` and `send_to_caller` are your existing prompt, tool definitions, provider call, existing tool loop, authenticated context and response sink. Keep your real tool loop and add a guard at its dispatcher.
+
+```python
+from rippletide import Rippletide, load_rippletide_env
+
+load_rippletide_env("/absolute/path/to/your-agent/.env")
+rippletide = Rippletide(name="Support agent")
+
+rippletide.register_prompts({"system": {"fallback": SYSTEM_PROMPT}})
+rippletide.tools("core", TOOLS)
+rippletide.connection("provider", env={"api_key": "PROVIDER_API_KEY"})
+
+def handle_request(request, trusted_context):
+    def dispatch_tool(tool_name, tool_args):
+        return rippletide.guard_tool_call(
+            toolset="core", tool=tool_name, params=tool_args,
+            context=trusted_context,
+            execute=lambda evaluated: tool_handlers[tool_name](evaluated),
+        )
+
+    try:
+        with rippletide.run(name="inbound_request", input=request):
+            with rippletide.agent(name="orchestrator"):
+                call_model = rippletide.traced(
+                    raw_model_call, name="provider.request", kind="model"
+                )
+                candidate = run_existing_agent(
+                    request, call_model=call_model, dispatch_tool=dispatch_tool
+                )
+                return rippletide.deliver_response(
+                    request=request,
+                    response=candidate,
+                    context=trusted_context,
+                    deliver=send_to_caller,
+                )
+    finally:
+        rippletide.flush()
+```
+
+At the real tool dispatcher, call `guard_tool_call()` with the declared toolset/tool, parameters, trusted context and execution callback. Use the repository-specific generated prompt to fit that wrapper to your application's dispatcher. A policy check only protects paths that honor its outcome.
+
+`load_rippletide_env()` does not override process environment variables. The SDK also accepts the app/manual `RIPPLETIDE_API_KEY` and `RIPPLETIDE_AGENT_ID` configuration. Never put a Platform key in the agent.
+
+## Verify a real run
+
+Run a turn that uses a guarded tool and delivers a response. Check `rippletide verify`, then `rippletide events --wait`. The app must show the inventory, heartbeat, tool and turn evidence, and the response-delivery outcome in **Traces**. Recording only a model candidate does not prove delivery.
+
+## Capture and failure behavior
+
+Runtime capture defaults to **metadata**. Prompt text is withheld unless its owner explicitly enables `allow_content_export=True` on `register_prompts()`. Choose `RIPPLETIDE_CAPTURE_MODE=redacted` or `full` deliberately; see [Privacy & capture](/docs/privacy).
+
+For tool and response guards, an enforced `BLOCK` raises `RippletidePolicyBlockedError` before the callback. Observe-only `WOULD_BLOCK` permits it. Network errors, 5xx, rate limits and malformed/interrupted HTTP responses fail open. Deterministic 400/401/403/404 decision errors raise `RippletidePolicyDecisionError`; do not treat them as telemetry outages.
+
+For a declared result collection, `guard_tool_result()` requires explicit `allow_result_export=True`. The complete result is sent for transient evaluation, and your `apply` callback preserves the original response shape while delivering only the allowed items. See [Result filtering](/docs/result-filtering) for the contract and fallback behavior.

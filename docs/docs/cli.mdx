@@ -1,57 +1,145 @@
 ---
 title: "CLI reference"
-description: "Every platform workflow, scriptable from your terminal."
+description: "Connect, inspect traces, manage Rules and sources, and administer authorized workspaces."
 ---
 
-Core workflows are available from the CLI: connecting, inspecting runtime evidence, and managing rules. Install once:
+Install the Node.js CLI once:
 
 ```bash
 npm install -g rippletide-package
+rippletide --help
 ```
 
-Every command is then `rippletide <command>`, and all commands accept `--json` for machine-readable output.
+Use `<command> --help` for its exact options. User-facing commands support `--json` for automation. Command success (`ok`) is not runtime health; inspect explicit evidence fields. Gate commands such as `verify`, `doctor`, `events --wait` and `connect --wait-evidence` also fail when their verification condition is not met.
 
-## Commands
+## Sign in and connect
 
-| Command | What it does |
+| Command | Purpose |
 | --- | --- |
-| `login` | Log in via your browser; reuses a valid stored Platform key |
-| `logout` | Revoke the current Platform key, then clear the local login |
-| `whoami` | Show the logged-in account |
-| `agents` | List the agents on your account |
-| `connect [--yes]` | Create or link the current repository, write its CLI connection configuration, and present its setup prompt |
-| `connect --print-prompt` | Create or link the repository, write its CLI connection configuration, and print the setup prompt for a coding agent |
-| `verify` | Check a repository's CLI configuration and synced inventory from its `.env` (no login needed) |
-| `events --wait` | Wait for complete observed runtime evidence: manifest, heartbeat, and turn; MCP also needs a tool call |
-| `status` | Account login, project binding, inventory, and runtime evidence at a glance |
-| `rules discover [--source <text\|https-url\|@file>]` | Review and batch-create complete discovered rules; `--json` is read-only |
-| `rules create --target <id> --action <key> --input "…"` | Compile and save a disabled plain-English rule |
-| `rules targets` / `rules list` | Inspect policy targets and rule releases |
-| `rules decisions --agent <id> [--limit 20]` | Review recent decisions and get commands to enforce triggered observe releases |
-| `rules set-mode --release <id> --mode disabled\|observe\|enforce` | Change one rule release's mode |
+| `login` | Browser authorization by a Workspace Admin; reuses a valid stored key |
+| `logout` | Revoke the CLI Platform key, then clear the local login |
+| `whoami` | Account, current workspace and role |
+| `connect --kind agent` | Create/link a JavaScript or TypeScript agent repository |
+| `connect --kind agent --language python` | Create/link a Python agent repository |
+| `connect --kind mcp` | Create/link a JavaScript or TypeScript MCP server |
+| `connect --kind agent --print-prompt` | Non-interactive agent setup prompt; include the kind on first connection |
+| `connect --agent <id>` | Bind the repository to an existing agent |
+| `connect --session <token>` | Claim a supported app-generated connection session |
+| `connect --wait-evidence` | Wait for the server's runtime proof contract; add `--kind` on first connection |
+| `connect --yes` | Allow execution of the repository's existing `rippletide:sync` script |
 
-`connect` can execute your repository's own `rippletide:sync` and `rippletide:start` scripts, so it asks for confirmation; pass `--yes` only for a repository you trust. It does not launch a coding agent or create those scripts for you. Apply the generated setup prompt in the coding agent you use for the repository.
+`--kind` accepts `agent` or `mcp`; `--language` accepts `typescript` or `python` for agents. The CLI does not infer the kind for a first non-interactive connection. It does not launch your coding agent, invent sync scripts or run `rippletide:start`.
 
-`login` validates `~/.rippletide/config.json` before starting a browser flow, so
-running it again does not accumulate keys. To replace the key or change
-accounts, run `rippletide logout` and then `rippletide login`. A validation
-failure creates nothing, while a failed logout keeps the current local
-credential so revocation can be retried.
+Login and project binding are distinct from runtime health. A failed logout keeps the local credential for retry. Changing workspace requires its own authorization.
 
-To try rule scenarios, follow [Test your rules](/docs/evaluate-improve). Generate prompts in the app, run them in your own runtime, and inspect their decisions.
+## Inspect and diagnose
 
-## Where configuration lives
+| Command | Purpose |
+| --- | --- |
+| `agents` | List agents in the authorized workspace |
+| `agents show <id-or-name>` | Inspect one agent and its connection state |
+| `agents risks <id-or-name> [--analyze]` | Read action risks; explicitly start/retry classification with `--analyze` |
+| `status` | Login, project binding, inventory and evidence summary |
+| `doctor` | Diagnose auth, configuration and evidence gaps |
+| `verify` | Verify readable stored tool inventory and local configuration; no account login required |
+| `events --agent <id> --limit 20` | List recorded traces |
+| `events <traceId> --agent <id> --json` | Read one complete retained trace |
+| `events --cursor <nextCursor> --json` | Continue to older traces |
+| `events --wait` | Wait for the server-owned runtime evidence contract |
 
-| Scope | Path | Contents |
-| --- | --- | --- |
-| Account | `~/.rippletide/config.json` | Endpoint and Platform key |
-| Project | `.rippletide/project.json` | Agent ID and name (safe to commit) |
-| Runtime | `.env` | `RIPPLETIDE` Connection string and `RIPPLETIDE_PROXY_URL` (never commit) |
+Use `--agent` outside a connected repository. `--wait` cannot be combined with a trace ID or cursor. SDK-agent proof includes before-response evidence; MCP requires a tool call but no turn. `verify` does not prove a live turn or compare the stored catalogue with every tool in your source code.
 
-The CLI configuration is distinct from the app-based/manual configuration documented in [API keys](/docs/api-keys). Do not add `RIPPLETIDE_AGENT_ID` and `RIPPLETIDE_API_KEY` to a `.env` already managed by `rippletide connect`.
+Running `rippletide` without a command opens the interactive home in a terminal. Non-interactive use returns next-step information rather than waiting for terminal input.
 
-After removing Rippletide instrumentation, disconnect a repository by deleting
-`.rippletide/project.json`, removing only `RIPPLETIDE` and
-`RIPPLETIDE_PROXY_URL` from `.env`, and revoking its Connection key in the
-Platform. `rippletide logout` is separate account-level cleanup: it revokes the
-CLI Platform key and clears the local account login.
+## Rules
+
+| Command | Purpose |
+| --- | --- |
+| `rules targets` | List policy targets (`rules agents` is an alias) |
+| `rules show-target <targetId>` | Inspect a target and its catalogue |
+| `rules create-target --agent <id>` | Sync a target from agent inventory |
+| `rules create-target --name "Name" --catalog catalog.json` | Create an API integration target |
+| `rules list` | List the connected target's releases |
+| `rules create --actions <key> --input "Policy"` | Compile and save a Disabled Rule |
+| `rules compile --actions <key> --input "Policy" --json` | Compile without saving |
+| `rules save --file rule.json` | Save a compiled release |
+| `rules discover [--source <text-or-url-or-@file>]` | Discover and review proposals from the catalogue and optional documentation |
+| `rules decisions --agent <id> --limit 20` | Recent action/response decisions |
+| `rules result-decisions --agent <id> --limit 20` | Result-plan summaries |
+| `rules result-decisions show <decisionId> --agent <id>` | Ordered item decisions and plan details |
+| `rules set-mode --release <id> --mode observe` | Set a release to `disabled`, `observe` or `enforce` |
+| `rules archive --release <id>` | Archive the logical family containing that release |
+| `rules restore --release <id>` | Restore the family with its releases Disabled |
+
+Use `--agent <id>` or advanced `--target <id>` when there is no project binding. Enforce requires Admin permission.
+
+Authoring selectors are `--actions <key>` (repeat for selected actions), `--all-actions`, `--before-response`, and `--after-action <key>` for one declared collection. Legacy `--action <key>` remains supported. Before-action Rules accept `--effect ALLOW` or `BLOCK`; BLOCK is the default. If the compiler asks a question, keep the original input/effect and add `--context "answer"`.
+
+### Discover from recorded traces
+
+```bash
+rippletide rules discover --agent <agentId> --traces \
+  --include-raw-values --out proposals.json
+rippletide rules save --agent <agentId> --file proposals.json \
+  --proposal <proposalId>
+```
+
+`--include-raw-values` permits analysis of captured values for that request. Review the output's evidence, replay and required settings. Add `--config '{"setting":100}'` using the proposal's declared fields when needed. Saving through this CLI flow starts Disabled; set Observe explicitly after review.
+
+For catalogue/document discovery, `--source` accepts text, an HTTPS URL or `@file` containing UTF-8 text. `--json` is read-only for discovery. Interactive ready-only batches omit proposals needing additional configuration; trace export preserves proposals for explicit review/save.
+
+## Business context
+
+Run from the connected repository, or add `--agent <id>` / `--target <id>`:
+
+```bash
+rippletide business-context upload policy.pdf
+rippletide business-context list --json
+rippletide business-context history <sourceId> --json
+rippletide business-context discover --out proposals.json
+rippletide business-context apply proposals.json --select <proposalId>
+rippletide business-context update <sourceId> policy.pdf --expected-version 1
+rippletide business-context analyze <sourceId> --from 1 --to 2 --out review.json
+rippletide business-context apply review.json --select <changeId>
+rippletide business-context archive <sourceId> --yes
+```
+
+Uploads accept PDF, DOCX, Markdown and text up to 10 MB. Discovery reads up to eight selected documents; repeat `--source <id>` to select them. `update` checks the expected version to avoid overwriting someone else's newer version.
+
+`analyze` proposes changes; `apply` changes only selected IDs and accepts `--config` keyed by those IDs. New Rules start Disabled, replacements Observe. Review per-change failures before retrying. Archiving disables dependent Rules. See [Business context](/docs/business-context) for the web preview, Notion and retained evidence.
+
+## Workspaces
+
+| Command | Purpose |
+| --- | --- |
+| `workspaces list` / `workspaces current` | Authorized workspaces / current workspace |
+| `workspaces use [id]` | Browser approval for another workspace |
+| `workspaces members` | List members (Admin) |
+| `workspaces invite user@example.com --role editor` | Create an invitation link (Admin) |
+| `workspaces set-role <userId> --role viewer` | Change role (Admin) |
+| `workspaces remove-member <userId> --yes` | Remove a member (Admin) |
+| `workspaces invitations` | List invitations (Admin) |
+| `workspaces revoke-invitation <invitationId> --yes` | Revoke an invitation (Admin) |
+| `workspaces rename "Name"` | Rename the workspace (Admin) |
+| `workspaces accept "<invitation link>"` | Verify and accept in the browser |
+
+Roles are `viewer`, `editor` or `admin`; invitations default to viewer. Invitation commands return a link, not an automatically sent email. CLI workspace changes do not change the browser's selected workspace.
+
+## Codex
+
+```bash
+rippletide codex setup
+rippletide codex setup --traces --no-backfill
+rippletide codex catalog
+rippletide codex backfill --dry-run --stats
+rippletide codex backfill --since 2026-09-01
+rippletide codex setup --uninstall
+```
+
+Setup accepts `--session <token>` or `--agent <id>`; without either it can create the Codex agent. `--traces`/`--no-traces` controls stored activity, and `--backfill`/`--no-backfill` controls history import. Backfill accepts `--capture metadata|redacted|full`; redacted is the default. `codex hook <event>` is called by Codex, not a manual verification command.
+
+Read [Connect Codex](/docs/connect-codex) before setup for coverage, trust and privacy choices.
+
+## Local configuration
+
+The account credential is in `~/.rippletide/config.json`, project binding in `.rippletide/project.json`, and runtime connection in the repository's git-ignored `.env`. CLI setup writes only `RIPPLETIDE`; Codex has its own `~/.rippletide/codex.env`. See [API keys](/docs/api-keys) for rotation, precedence and removal.

@@ -1,0 +1,55 @@
+---
+title: "Privacy & capture"
+description: "Choose what runtime content to export and distinguish traces, inventory and decision audit data."
+---
+
+Trace capture, inventory declaration and policy evaluation are separate data paths. Reducing trace capture does not prevent a policy check from receiving the values it must evaluate.
+
+## Defaults by integration
+
+| Integration | Default trace behavior | Content controls |
+| --- | --- | --- |
+| TypeScript SDK, including instrumented JS/TS MCP | `full`: bounded payload values with credential-shaped values redacted | `captureMode` client option or `RIPPLETIDE_CAPTURE_MODE` |
+| Python SDK | `metadata` | `RIPPLETIDE_CAPTURE_MODE`; prompt text needs separate `allow_content_export=True` |
+| Codex live hooks | Activity storage off until selected; `redacted` when enabled | Setup `--traces`/`--no-traces`, then capture setting in `~/.rippletide/codex.env` |
+| Codex history import | Explicit import, `redacted` by default | `backfill --capture metadata`, `redacted`, or `full` |
+
+Do not assume a metadata-only default across all SDKs. Set the capture mode deliberately before running an integration on customer content.
+
+## Capture modes
+
+| Mode | Payloads |
+| --- | --- |
+| `metadata` | Timing, kinds, correlation identifiers, model/token and decision metadata; input/output payloads withheld |
+| `redacted` | Payload structure, with scalar values replaced by redaction markers |
+| `full` | Bounded input/output values; credential-shaped keys and authorization values receive best-effort redaction |
+
+For an SDK agent, place a setting in its environment:
+
+```bash
+RIPPLETIDE_CAPTURE_MODE=metadata
+```
+
+For Codex, put it in `~/.rippletide/codex.env`; repository environment variables do not configure that adapter. Use supported mode names exactly.
+
+Metadata can still be sensitive. Identifiers, tool names, model names and attributes may identify a person or system. Codex metadata can include an absolute working directory containing a username. Redaction is not a guarantee that all personal or business-sensitive data has been removed.
+
+## Inventory and prompts
+
+Third-party connection declarations send credential names and status, not secret values. Prompt/instruction inventory is distinct from trace payload capture: a TypeScript prompt declaration can send its fallback text even when runtime capture is metadata. Review what you register.
+
+Python withholds prompt text by default. Enable `allow_content_export=True` only when the prompt owner has approved storing it. Do not put secrets in prompt text or schema descriptions.
+
+## Policy decision data
+
+Before-action parameters and trusted context are sent to Rippletide and stored in the decision audit trail. Before-response checks evaluate the candidate response and request. These policy inputs do not inherit the trace redaction setting. Keep their scope limited to facts needed by the policy.
+
+Result filtering sends the full declared result for transient validation and evaluation. Raw collection/item bodies are not persisted in the result decision; item IDs, fingerprints, decisions, reasons and plan metadata are retained. Python requires explicit `allow_result_export=True`. Runtime traces can separately capture result content according to their capture mode.
+
+Rules using a model predicate can send the selected field and instruction to the configured model evaluator. Trace discovery analyses captured values, and document discovery/labeling analyses imported text. Only select sources and fields approved for that processing. A metadata-only trace cannot later be replayed as if its raw arguments had been captured.
+
+## Codex history and local state
+
+Backfill reads local Codex rollouts only when explicitly requested, or when you opt into history import during setup. Use `--dry-run --stats` first. `full` can export prompts, patches, command lines and command output; the history does not receive retroactive policy decisions.
+
+Removing local instrumentation or hooks does not erase previously stored server evidence. Keep Connection keys and local credential files private; use [API keys](/docs/api-keys) for rotation and revocation.
