@@ -18,6 +18,7 @@
         "group": "Connect",
         "pages": [
           "docs/connect-agent",
+          "docs/vercel-ai-sdk",
           "docs/connect-mcp-server",
           "docs/manual-setup",
           "docs/api-keys"
