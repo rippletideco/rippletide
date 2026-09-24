@@ -5,56 +5,59 @@ description: "Connect an agent, verify a tool-using run and response delivery, t
 
 This path connects an existing JavaScript or TypeScript agent on Node.js 18+. For another runtime, use [Python](/docs/connect-python), [MCP](/docs/connect-mcp-server), or [Codex](/docs/connect-codex).
 
-## 1. Install and sign in
+<Steps titleSize="h2">
+  <Step title="Install and sign in" id="1-install-and-sign-in">
+    From the repository containing your agent:
 
-From the repository containing your agent:
+    ```bash
+    npm install -g rippletide-package
+    rippletide login
+    rippletide connect --kind agent
+    ```
 
-```bash
-npm install -g rippletide-package
-rippletide login
-rippletide connect --kind agent
-```
+    A Workspace Admin authorizes the CLI in the browser. `connect` creates or links the agent, writes its connection string to the repository's git-ignored `.env`, and gives you a setup prompt. Check that you are in the intended workspace with `rippletide workspaces current`.
+  </Step>
 
-A Workspace Admin authorizes the CLI in the browser. `connect` creates or links the agent, writes its connection string to the repository's git-ignored `.env`, and gives you a setup prompt. Check that you are in the intended workspace with `rippletide workspaces current`.
+  <Step title="Apply the generated prompt" id="2-apply-the-generated-prompt">
+    Paste the prompt into the coding agent you use for that repository. It adds the SDK at your existing model, tool, and response-delivery boundaries. The CLI does not launch the coding agent or start your application.
 
-## 2. Apply the generated prompt
+    For a session without an interactive terminal, sign in first and request the prompt explicitly:
 
-Paste the prompt into the coding agent you use for that repository. It adds the SDK at your existing model, tool, and response-delivery boundaries. The CLI does not launch the coding agent or start your application.
+    ```bash
+    npx -p rippletide-package rippletide connect --kind agent --print-prompt
+    ```
 
-For a session without an interactive terminal, sign in first and request the prompt explicitly:
+    Keep `--kind agent` on the first connection: the CLI does not guess whether the repository contains an agent or an MCP server. The prompt contains no Connection key. Keep the generated `.env` git-ignored.
+  </Step>
 
-```bash
-npx -p rippletide-package rippletide connect --kind agent --print-prompt
-```
+  <Step title="Run a real turn" id="3-run-a-real-turn">
+    Start the application normally, with its own provider and tool credentials. Send a request that uses a tool and delivers a response to its normal recipient.
 
-Keep `--kind agent` on the first connection: the CLI does not guess whether the repository contains an agent or an MCP server. The prompt contains no Connection key. Keep the generated `.env` git-ignored.
+    Before using customer data, choose the appropriate [capture mode](/docs/privacy). The TypeScript SDK captures bounded content in `full` mode by default; `metadata` and `redacted` are available.
+  </Step>
 
-## 3. Run a real turn
+  <Step title="Verify the complete connection" id="4-verify-the-complete-connection">
+    ```bash
+    rippletide verify
+    rippletide events --wait
+    ```
 
-Start the application normally, with its own provider and tool credentials. Send a request that uses a tool and delivers a response to its normal recipient.
+    `verify` checks local configuration and declared inventory. `events --wait` checks the server's evidence contract. For an SDK agent this includes inventory, heartbeat, a tool call when required, a turn, and a proven **before-response delivery boundary**.
 
-Before using customer data, choose the appropriate [capture mode](/docs/privacy). The TypeScript SDK captures bounded content in `full` mode by default; `metadata` and `redacted` are available.
+    In the app, inspect **Context & actions** for instructions, actions, and connections. Open **Traces** for the run, tool calls, policy decisions, and delivery outcome. A model response is a candidate until the delivery callback runs.
 
-## 4. Verify the complete connection
+    If `before_response` is missing, check that `deliverResponse()` stays inside the causal `run()` and wraps the actual delivery callback. See [Manual TypeScript setup](/docs/manual-setup).
+  </Step>
 
-```bash
-rippletide verify
-rippletide events --wait
-```
+  <Step title="Observe your first Rule" id="5-observe-your-first-rule">
+    1. Open **Rules** and describe a restriction on the tool you just used.
+    2. Review its action scope and setup, then save and set its release to **Observe**.
+    3. Repeat the tool-using request in a safe test environment.
+    4. Inspect the recorded match and **Would block** disposition. The action still runs in Observe.
+    5. Follow [Test your rules](/docs/evaluate-improve) before an Admin enables **Enforce**.
+  </Step>
 
-`verify` checks local configuration and declared inventory. `events --wait` checks the server's evidence contract. For an SDK agent this includes inventory, heartbeat, a tool call when required, a turn, and a proven **before-response delivery boundary**.
-
-In the app, inspect **Context & actions** for instructions, actions, and connections. Open **Traces** for the run, tool calls, policy decisions, and delivery outcome. A model response is a candidate until the delivery callback runs.
-
-If `before_response` is missing, check that `deliverResponse()` stays inside the causal `run()` and wraps the actual delivery callback. See [Manual TypeScript setup](/docs/manual-setup).
-
-## 5. Observe your first Rule
-
-1. Open **Rules** and describe a restriction on the tool you just used.
-2. Review its action scope and setup, then save and set its release to **Observe**.
-3. Repeat the tool-using request in a safe test environment.
-4. Inspect the recorded match and **Would block** disposition. The action still runs in Observe.
-5. Follow [Test your rules](/docs/evaluate-improve) before an Admin enables **Enforce**.
+</Steps>
 
 ## If evidence is missing
 

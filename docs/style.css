@@ -1,0 +1,9 @@
+/* Keep Mintlify's text wordmark compact beside the native theme controls.
+   Layout, reading typography, navigation and components stay theme-owned. */
+.nav-logo {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
