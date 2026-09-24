@@ -1,0 +1,98 @@
+---
+title: "Vercel AI SDK"
+description: "Connect an existing Vercel AI SDK agent through Rippletide's JavaScript/TypeScript SDK."
+---
+
+Use the **Agent (JS/TS)** path for an agent built with Vercel AI SDK. You do not need a separate Vercel connector. Rippletide runs beside your agent: it records model and tool evidence, checks rules before a tool runs, and checks the final response before you send it.
+
+## Connect
+
+1. In Rippletide, open **Agents & integrations → Connect an agent → Agent (JS/TS)**.
+2. Save the one-time `.env` block in your agent repository. It contains `RIPPLETIDE_AGENT_ID` and an agent-bound `RIPPLETIDE_API_KEY`. Keep it out of Git.
+3. Install `rippletide-package` in that repository:
+
+```bash
+npm install rippletide-package ai @ai-sdk/openai zod
+```
+
+Keep both keys in the agent's server-side environment, never in browser code. The Rippletide Connection key is separate from the provider key. If you already used `rippletide connect` in this repository, follow its generated setup prompt instead of mixing the CLI and app `.env` formats.
+
+## Instrument your existing agent
+
+Add the SDK at the code path that handles a user request. This example uses `generateText` and a read-only `lookup_case` tool; replace the sample tool and model with your existing ones. Your application's environment loader must load the saved `.env` before this code runs.
+
+```ts
+import { createOpenAI } from "@ai-sdk/openai";
+import { generateText, stepCountIs, tool, wrapLanguageModel } from "ai";
+import Rippletide from "rippletide-package";
+import { z } from "zod";
+
+const rippletide = new Rippletide({
+  name: "Support agent",
+  captureMode: "metadata",
+});
+
+const system = "Look up the requested case before answering.";
+await rippletide.prompt("system", { fallback: system });
+await rippletide.tools("support", [{
+  name: "lookup_case",
+  description: "Read a case by ID",
+  parameters: {
+    type: "object",
+    properties: { caseId: { type: "string" } },
+    required: ["caseId"],
+  },
+}]);
+const connection = await rippletide.connection("openai", {
+  env: { apiKey: "OPENAI_API_KEY" },
+});
+const apiKey = connection.secret("apiKey");
+if (!apiKey) throw new Error("OPENAI_API_KEY is missing");
+
+const model = wrapLanguageModel({
+  model: createOpenAI({ apiKey })("gpt-4o-mini"),
+  middleware: {
+    wrapGenerate: ({ doGenerate }) =>
+      rippletide.traced(doGenerate, { name: "gpt-4o-mini", type: "llm" })(),
+  },
+});
+
+async function answer(query: string): Promise<string> {
+  try {
+    return await rippletide.run({ name: "support_request", input: { query } },
+      () => rippletide.agent({ name: "support_agent", input: { query } }, async () => {
+        const result = await generateText({
+          model, system, prompt: query, stopWhen: stepCountIs(4),
+          tools: {
+            lookup_case: tool({
+              description: "Read a case by ID",
+              inputSchema: z.object({ caseId: z.string() }),
+              execute: ({ caseId }, { toolCallId }) =>
+                rippletide.guardToolCall(
+                  { toolset: "support", tool: "lookup_case", params: { caseId }, toolCallId },
+                  ({ caseId }) => lookupCase(caseId),
+                ),
+            }),
+          },
+        });
+        return rippletide.deliverResponse(
+          { request: { query }, response: { text: result.text } },
+          ({ text }) => sendToCaller(text),
+        );
+      }),
+    );
+  } finally {
+    await rippletide.flush();
+  }
+}
+```
+
+`lookupCase` is your existing tool handler. `sendToCaller` is your real HTTP, chat, or job response sink. Keep `guardToolCall` immediately before the tool handler and `deliverResponse` at the final caller-facing seam; returning `result.text` directly bypasses the response check. Keep your existing trusted user identity outside model output and tool arguments.
+
+This example covers `generateText`. For streamed responses, buffer the final response before `deliverResponse` or treat that delivery path as unsupported until you can guard it. No automatic Vercel instrumentation or provider marketplace connection is implied.
+
+## Check it worked
+
+Run a real request that calls a tool. In the agent's **Connection** and **Traces** views, check for registration, heartbeat, a model span, the guarded tool call, a complete turn, and a response delivery receipt. A saved key or setup screen alone does not prove the agent ran. With `captureMode: "metadata"`, runtime prompt and response content stays out of the trace; tool arguments and candidate responses still go to the policy decision API when a guard evaluates them.
+
+Start rules in Observe. An Enforce block needs a separate test showing the real tool or response was prevented before relying on it. For the full manual SDK contract, see [Manual setup](/docs/manual-setup).
