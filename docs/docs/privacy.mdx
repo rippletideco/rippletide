@@ -11,8 +11,8 @@ Trace capture, inventory declaration and policy evaluation are separate data pat
 | --- | --- | --- |
 | TypeScript SDK, including instrumented JS/TS MCP | Operational metadata; input/output content withheld | `captureContent: true` on the client, after owner consent |
 | Python SDK | Operational metadata; input/output content withheld | `capture_content=True` on the client, after owner consent; prompt inventory needs separate `allow_content_export=True` |
-| Codex live hooks | Activity storage off until selected; `redacted` when enabled | Setup `--traces`/`--no-traces`, then capture setting in `~/.rippletide/codex.env` |
-| Codex history import | Explicit import, `redacted` by default | `backfill --capture metadata`, `redacted`, or `full` |
+| Codex live hooks | Activity storage off until selected; content withheld when enabled | Setup `--traces`/`--no-traces`; content opt-in via `RIPPLETIDE_CAPTURE_CONTENT=true` in `~/.rippletide/codex.env` |
+| Codex history import | Explicit import; content withheld by default | `backfill --capture-content`, or the adapter content setting |
 
 Review the content setting before running an integration on customer data. SDK content capture is off by default; inventory and policy inputs have separate data boundaries.
 
@@ -52,6 +52,14 @@ Rules using a model predicate can send the selected field and instruction to the
 
 ## Codex history and local state
 
-Backfill reads local Codex rollouts only when explicitly requested, or when you opt into history import during setup. Use `--dry-run --stats` first. `full` can export prompts, patches, command lines and command output; the history does not receive retroactive policy decisions.
+Codex stores activity only when selected with `--traces`. Input/output content is withheld by default. To include bounded tool inputs/results and final response content, set the following in `~/.rippletide/codex.env` after owner consent:
+
+```bash
+RIPPLETIDE_CAPTURE_CONTENT=true
+```
+
+Setup preserves this setting but does not enable it. Repository and shell `RIPPLETIDE_*` settings do not configure the adapter. Set the adapter value to `false` to withhold content on subsequent runs and history imports.
+
+Backfill reads local Codex rollouts only when explicitly requested, or when you opt into history import during setup. Use `--dry-run --stats` first. Content is withheld unless `--capture-content` is supplied or the adapter setting is exactly `true`. That opt-in can export bounded prompts, patches, command lines and output; the history does not receive retroactive policy decisions.
 
 Removing local instrumentation or hooks does not erase previously stored server evidence. Keep Connection keys and local credential files private; use [API keys](/docs/api-keys) for rotation and revocation.

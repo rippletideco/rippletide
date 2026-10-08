@@ -27,7 +27,7 @@ Setup asks separately whether to:
 - **Store activity:** tool calls and their outcomes become traces. The default is **No**, including in a non-interactive terminal. `--traces` or `--no-traces` selects explicitly. With traces off, decisions and receipts are still recorded, but the activity-based connection status may remain declared.
 - **Import history:** only offered when storing activity. Default **No**. `--backfill` imports past sessions once; `--no-backfill` declines.
 
-Recorded activity defaults to `redacted` capture. Raw prompts and content need explicit `full` capture; see [Privacy & capture](/docs/privacy). Run a new Codex session with a tool call to verify the live hooks and its decision receipt. A historical import does not prove that a live hook is installed.
+Recorded activity withholds input/output content by default. To include bounded tool inputs/results and final response content, set `RIPPLETIDE_CAPTURE_CONTENT=true` in `~/.rippletide/codex.env` after owner consent. Setup preserves this setting but does not enable it. Repository and shell `RIPPLETIDE_*` settings do not configure the adapter. See [Privacy & capture](/docs/privacy). Run a new Codex session with a tool call to verify the live hooks and its decision receipt. A historical import does not prove that a live hook is installed.
 
 ## What the hooks can govern
 
@@ -54,7 +54,7 @@ rippletide codex backfill --dry-run --stats
 rippletide codex backfill --since 2026-09-01
 ```
 
-Backfill reads Codex's own sessions under `~/.codex/sessions` and imports them as backdated evidence. Review the dry run first. Capture defaults to redacted; `--capture full` explicitly exports raw content. Re-runs skip already imported sessions using local state.
+Backfill reads Codex's own sessions under `~/.codex/sessions` and imports them as backdated evidence. Review the dry run first. Content is withheld by default. `--capture-content` explicitly includes bounded prompts, patches, commands and outputs for that import. The same opt-in can be configured with `RIPPLETIDE_CAPTURE_CONTENT=true` in `~/.rippletide/codex.env`. Re-runs skip already imported sessions using local state.
 
 Historical turns are not re-evaluated against today's Rules and do not prove earlier enforcement. They can show **No policy check**. Keep historical evidence separate from proof that a live guard blocked an action.
 
