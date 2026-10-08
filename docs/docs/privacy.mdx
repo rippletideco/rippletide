@@ -44,7 +44,9 @@ Python withholds prompt text by default. Enable `allow_content_export=True` only
 
 ## Policy decision data
 
-Before-action parameters and trusted context are sent to Rippletide and stored in the decision audit trail. Before-response checks evaluate the candidate response and request. These policy inputs do not inherit the trace redaction setting. Keep their scope limited to facts needed by the policy.
+Before-action parameters and trusted context are sent to Rippletide and stored in the decision audit trail. Before-response checks evaluate the candidate response and request. These policy inputs do not inherit trace content-capture settings. Keep their scope limited to facts needed by the policy.
+
+Codex Stop sends the complete last assistant message for response evaluation and stores it in the decision audit trail even when activity storage or content capture is off. It sends `request: null`; the original user request is unavailable. Trace capture settings do not redact these policy inputs.
 
 Result filtering sends the full declared result for transient validation and evaluation. Raw collection/item bodies are not persisted in the result decision; item IDs, fingerprints, decisions, reasons and plan metadata are retained. Python requires explicit `allow_result_export=True`. Runtime traces can separately capture result content when content capture is enabled.
 

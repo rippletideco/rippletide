@@ -43,9 +43,9 @@ An executed handler can still fail. A model candidate is not a delivered respons
 | --- | --- |
 | TypeScript or Python SDK agent | Current inventory, heartbeat, expected tool call, turn and before-response evidence |
 | JavaScript/TypeScript MCP server | Inventory, heartbeat and tool call; no turn or response boundary |
-| Codex hooks | Inventory, heartbeat, covered tool call and turn when activity is enabled; no before-response gate |
+| Codex hooks | Inventory, heartbeat, covered tool call and turn when activity is enabled; Stop response review is separate from the required connection-proof contract |
 
-Codex with activity disabled can still produce policy decisions while its activity-based status remains declared. Imported Codex history is backdated evidence, not proof that those turns were governed.
+Codex Stop can request a revised response, but does not report a delivery or suppression receipt. Codex with activity disabled can still produce policy decisions while its activity-based status remains declared. Imported Codex history is backdated evidence, not proof that those turns were governed.
 
 ## Inspect from the CLI
 

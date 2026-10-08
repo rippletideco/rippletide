@@ -38,12 +38,16 @@ Recorded activity withholds input/output content by default. To include bounded 
 | Hosted tools such as `WebSearch` | Not governed by local hooks |
 | `write_stdin` into an open exec session | Not governed or recorded by the hook |
 | The JavaScript body of an `exec` cell | No hook on the cell; covered nested tool calls are checked |
-| Final response delivery | No `before_response` gate |
+| Final response | Stop evaluates the last assistant message and can request a revision; delivery or suppression is not confirmed |
 | Tool result filtering | Cannot be enforced after the effect through the post-tool hook |
 
 Shell payloads expose the command but not every execution flag or working directory. Some subagent message bodies are encrypted by Codex and unavailable for matching. Unknown or changed tool payloads require compatibility verification. These hooks are a guardrail, not complete coverage of everything Codex can do.
 
 An enforced `BLOCK` becomes a native deny before the covered call. Availability failures such as network outages, rate limits, 5xx and timeouts fail open. Deterministic policy rejections and arguments too large/deep to evaluate are refused. A missing, untrusted or crashed hook can leave a call ungoverned.
+
+At Stop, Rippletide evaluates Codex's complete last assistant message against before-response Rules. An enforced `BLOCK` requests that Codex revise the response. Observe decisions allow stopping. Evaluation errors, invalid replies and timeouts fail open. The check sends `request: null`, so the original user request is unavailable for matching.
+
+Stop review does not produce a delivery or suppression receipt and is separate from the required Codex connection-proof contract. It sends the complete response for policy evaluation and decision audit even when activity storage or content capture is off. See [Privacy & capture](/docs/privacy).
 
 Check `~/.rippletide/codex-hook.log` and recent decision receipts when diagnosing coverage. An authorized call with no post-tool evidence has an unknown outcome; authorization alone is not proof it executed.
 
