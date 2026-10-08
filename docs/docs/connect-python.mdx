@@ -3,7 +3,7 @@ title: "Connect a Python agent"
 description: "Install the Python SDK, apply the generated setup prompt, and verify your first live turn."
 ---
 
-`rippletide-python` supports existing Python 3.10+ agents with synchronous call sites. It has no model-provider dependencies: keep your provider and wrap its existing call sites. Python MCP servers, asynchronous execution and response streaming are not supported by this integration.
+`rippletide-python` supports existing Python 3.10+ agents with synchronous and asyncio call sites. It has no model-provider dependencies: keep your provider and wrap its existing call sites. Provider streams can be traced. Responses streamed directly to the caller are evaluated after delivery and cannot be suppressed. Python MCP servers are not supported by this integration.
 
 ## Install and connect
 
@@ -39,4 +39,4 @@ Runtime content capture is disabled by default. See [Privacy & capture](/docs/pr
 
 ## Verify a real run
 
-Run a turn that uses a guarded tool and delivers a response. Check `rippletide verify`, then `rippletide events --wait`. The app must show the inventory, heartbeat, tool and turn evidence, and the response-delivery outcome in **Traces**. Recording only a model candidate does not prove delivery.
+Run a turn that uses a guarded tool and delivers a response. Check `rippletide verify`, then `rippletide events --wait`. The app must show the inventory, heartbeat, tool and turn evidence, and the response-delivery outcome in **Traces**. Recording only a model candidate does not prove delivery. For a directly delivered stream, verification proves recorded delivery, not a pre-delivery enforcement boundary. See [Async and streaming](/docs/manual-python-setup#async-and-streaming).

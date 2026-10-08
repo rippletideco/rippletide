@@ -1,11 +1,11 @@
 ---
 title: "Manual Python setup"
-description: "Instrument synchronous Python model, tool, and response call sites yourself."
+description: "Instrument Python model, tool, and response call sites yourself."
 ---
 
 Use this guide when you maintain the instrumentation yourself. First [install the Python SDK and create a connection](/docs/connect-python#install-and-connect). The generated setup prompt can adapt these same boundaries to your repository.
 
-This integration supports Python 3.10+ agents with synchronous call sites. Python MCP servers, asynchronous execution and response streaming are not supported.
+This integration supports Python 3.10+ agents with synchronous and asyncio call sites, including provider streams. Python MCP servers are not supported.
 
 ## Instrument your existing request handler
 
@@ -52,11 +52,21 @@ At the real tool dispatcher, call `guard_tool_call()` with the declared toolset/
 
 `load_rippletide_env()` does not override process environment variables. The SDK also accepts the app/manual `RIPPLETIDE_API_KEY` and `RIPPLETIDE_AGENT_ID` configuration. Never put a Platform key in the agent.
 
+## Async and streaming
+
+`guard_tool_call()`, `guard_tool_result()` and `deliver_response()` accept `async def` callbacks. Await their returned result. Keep `run()`, `agent()` and `span()` as plain `with` blocks. Use `await rippletide.aflush()` before a short-lived invocation exits and `await rippletide.ashutdown()` when the client is no longer needed.
+
+Wrap the existing provider call with `traced()`. Await coroutine results; consume returned synchronous or asynchronous iterators normally. A directly returned iterator keeps its model span open until it is consumed or closed.
+
+For response enforcement, pass the complete candidate your agent has already assembled to `deliver_response()` before its existing sink delivers it. If the sink streams tokens to the caller as they arrive, pass the synchronous or asynchronous iterator of response-text strings as `response`. The SDK forwards the chunks to `deliver` and records the policy decision after delivery. A `BLOCK` recorded after delivery cannot suppress content already sent; the receipt remains `DELIVERED` and the trace marks the decision as after delivery.
+
+A successful verification proves recorded delivery; it does not prove that a streamed response could be blocked before reaching the caller.
+
 ## Capture and failure behavior
 
 Runtime content capture is disabled by default. Set `capture_content=True` on the `Rippletide` constructor only after the content owner approves exporting bounded input/output values. Prompt inventory is separate: text is withheld unless its owner explicitly enables `allow_content_export=True` on `register_prompts()`. See [Privacy & capture](/docs/privacy).
 
-For tool and response guards, an enforced `BLOCK` raises `RippletidePolicyBlockedError` before the callback. Observe-only `WOULD_BLOCK` permits it. Network errors, 5xx, rate limits and malformed/interrupted HTTP responses fail open. Deterministic 400/401/403/404 decision errors raise `RippletidePolicyDecisionError`; do not treat them as telemetry outages.
+For tool guards and complete-response delivery, an enforced `BLOCK` raises `RippletidePolicyBlockedError` before the callback. Observe-only `WOULD_BLOCK` permits it. Network errors, 5xx, rate limits and malformed/interrupted HTTP responses fail open. Deterministic 400/401/403/404 decision errors raise `RippletidePolicyDecisionError`; do not treat them as telemetry outages.
 
 For a declared result collection, `guard_tool_result()` requires explicit `allow_result_export=True`. The complete result is sent for transient evaluation, and your `apply` callback preserves the original response shape while delivering only the allowed items. See [Result filtering](/docs/result-filtering) for the contract and fallback behavior.
 
