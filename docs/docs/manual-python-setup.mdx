@@ -54,7 +54,7 @@ At the real tool dispatcher, call `guard_tool_call()` with the declared toolset/
 
 ## Capture and failure behavior
 
-Runtime capture defaults to **metadata**. Prompt text is withheld unless its owner explicitly enables `allow_content_export=True` on `register_prompts()`. Choose `RIPPLETIDE_CAPTURE_MODE=redacted` or `full` deliberately; see [Privacy & capture](/docs/privacy).
+Runtime content capture is disabled by default. Set `capture_content=True` on the `Rippletide` constructor only after the content owner approves exporting bounded input/output values. Prompt inventory is separate: text is withheld unless its owner explicitly enables `allow_content_export=True` on `register_prompts()`. See [Privacy & capture](/docs/privacy).
 
 For tool and response guards, an enforced `BLOCK` raises `RippletidePolicyBlockedError` before the callback. Observe-only `WOULD_BLOCK` permits it. Network errors, 5xx, rate limits and malformed/interrupted HTTP responses fail open. Deterministic 400/401/403/404 decision errors raise `RippletidePolicyDecisionError`; do not treat them as telemetry outages.
 
