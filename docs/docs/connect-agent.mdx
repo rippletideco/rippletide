@@ -3,7 +3,7 @@ title: "Connect an agent"
 description: "Instrument an existing JavaScript or TypeScript agent through its generated setup prompt."
 ---
 
-Use this guide for an existing JavaScript or TypeScript agent on Node.js 18+. The agent continues to run in your infrastructure. [Python](/docs/connect-python), [MCP servers](/docs/connect-mcp-server), and [Codex itself](/docs/connect-codex) have separate guides.
+Use this guide for an existing JavaScript or TypeScript agent on Node.js 18.19+ on the 18.x line, or 20.6+. The agent continues to run in your infrastructure. [Python](/docs/connect-python), [MCP servers](/docs/connect-mcp-server), and [Codex itself](/docs/connect-codex) have separate guides.
 
 ## CLI connection
 
@@ -29,7 +29,7 @@ Use `--agent <agentId>` to link an existing agent. Re-running `connect` reuses t
 
 ## App-based connection
 
-Choose **Connect → Agent** and the JavaScript/TypeScript option in the app. Save its generated `.env` credentials and apply its generated prompt in your repository.
+Choose **Connect → Agent (JS/TS)** in the app. Save its generated `.env` credentials and apply its generated prompt in your repository.
 
 The app/manual path uses `RIPPLETIDE_AGENT_ID` and `RIPPLETIDE_API_KEY`. The CLI path uses one `RIPPLETIDE` connection string. Use the configuration your chosen path generates; see [API keys](/docs/api-keys) for rotation and precedence.
 

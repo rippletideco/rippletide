@@ -26,11 +26,11 @@ rippletide rules result-decisions --agent <agentId> --limit 20
 rippletide rules result-decisions show <decisionId> --agent <agentId>
 ```
 
-Trace details expose only content that was actually retained; metadata/redacted capture cannot reconstruct missing raw values. Decision-history views also limit sensitive fields.
+Trace details expose only content that was actually retained; traces cannot reconstruct values withheld from the original capture. Decision-history views also limit sensitive fields.
 
 ## Use replay carefully
 
-Activity discovery and [source-update review](/docs/business-context) can compare proposed Rules with retained recorded inputs. Review the cases, supporting evidence, counterexamples and **inconclusive** outcomes.
+Trace discovery and [source-update review](/docs/business-context) can compare proposed Rules with retained recorded inputs. Review the cases, supporting evidence, counterexamples and **inconclusive** outcomes.
 
 Replay is a counterfactual on a bounded cohort: it does not prove the historical action was blocked or predict how the agent would adapt to a different result. Missing capture/context, unsupported predicates, truncated evidence or evaluation failures can prevent a conclusion. Changing selections or required configuration may recalculate the preview.
 

@@ -3,7 +3,7 @@ title: "Traces"
 description: "Read runs, tool calls, policy decisions and reported outcomes without overstating the evidence."
 ---
 
-**Traces** presents recorded runs and their outcomes. It contains what the integration actually reported, with the content allowed by its [capture mode](/docs/privacy).
+**Traces** presents recorded runs and their outcomes. It contains what the integration actually reported, with the content allowed by its [capture setting](/docs/privacy).
 
 ## Find a run or situation
 
@@ -16,10 +16,10 @@ Counts in a loaded list describe the loaded traces; older traces may be availabl
 Open a trace in the detail panel:
 
 - **Flow** presents recorded business steps and their outcomes.
-- **Full trace** presents the technical span structure: runs, agents, model calls, tools, policy checks and response delivery when reported.
+- **Technical** presents the technical span structure: runs, agents, model calls, tools, policy checks and response delivery when reported.
 - Correlation links connect a protected invocation to its decision and actual reported outcome.
 
-Full trace is a view, not a guarantee that raw content was captured. A metadata/redacted trace cannot recover values that were withheld. A missing span or receipt is unavailable evidence, not a successful action.
+Technical is a view, not a guarantee that raw content was captured. A trace cannot recover content that was withheld. A missing span or receipt is unavailable evidence, not a successful action.
 
 ## Read outcomes precisely
 
@@ -43,9 +43,9 @@ An executed handler can still fail. A model candidate is not a delivered respons
 | --- | --- |
 | TypeScript or Python SDK agent | Current inventory, heartbeat, expected tool call, turn and before-response evidence |
 | JavaScript/TypeScript MCP server | Inventory, heartbeat and tool call; no turn or response boundary |
-| Codex hooks | Inventory, heartbeat, covered tool call and turn when activity is enabled; no before-response gate |
+| Codex hooks | Inventory, heartbeat, covered tool call and turn when activity is enabled; Stop response review is separate from the required connection-proof contract |
 
-Codex with activity disabled can still produce policy decisions while its activity-based status remains declared. Imported Codex history is backdated evidence, not proof that those turns were governed.
+Codex Stop can request a revised response, but does not report a delivery or suppression receipt. Codex with activity disabled can still produce policy decisions while its activity-based status remains declared. Imported Codex history is backdated evidence, not proof that those turns were governed.
 
 ## Inspect from the CLI
 

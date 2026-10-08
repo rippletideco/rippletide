@@ -136,7 +136,7 @@ rippletide codex backfill --since 2026-09-01
 rippletide codex setup --uninstall
 ```
 
-Setup accepts `--session <token>` or `--agent <id>`; without either it can create the Codex agent. `--traces`/`--no-traces` controls stored activity, and `--backfill`/`--no-backfill` controls history import. Backfill accepts `--capture metadata|redacted|full`; redacted is the default. `codex hook <event>` is called by Codex, not a manual verification command.
+Setup accepts `--session <token>` or `--agent <id>`; without either it can create the Codex agent. `--traces`/`--no-traces` controls stored activity, and `--backfill`/`--no-backfill` controls history import. Backfill accepts `--capture-content`; content is withheld unless the flag is present or `RIPPLETIDE_CAPTURE_CONTENT` is exactly `true` in `~/.rippletide/codex.env`. Repository and shell `RIPPLETIDE_*` settings do not configure this adapter. `codex hook <event>` is called by Codex, not a manual verification command.
 
 Read [Connect Codex](/docs/connect-codex) before setup for coverage, trust and privacy choices.
 

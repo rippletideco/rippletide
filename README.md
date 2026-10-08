@@ -11,7 +11,7 @@ Rippletide connects to agents you already run, records runtime evidence, and eva
 
 ## Connect an existing agent
 
-For a JavaScript or TypeScript agent on Node.js 18+:
+For a JavaScript or TypeScript agent on Node.js 18.19+ on the 18.x line, or 20.6+:
 
 ```bash
 npm install -g rippletide-package

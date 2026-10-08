@@ -9,47 +9,59 @@ Trace capture, inventory declaration and policy evaluation are separate data pat
 
 | Integration | Default trace behavior | Content controls |
 | --- | --- | --- |
-| TypeScript SDK, including instrumented JS/TS MCP | `full`: bounded payload values with credential-shaped values redacted | `captureMode` client option or `RIPPLETIDE_CAPTURE_MODE` |
-| Python SDK | `metadata` | `RIPPLETIDE_CAPTURE_MODE`; prompt text needs separate `allow_content_export=True` |
-| Codex live hooks | Activity storage off until selected; `redacted` when enabled | Setup `--traces`/`--no-traces`, then capture setting in `~/.rippletide/codex.env` |
-| Codex history import | Explicit import, `redacted` by default | `backfill --capture metadata`, `redacted`, or `full` |
+| TypeScript SDK, including instrumented JS/TS MCP | Operational metadata; input/output content withheld | `captureContent: true` on the client, after owner consent |
+| Python SDK | Operational metadata; input/output content withheld | `capture_content=True` on the client, after owner consent; prompt inventory needs separate `allow_content_export=True` |
+| Codex live hooks | Activity storage off until selected; content withheld when enabled | Setup `--traces`/`--no-traces`; content opt-in via `RIPPLETIDE_CAPTURE_CONTENT=true` in `~/.rippletide/codex.env` |
+| Codex history import | Explicit import; content withheld by default | `backfill --capture-content`, or the adapter content setting |
 
-Do not assume a metadata-only default across all SDKs. Set the capture mode deliberately before running an integration on customer content.
+Review the content setting before running an integration on customer data. SDK content capture is off by default; inventory and policy inputs have separate data boundaries.
 
-## Capture modes
+<span id="capture-modes" />
 
-| Mode | Payloads |
-| --- | --- |
-| `metadata` | Timing, kinds, correlation identifiers, model/token and decision metadata; input/output payloads withheld |
-| `redacted` | Payload structure, with scalar values replaced by redaction markers |
-| `full` | Bounded input/output values; credential-shaped keys and authorization values receive best-effort redaction |
+## SDK content capture
 
-For an SDK agent, place a setting in its environment:
+Both SDKs export allowlisted operational metadata by default. Inputs, outputs, arbitrary application attributes and exception messages/stacks are withheld until content capture is enabled.
 
-```bash
-RIPPLETIDE_CAPTURE_MODE=metadata
+```ts
+const rippletide = new Rippletide({ captureContent: false });
 ```
 
-For Codex, put it in `~/.rippletide/codex.env`; repository environment variables do not configure that adapter. Use supported mode names exactly.
+```python
+rippletide = Rippletide(capture_content=False)
+```
 
-Metadata can still be sensitive. Identifiers, tool names, model names and attributes may identify a person or system. Codex metadata can include an absolute working directory containing a username. Redaction is not a guarantee that all personal or business-sensitive data has been removed.
+Set the option to `true` in TypeScript or `True` in Python only after explicit owner consent. Captured values are bounded, with credential-shaped keys and inline authorization values redacted. This is not a general PII filter. Operation names and correlation identifiers must not contain user content.
+
+The old `captureMode` option and `RIPPLETIDE_CAPTURE_MODE` variable are no longer supported. They do not override content capture or grant consent; remove them from code and deployment settings.
+
+Metadata can still be sensitive. Identifiers, tool names and model names may identify a person or system. Redaction is not a guarantee that all personal or business-sensitive data has been removed.
 
 ## Inventory and prompts
 
-Third-party connection declarations send credential names and status, not secret values. Prompt/instruction inventory is distinct from trace payload capture: a TypeScript prompt declaration can send its fallback text even when runtime capture is metadata. Review what you register.
+Third-party connection declarations send credential names and status, not secret values. Prompt/instruction inventory is distinct from trace payload capture: a TypeScript prompt declaration can send its fallback text even when runtime content capture is disabled. Review what you register.
 
 Python withholds prompt text by default. Enable `allow_content_export=True` only when the prompt owner has approved storing it. Do not put secrets in prompt text or schema descriptions.
 
 ## Policy decision data
 
-Before-action parameters and trusted context are sent to Rippletide and stored in the decision audit trail. Before-response checks evaluate the candidate response and request. These policy inputs do not inherit the trace redaction setting. Keep their scope limited to facts needed by the policy.
+Before-action parameters and trusted context are sent to Rippletide and stored in the decision audit trail. Before-response checks evaluate the candidate response and request. These policy inputs do not inherit trace content-capture settings. Keep their scope limited to facts needed by the policy.
 
-Result filtering sends the full declared result for transient validation and evaluation. Raw collection/item bodies are not persisted in the result decision; item IDs, fingerprints, decisions, reasons and plan metadata are retained. Python requires explicit `allow_result_export=True`. Runtime traces can separately capture result content according to their capture mode.
+Codex Stop sends the complete last assistant message for response evaluation and stores it in the decision audit trail even when activity storage or content capture is off. It sends `request: null`; the original user request is unavailable. Trace capture settings do not redact these policy inputs.
 
-Rules using a model predicate can send the selected field and instruction to the configured model evaluator. Trace discovery analyses captured values, and document discovery/labeling analyses imported text. Only select sources and fields approved for that processing. A metadata-only trace cannot later be replayed as if its raw arguments had been captured.
+Result filtering sends the full declared result for transient validation and evaluation. Raw collection/item bodies are not persisted in the result decision; item IDs, fingerprints, decisions, reasons and plan metadata are retained. Python requires explicit `allow_result_export=True`. Runtime traces can separately capture result content when content capture is enabled.
+
+Rules using a model predicate can send the selected field and instruction to the configured model evaluator. Trace discovery analyses captured values, and document discovery/labeling analyses imported text. Only select sources and fields approved for that processing. A trace without captured content cannot later be replayed as if its raw arguments had been retained.
 
 ## Codex history and local state
 
-Backfill reads local Codex rollouts only when explicitly requested, or when you opt into history import during setup. Use `--dry-run --stats` first. `full` can export prompts, patches, command lines and command output; the history does not receive retroactive policy decisions.
+Codex stores activity only when selected with `--traces`. Input/output content is withheld by default. To include bounded tool inputs/results and final response content, set the following in `~/.rippletide/codex.env` after owner consent:
+
+```bash
+RIPPLETIDE_CAPTURE_CONTENT=true
+```
+
+Setup preserves this setting but does not enable it. Repository and shell `RIPPLETIDE_*` settings do not configure the adapter. Set the adapter value to `false` to withhold content on subsequent runs and history imports.
+
+Backfill reads local Codex rollouts only when explicitly requested, or when you opt into history import during setup. Use `--dry-run --stats` first. Content is withheld unless `--capture-content` is supplied or the adapter setting is exactly `true`. That opt-in can export bounded prompts, patches, command lines and output; the history does not receive retroactive policy decisions.
 
 Removing local instrumentation or hooks does not erase previously stored server evidence. Keep Connection keys and local credential files private; use [API keys](/docs/api-keys) for rotation and revocation.

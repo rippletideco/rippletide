@@ -13,15 +13,24 @@ Every Rule release has a mode: **Disabled**, **Observe**, or **Enforce**. There 
 | Observe | Matches are recorded; a blocking match alone returns Would block and lets the protected callback run |
 | Enforce | A blocking match prevents the protected callback; an Allow match does not block it |
 
-Basic manual/CLI creation starts Disabled. Discovery may explicitly create in Observe. Web Activity proposals use Observe, and source-update replacements return to Observe. Check the mode shown before saving or applying a review.
+Basic manual/CLI creation starts Disabled. Discovery may explicitly create in Observe. Web trace proposals use Observe, and source-update replacements return to Observe. Check the mode shown before saving or applying a review.
 
 ## Allow and Block
 
-Before-action rules can express **ALLOW** or **BLOCK**. Actions normally use `block-only`: no blocking match means the action can proceed. Creating an Allow rule moves its covered actions to `allow-block`, which records explicit Allow, Block or **Undetermined** outcomes. Only an enforced Block prevents execution; Undetermined is not an enforced deny.
+Before-action rules can express **ALLOW** or **BLOCK**. The Rules' conclusion and the runtime's effective disposition are separate:
+
+| Rules' conclusion | Effective disposition |
+| --- | --- |
+| An Allow rule matches, with no blocking match or evaluation error | `ALLOW`: the action can proceed |
+| No Rule matches, with no evaluation error | `UNDETERMINED` with reason `NO_MATCH`; disposition `ALLOW` lets the action proceed |
+| Blocking matches are all Observe-only | `WOULD_BLOCK`: record the matches and let the action proceed |
+| A blocking match is Enforce | `BLOCK`: prevent the protected handler |
+
+Only an enforced Block prevents execution. `UNDETERMINED` is not an enforced deny. Before-action Rules do not change a separate action-wide decision mode.
 
 An Allow match does not override an enforced Block from another applicable Rule. When only Observe releases block, the effective disposition is **Would block**; if an Enforce release blocks, it is **Block**. Test the combined active set as well as the Rule you are reviewing.
 
-Allow rules apply before actions, not as an Allow authoring option for response or result rules. An action with an active Allow rule cannot return to block-only until that covering Rule is disabled or archived.
+Allow rules apply before actions, not as an Allow authoring option for response or result rules. Disabling or archiving an Allow release removes it from evaluation; it does not switch the action into another mode.
 
 ## Decisions need an enforcement boundary
 

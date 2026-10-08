@@ -21,7 +21,7 @@ import Rippletide, { loadRippletideEnv } from "rippletide-package";
 loadRippletideEnv("/absolute/path/to/your-agent/.env");
 const rippletide = new Rippletide({
   name: "Support agent",
-  captureMode: "metadata",
+  captureContent: false,
   contextSchema: {
     type: "object",
     properties: {
@@ -31,7 +31,7 @@ const rippletide = new Rippletide({
 });
 ```
 
-This example chooses metadata capture deliberately. Without a capture setting, the TypeScript SDK defaults to `full`. See [Privacy & capture](/docs/privacy). A client with no Connection key runs disabled; instrumented code alone is not proof of governance.
+This example leaves runtime content capture disabled, which is also the default. Enable `captureContent: true` only after the content owner approves exporting bounded input/output values. See [Privacy & capture](/docs/privacy). A client with no Connection key runs disabled; instrumented code alone is not proof of governance.
 
 ## 2. Declare inventory
 
