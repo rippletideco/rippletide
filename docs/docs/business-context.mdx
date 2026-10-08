@@ -9,7 +9,7 @@ Business context connects your team's documents and recorded activity to the Rul
 
 Open **Business context** on the agent or integration. **Overview** connects sources to current Rules; select either to inspect its recorded associations. A Rule linked to several sources appears once in the overview. Sources and Rules without an association remain visible.
 
-**Sources** contains documents, versions, connectors and saved Activity sources. These links record authoring provenance, not proof that a source was consulted or a Rule covered a particular runtime action.
+**Sources** contains documents, versions, connectors and saved trace sources. These links record authoring provenance, not proof that a source was consulted or a Rule covered a particular runtime action.
 
 ## Connect a document
 
@@ -34,27 +34,27 @@ Google Drive and SharePoint are disabled **Preview** entries. They do not connec
 
 ## Propose a Rule
 
-Choose **Propose a Rule**. Select documents, captured Activity, or both, then start analysis.
+Choose **Propose a Rule**. Select documents, captured traces, or both, then start analysis.
 
 - **Documents** contribute the selected versions and supporting passages.
-- **Activity** contributes retained runtime cases. Selecting it and starting discovery permits analysis of captured values. It is available for connected agents even without uploaded documents; direct integrations retain the document path.
+- **Traces** contributes retained runtime cases. Selecting it and starting discovery permits analysis of captured values. It is available for connected agents even without uploaded documents; direct integrations retain the document path.
 - Selecting both analyses does not automatically establish corroboration between them.
 
-Review each proposal's scope, evidence, replay, counterexamples and setup requirements. Complete required configuration before saving. Document discovery offers Disabled or Observe; Activity proposals in the web start Observe. No Rule is created until you apply your selection.
+Review each proposal's scope, evidence, replay, counterexamples and setup requirements. Complete required configuration before saving. Document discovery offers Disabled or Observe; Trace proposals in the web start Observe. No Rule is created until you apply your selection.
 
-Saved Activity proposals retain a frozen source containing the analysis window and exact trace/span references. They do not copy raw argument values into that source. Missing original traces are shown as unavailable. Review snapshots can expire; analyze again when prompted rather than applying a stale proposal.
+Saved Trace proposals retain a frozen source containing the analysis window and exact trace/span references. They do not copy raw argument values into that source. Missing original traces are shown as unavailable. Review snapshots can expire; analyze again when prompted rather than applying a stale proposal.
 
 ## Update a document and review impact
 
 1. In **Sources**, select **Update** and choose the replacement file.
-2. Choose **Store & analyze update**. The new version is stored before Rule changes are applied.
+2. Choose **Upload and analyze**. The new version is stored before Rule changes are applied.
 3. Review the full-page impact view: proposed updates, new Rules, archived Rules and unchanged Rules. Select a node to inspect its passages, required configuration or recorded calls.
 4. Select the changes you want and complete required settings. Review the recalculated before/after preview and the new-Rule Disabled/Observe choice.
 5. Apply the reviewed selection. Updated Rules return to Observe; new Rules use the chosen mode.
 
 The preview compares current and proposed Rules on the same bounded set of captured tool inputs. It is not historical enforcement or measured agent adaptation. Missing inputs/context and unsupported evaluation paths produce inconclusive results. Counts describe the returned cohort, not all stored activity; groups can contain overlapping traces.
 
-Leaving the review keeps the stored document and leaves Rules unchanged. If analysis fails, use **Retry impact analysis**. Expired reviews, changed Rules or a newer source version require reanalysis. During recalculation the app prevents applying stale results. The web apply operation commits the reviewed selection together; after an unconfirmed response, follow the retry guidance for that same preview.
+Leaving the review keeps the stored document and leaves Rules unchanged. If analysis fails, use **Retry analysis**. Expired reviews, changed Rules or a newer source version require reanalysis. During recalculation the app prevents applying stale results. The web apply operation commits the reviewed selection together; after an unconfirmed response, follow the retry guidance for that same preview.
 
 ## Archive a source
 
