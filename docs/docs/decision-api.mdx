@@ -1,0 +1,281 @@
+---
+title: "Decision API"
+description: "Compare explicit choices using shared memory and policies, inspect the evidence, and correct a result."
+---
+
+The Decision API compares the choices you provide and returns the option it considers best supported by your question, current context, retrieved memory and active policies. Your application decides how to use that recommendation.
+
+Each workspace has a shared memory bank for stored information, previous interactions and policies. You can use **Decision API → Test, Memory and Policies** in the [platform](https://app.rippletide.com/decision-api), or call the API with that bank's Connection key. An agent connection is not required.
+
+Policies guide the model's comparison. [Rules and the Policy API](/docs/policy-api) evaluate execution and delivery boundaries. A Decision API recommendation does not execute, approve or block an action.
+
+## Try it in the app
+
+This example uses a fictional service, **Orion**, and synthetic error code **RP17**. It compares the same question before and after adding sourced information. Review [Privacy & capture](/docs/privacy#decision-api-memory-and-replay) before submitting customer data: successful decisions can retain their inputs and generated results as memory.
+
+Sign in, select your workspace and open **Decision API** below **Agents & integrations**. An Admin's first visit creates the workspace bank and key. Editors can test decisions and change memory or policies; Viewers can read memory and policies. The app uses your account session, with no key to paste.
+
+<Steps>
+  <Step title="Prepare the comparison">
+    Inspect **Memory** and **Policies** first. If Orion or RP17 already has a definition in the bank, use another unused synthetic service and code throughout the example. Keep the active policies unchanged for the two decisions.
+
+    In **Test**, select **Add choices**, enter `upstream_timeout` and `db_pool_full` separately, then select **Done**. Select **Add context** and paste only this JSON object:
+
+    ```json
+    {
+      "service": "Orion",
+      "error_code": "RP17"
+    }
+    ```
+
+    Select **Done**, then enter: “What does error code RP17 mean for Orion?”
+  </Step>
+
+  <Step title="Record the first decision">
+    Send the question. Record the selected option and both **Choice scores**, then open **Why?** to inspect the memory excerpts and policies presented to the model.
+
+    This is a baseline: it may already select the right option. Earlier interactions or generated hypotheses in memory do not establish what RP17 means.
+  </Step>
+
+  <Step title="Add the missing runbook information">
+    Open **Memory → Add information**. Enter:
+
+    > For Orion, RP17 means the upstream request timed out. It does not indicate a database pool problem.
+
+    Set **Source** to `runbook:orion-rp17` and select **Add information**. The app supplies the observation time. Check **Added to memory**, then search for Orion or RP17.
+
+    The information is stored and indexed when the addition commits. Retention makes it eligible for retrieval; a later question may still retrieve a different selection of excerpts.
+  </Step>
+
+  <Step title="Repeat with the same inputs">
+    Return to **Test** and send the same question without changing **Choices**, **Context** or the active policies. Sending clears the question but keeps the configured choices and context.
+
+    The supplied runbook supports `upstream_timeout`. Open **Why?** and check whether the runbook text appears as **Information**. Compare the actual option and scores with your first result. One comparison, or a higher score alone, does not measure overall accuracy.
+  </Step>
+</Steps>
+
+The conversation clears on reload, workspace changes and logout. Stored memory and policies remain in their workspace bank. Coordinate additions and policy changes with teammates using the same bank.
+
+## Read a decision
+
+| Field or view | Meaning |
+| --- | --- |
+| `decision_id` | Identifier to retain for feedback and diagnostics |
+| `choice` | One of the exact strings supplied in `choices` |
+| `choice_scores` | Each option's `probability` from 0 to 1, in submitted order; the selected option has a maximum score |
+| `mode`, `status` | New decisions return `choice` and `answered` |
+| `answer`, `reason` | Currently `null` for new decisions; no free-text answer or explanation is returned here |
+| `evidence.presented_facts` | Exact retrieved excerpts presented to this decision, with source references, observation dates and provenance |
+| `evidence.policy_versions` | IDs and versions of policies included in the decision |
+| **Why?** | The original decision's memory excerpts and policy versions, rather than the bank's current contents |
+
+Scores are model outputs, not calibrated certainty. Presented facts prove what was supplied to the model, not factual correctness, causal influence or compliance with a policy. `citation_status: unsupported` means the response provides no model citations.
+
+In the app, **Information**, **Interaction**, **Hypothesis** and **Correction** identify the origin of memory excerpts. A Hypothesis is generated history. Source references and observation dates remain available in the API JSON; the compact app blocks do not display them.
+
+The API selects from the supplied choices even with weak evidence. If your workflow needs `insufficient_evidence`, include it as a choice and describe when to select it in a policy. Check the result against your use case.
+
+## Call from your application
+
+An Admin can select **Copy API key** in Decision API. This Connection key is bound to the workspace bank and uses **Bearer** authentication. It also authorizes memory and policy edits, so keep it in the intended backend application's secret manager. See [API keys](/docs/api-keys#decision-api-keys) for expiration, copying and replacement.
+
+The Bash examples use `uuidgen`. Set the production API URL and the key copied from the same environment:
+
+```bash
+export RT_API='https://agent-evalserver-production.up.railway.app'
+export RT_BANK_KEY='<Connection key copied from Decision API>'
+```
+
+For staging, use `https://agent-evalserver-staging.up.railway.app` with its staging bank key. Keep the app, API and credentials in the same environment.
+
+<Steps>
+  <Step title="Check the key and prepare a request">
+    List policies to check authentication without calling the decision model:
+
+    ```bash
+    curl -sS "$RT_API/v1/policies" \
+      -H "Authorization: Bearer $RT_BANK_KEY"
+    ```
+
+    HTTP 200 confirms that the key is accepted. The list includes inactive policies; only active policies guide decisions.
+
+    Save the comparison inputs so both calls use the same body:
+
+    ```bash
+    cat > orion-request.json <<'JSON'
+    {
+      "question": "What does error code RP17 mean for Orion?",
+      "context": { "service": "Orion", "error_code": "RP17" },
+      "choices": ["upstream_timeout", "db_pool_full"]
+    }
+    JSON
+    ```
+
+    `question` and `choices` are required. Supply 1–80 unique, nonblank choices, each up to 256 characters. Optional `context` must be a JSON object and defaults to `{}`.
+  </Step>
+
+  <Step title="Request the baseline decision">
+    Create a UUID once for this attempt, then send the request:
+
+    ```bash
+    export RT_DECISION_REQUEST_ID="$(uuidgen)"
+
+    curl -sS -o orion-before.json -w '\nHTTP %{http_code}\n' \
+      -X POST "$RT_API/v1/decide" \
+      -H "Authorization: Bearer $RT_BANK_KEY" \
+      -H 'Content-Type: application/json' \
+      -H "Idempotency-Key: $RT_DECISION_REQUEST_ID" \
+      --data-binary @orion-request.json
+
+    cat orion-before.json
+    ```
+
+    HTTP 200 returns the decision. Keep its actual scores, evidence and `decision_id`. Reuse this UUID and body when retrying an uncertain attempt; create a new UUID for a new decision.
+  </Step>
+
+  <Step title="Record and retrieve the runbook information">
+    Use this API path instead of adding the same information in the app:
+
+    ```bash
+    export RT_MEMORY_REQUEST_ID="$(uuidgen)"
+
+    curl -sS -X POST "$RT_API/v1/memories" \
+      -H "Authorization: Bearer $RT_BANK_KEY" \
+      -H 'Content-Type: application/json' \
+      -H "Idempotency-Key: $RT_MEMORY_REQUEST_ID" \
+      -d '{
+        "content": "For Orion, RP17 means the upstream request timed out. It does not indicate a database pool problem.",
+        "source": {
+          "ref": "runbook:orion-rp17",
+          "observed_at": "2026-10-14T09:00:00Z"
+        }
+      }'
+    ```
+
+    HTTP 202 returns `status: recorded`, `memory_status: retained`, `memory_id` and `ingestion_id`. The text is already stored and indexed when the request returns. `GET /v1/ingestions/:ingestionId` checks the ingestion's status.
+
+    Retrieve relevant information without a decision-model call:
+
+    ```bash
+    curl -sS -X POST "$RT_API/v1/context/recall" \
+      -H "Authorization: Bearer $RT_BANK_KEY" \
+      -H 'Content-Type: application/json' \
+      -d '{"query":"What does error code RP17 mean for Orion?"}'
+    ```
+
+    Inspect `facts` for the runbook text and `source.ref: runbook:orion-rp17`. Recall returns a bounded selection of retained excerpts and active policies.
+  </Step>
+
+  <Step title="Repeat the decision and compare">
+    Create a new request UUID, keeping the original body:
+
+    ```bash
+    export RT_DECISION_REQUEST_ID="$(uuidgen)"
+
+    curl -sS -o orion-after.json -w '\nHTTP %{http_code}\n' \
+      -X POST "$RT_API/v1/decide" \
+      -H "Authorization: Bearer $RT_BANK_KEY" \
+      -H 'Content-Type: application/json' \
+      -H "Idempotency-Key: $RT_DECISION_REQUEST_ID" \
+      --data-binary @orion-request.json
+
+    cat orion-after.json
+    ```
+
+    Compare `choice`, `choice_scores` and `evidence.presented_facts` in the two files. Check whether the follow-up contains the sourced runbook information, including its reference. Report the actual result even if it did not improve.
+  </Step>
+</Steps>
+
+## Add a policy
+
+After the memory comparison, open **Policies → Add a policy**. Enter “Choose the diagnosis supported by the supplied observations and runbook facts”, keep the policy **Active**, then select **Save policy**. The app handles version checks.
+
+Through the API, create a policy with `expected_version: 0`:
+
+```bash
+curl -sS -X PUT "$RT_API/v1/policies/orion-diagnosis" \
+  -H "Authorization: Bearer $RT_BANK_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "text": "Choose the diagnosis supported by the supplied observations and runbook facts.",
+    "active": true,
+    "expected_version": 0
+  }'
+```
+
+A new policy starts at version 1. For an update, use its current version from `GET /v1/policies`. Identical updates are no-ops; a stale version returns `409 POLICY_VERSION_CONFLICT`. Inactive policies are excluded from future decisions. Run a new decision and inspect `evidence.policy_versions` for the policy and saved version.
+
+## Correct a response
+
+In **Test**, select **Correct this answer** below the result, enter the correction and select **Send**. The app attributes it as user-provided information with an observation time. It can inform future decisions without changing the original response or its **Why?** snapshot.
+
+The API supports either a vote or a sourced correction. For an incorrect result with a source, use the returned `decision_id` and generate a UUID once for the feedback operation:
+
+```bash
+export RT_FEEDBACK_REQUEST_ID="$(uuidgen)"
+
+curl -sS -X POST "$RT_API/v1/feedback" \
+  -H "Authorization: Bearer $RT_BANK_KEY" \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: $RT_FEEDBACK_REQUEST_ID" \
+  -d '{
+    "decision_id": "<decision_id from your response>",
+    "rating": "incorrect",
+    "correction": "For Orion, RP17 means the upstream request timed out.",
+    "source": {
+      "ref": "runbook:orion-rp17",
+      "observed_at": "2026-10-14T09:00:00Z"
+    }
+  }'
+```
+
+A sourced correction returns HTTP 202 and retained ingestion metadata. A vote omits both `correction` and `source`, uses `rating: correct` or `incorrect`, and returns HTTP 201 without adding memory. Only completed decisions in the same bank accept feedback. Corrections retain attribution; they do not change policies or model weights.
+
+## Endpoint reference
+
+All routes below use the bank's Bearer Connection key. The key selects the bank; requests cannot supply another bank or workspace.
+
+| Method and path | Contract |
+| --- | --- |
+| `POST /v1/decide` | Question, required choices and optional context; UUID `Idempotency-Key`; returns a recommendation and evidence |
+| `POST /v1/memories` | Content plus `source.ref` and `source.observed_at`; UUID `Idempotency-Key` |
+| `GET /v1/ingestions/:ingestionId` | Status for an ingestion in this bank |
+| `GET /v1/memories?offset=0` | Retained excerpts, newest first, 50 per page; `total` counts excerpts |
+| `POST /v1/context/recall` | `{ "query": "..." }`; returns `{ bank_id, facts, policies }` without calling the decision model |
+| `GET /v1/policies` | Exact policy text, versions and activation state, including inactive policies |
+| `PUT /v1/policies/:policyId` | Exact `text`, `active` and `expected_version`; version 0 creates |
+| `POST /v1/feedback` | Decision ID and rating, optionally correction plus source; UUID `Idempotency-Key` |
+
+## Retries, limits and errors
+
+Keep the original UUID and request body when retrying an uncertain decision, memory addition or feedback submission. Changed content under the same UUID returns `409 IDEMPOTENCY_CONFLICT`. A pending decision retry returns `409 REQUEST_IN_PROGRESS`; a failed decision retry returns its saved error. A new UUID requests a new decision. Exact replay of a completed response is disabled by default: `409 RESULT_NOT_REPLAYABLE` can confirm completion without returning the original result or calling the model again. See [Memory and replay](/docs/privacy#decision-api-memory-and-replay) for the separate opt-in cache.
+
+| Limit | Current budget |
+| --- | --- |
+| Question | 1–8,000 nonblank characters |
+| Choices | 1–80 unique, nonblank strings; 256 characters each |
+| Context | JSON object; 16 nested levels and 2,048 nodes |
+| Question and context | 12,000 UTF-8 bytes after canonical serialization |
+| Complete decision request | 32,000 characters after canonical serialization |
+| Prepared question, context, memory and policies | 24,000 bytes |
+| Memory or correction | 16,000 characters; source reference up to 256; observation time in UTC ISO 8601 ending in `Z` |
+| Recall query | 1–2,000 nonblank characters |
+| Policy | Lowercase slug ID up to 64 characters; text up to 8,000; 100 policies per bank, eight active and 16,000 active-text characters |
+| Decision rate | Two simultaneous decisions and 20 new decisions per second per bank |
+
+Decision and memory HTTP bodies are limited to 64 KiB; policy bodies to 32 KiB. Memory additions and recall share 30 requests/minute/bank per server instance; memory reads and ingestion checks share 120/minute/bank. Policy writes allow 30/minute/bank and reads 120/minute/bank per instance. For HTTP 429, honor `Retry-After` when supplied.
+
+| Error | Next step |
+| --- | --- |
+| `401` or `403` | Check the bank key, expiry and environment; an agent or Platform key cannot authorize these runtime routes |
+| `400 INVALID_REQUEST` | Check required choices, valid JSON and the UUID header; objects reject unexpected fields |
+| `409 POLICY_VERSION_CONFLICT` | Read the latest policy version before editing |
+| `409 POLICY_LIMIT_EXCEEDED` | Check total and active policy budgets; at the total limit, edit an existing policy rather than adding another |
+| `429 BANK_QUEUE_FULL` | Retry the same memory operation after capacity is available |
+| `502 INVALID_MODEL_OUTPUT` or `MODEL_ERROR` | Keep the error code and request ID for diagnosis |
+| `503 SERVICE_UNAVAILABLE` or `MEMORY_UNAVAILABLE` | Check service availability; do not treat the error as a recommendation |
+| `504 TIMEOUT` | Retry with the same UUID to check the attempt's outcome |
+
+A successful decision can return `memory.status: not_queued` with `BANK_QUEUE_FULL` when fewer than two queue slots are free. Otherwise its response keeps the compatibility value `memory.status: pending`, while the associated ingestions are already retained on commit. Check the returned ingestion IDs when memory status matters.
+
+Request IDs, key replacement and retries do not make your application's business effects idempotent. Implement that behavior at the effect itself. Read [Privacy & capture](/docs/privacy#decision-api-memory-and-replay) for the retained content and current removal limits.

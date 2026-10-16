@@ -6,13 +6,13 @@ description: "Use workspace management credentials and connection-scoped runtime
 | Key | Scope | Where it belongs |
 | --- | --- | --- |
 | Platform key | Management access for its authorized workspace | Your CLI or management scripts; created/managed by an Admin |
-| Connection key | Exactly one agent, MCP server or API integration | Only that connection's runtime |
+| Connection key | Exactly one agent, MCP server, API integration or memory bank | That connection's runtime, or backend calls to Decision API |
 
-Never install a Platform key in an agent. A Connection key cannot administer the workspace or select another target by changing the request body. A secret is returned when created; list views expose metadata, not a retrievable copy of that secret.
+Never install a Platform key in an agent. A Connection key cannot administer the workspace or select another resource by changing the request body. List views expose metadata, not secrets.
 
 ## Use the generated configuration
 
-The CLI writes one value to the repository's git-ignored `.env`:
+For agent and MCP connections, the CLI writes one value to the repository's git-ignored `.env`:
 
 ```bash
 RIPPLETIDE=rippletide://<connection-key>@<api-host>/<agent-id>
@@ -31,10 +31,19 @@ Both formats remain supported. A valid connection string takes precedence over l
 
 Codex uses `~/.rippletide/codex.env`, not the repository's `.env`. Its setup command claims the Connection key on the machine that runs Codex. The app's single-use session token is a setup token, not a runtime key.
 
+## Decision API keys
+
+Open [Decision API](/docs/decision-api) in the selected workspace. The app uses your signed-in account session. An Admin's first visit creates the workspace's memory bank and its Connection key; later visits reuse them. Editors can use Decision API without receiving the secret. Provisioning, copying and replacing the key require an Admin account session.
+
+Backend calls use this bank's Connection key in `Authorization: Bearer <connection-key>` for memory, policies, decisions and feedback. The key also permits policy edits. Agent/MCP and direct-integration policy guards use their own Connection keys in `x-api-key`; those credentials do not authorize Decision API.
+
+An Admin can copy the same active secret again from Decision API. Copying does not rotate it. Store the copied value in your application's secret manager. Platform-key management scripts can manage separate issuer-owned banks; they cannot provision or manage the workspace's default bank or its key.
+
 ## Rotation and revocation
 
 - **Agent/MCP Connection key:** replace it from the connection's page and update the runtime configuration. The previous key is revoked when replaced. For a CLI-managed repository, rerun `connect` to refresh its configuration.
 - **Direct API integration keys:** replacement keys can overlap. Revoke the old key explicitly after switching the integration.
+- **Workspace Decision API key:** expires after 90 days. An Admin explicitly replaces it in Decision API; replacement immediately revokes previous keys for that bank and preserves its memory and policies. Update your backend secret after replacement. Expired or revoked keys cannot be copied and are not automatically replaced; account access remains available.
 - **Platform keys:** creating a new one does not revoke older keys. Revoke obsolete keys in Settings after switching your scripts.
 - **CLI login:** a repeated `login` reuses a valid stored key. Use `logout` then `login` to replace it or change accounts. Logout revokes the key before clearing local credentials; failed revocation preserves the local login for retry. CLI-issued keys expire after 90 days.
 

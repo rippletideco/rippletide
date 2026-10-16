@@ -5,6 +5,8 @@ description: "Call scoped decision endpoints and report what your application ac
 
 Use the runtime policy API when your application implements its own enforcement boundary. The [SDK](/docs/manual-setup) handles guards, correlation and receipts for supported runtimes. Calling the API alone does not execute, stop or deliver anything.
 
+For recommendations among explicit choices using shared memory and policies, use the separate [Decision API](/docs/decision-api). Its bank-scoped Bearer key and question/choices contract differ from the target-scoped runtime requests below.
+
 ## Authentication and target setup
 
 Runtime requests use `x-api-key` with a **Connection key** bound to one agent or API integration. The key selects the target; the body cannot switch it. Management requests use a workspace-authorized **Platform key**, which must never be installed in an agent.
