@@ -5,6 +5,8 @@ description: "Understand Rule modes, Allow/Block decisions, and the evidence of 
 
 Every Rule release has a mode: **Disabled**, **Observe**, or **Enforce**. There is no target-wide mode switch. Mode and effect are different: an Allow rule can match without asking for a block.
 
+[Decision API Policies](/docs/decision-api#add-a-policy) guide the model's comparison of supplied choices. Keeping a Policy Active includes it in future recommendations; it does not enable Rule enforcement at an action or delivery boundary.
+
 ## Modes
 
 | Mode | Behavior |

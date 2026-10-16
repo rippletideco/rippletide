@@ -52,6 +52,18 @@ Result filtering sends the full declared result for transient validation and eva
 
 Rules using a model predicate can send the selected field and instruction to the configured model evaluator. Trace discovery analyses captured values, and document discovery/labeling analyses imported text. Only select sources and fields approved for that processing. A trace without captured content cannot later be replayed as if its raw arguments had been retained.
 
+## Decision API memory and replay
+
+The [Decision API](/docs/decision-api) sends the question, context, supplied choices, selected retained facts and active exact policies to its decision model. A successful new decision automatically retains the original question/context/choices and generated result as two memories in its bank when queue capacity permits. They are committed with decision completion; a decision recorded as failed creates no automatic memories. A timeout response alone does not prove that completion or memory retention failed.
+
+Direct memory additions and sourced feedback corrections are stored and indexed as text excerpts in Postgres in the same transaction as their ingestion journal. They are searchable when the request returns. Exact policy text and every revision are also retained. Generated results and attributed corrections are not automatically verified truth; memories do not change policies.
+
+SDK trace options such as `captureContent` and `capture_content` do not control Decision API memory. This content does not receive a general redaction pass. Submit only information approved for model processing and retention.
+
+The metadata-only decision journal and optional replay cache are separate from retained memory. Explicit replay consent enables an encrypted response-only cache for 24 hours; responses can include the fact excerpts presented to the model. Cache expiry does not expire memory or policy revisions, and database backups can outlive cache expiry.
+
+There is currently no content purge API. Confirm your database and backup retention requirements before processing client data. Disabling a bank or revoking/replacing its [Connection key](/docs/api-keys) does not erase retained memory or policies.
+
 ## Codex history and local state
 
 Codex stores activity only when selected with `--traces`. Input/output content is withheld by default. To include bounded tool inputs/results and final response content, set the following in `~/.rippletide/codex.env` after owner consent:
