@@ -40,11 +40,10 @@ Read [Observe & enforce](https://docs.rippletide.com/docs/observe-and-enforce) a
 
 ## Repository and documentation
 
-Customer-facing documentation is maintained in `docs/`. Mintlify publishes that directory from this repository's `main` branch to [docs.rippletide.com](https://docs.rippletide.com).
+This repository contains Rippletide's customer-facing documentation and supporting community files. Mintlify publishes `docs/` from this repository's `main` branch to [docs.rippletide.com](https://docs.rippletide.com).
 
 ```text
 rippletide/
-├── context-graph/    # Existing packages and runtime components
 └── docs/             # Public MDX pages and docs.json navigation
 ```
 
