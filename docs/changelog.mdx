@@ -3,4 +3,29 @@ title: "Changelog"
 description: "Product updates and release notes."
 ---
 
-No release notes have been published yet.
+Historical entries were reconstructed from release records.
+
+<Update label="October 22, 2026" description="CLI 0.35.0" tags={["Improved"]}>
+  ## Clearer policy coverage for Codex
+
+  - Codex tools missing from their declared catalog now receive an explicit **Not evaluated** result.
+  - These calls continue without policy coverage until the tools are declared.
+  - Use `rippletide codex catalog` to refresh the declared tool catalog.
+</Update>
+
+<Update label="October 16, 2026" tags={["New"]}>
+  ## Decision API in your workspace
+
+  - Test decisions, inspect shared memory, and manage policies directly from your Rippletide workspace.
+  - Save corrections alongside the original interactions.
+  - Access follows your existing workspace roles, using your Rippletide account.
+</Update>
+
+<Update label="October 2, 2026" tags={["Fixed", "Breaking change"]}>
+  ## Clearer policy outcomes in Traces
+
+  - Traces now distinguish undetermined policy outcomes from failures, including when trace content is redacted.
+  - Successful tool execution remains separate from approval by a Rule.
+
+  **Breaking change:** The standalone Coding Agent APIs and the legacy `/code` dashboard have been retired. Contact Rippletide for migration guidance if your integration relied on these endpoints.
+</Update>
