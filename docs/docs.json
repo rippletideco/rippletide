@@ -17,8 +17,8 @@
             "group": "Getting started",
             "pages": [
               "index",
-              "docs/quickstart",
-              "docs/decision-api"
+              "docs/decision-api",
+              "docs/quickstart"
             ]
           },
           {

@@ -1,19 +1,19 @@
 ---
-title: "Decision API"
-description: "Compare explicit choices using shared memory and policies, inspect the evidence, and correct a result."
+title: "Tide-1"
+description: "Send explicit choices, get a recommendation with scores and the evidence behind it."
 ---
 
-The Decision API compares the choices you provide and returns the option it considers best supported by your question, current context, retrieved memory and active policies. Your application decides how to use that recommendation.
+Tide-1 is the decision API for agents. It compares the choices you provide and returns the option it considers best supported by your question, current context, retrieved memory and active policies. Your application decides how to use that recommendation.
 
-Each workspace has a shared memory bank for stored information, previous interactions and policies. You can use **Decision API → Test, Memory and Policies** in the [platform](https://app.rippletide.com/decision-api), or call the API with that bank's Connection key. An agent connection is not required.
+Each workspace has a shared memory bank for stored information, previous interactions and policies. You can use **Tide-1 → Test, Memory and Policies** in the [platform](https://app.rippletide.com/decision-api), or call the API with that bank's Connection key. An agent connection is not required.
 
-Policies guide the model's comparison. [Rules and the Policy API](/docs/policy-api) evaluate execution and delivery boundaries. A Decision API recommendation does not execute, approve or block an action.
+Policies guide the model's comparison. [Rules and the Policy API](/docs/policy-api) evaluate execution and delivery boundaries. A Tide-1 recommendation does not execute, approve or block an action.
 
 ## Try it in the app
 
-This example uses a fictional service, **Orion**, and synthetic error code **RP17**. It compares the same question before and after adding sourced information. Review [Privacy & capture](/docs/privacy#decision-api-memory-and-replay) before submitting customer data: successful decisions can retain their inputs and generated results as memory.
+This example uses a fictional service, **Orion**, and synthetic error code **RP17**. It compares the same question before and after adding sourced information. Review [Privacy & capture](/docs/privacy#tide-1-memory-and-replay) before submitting customer data: successful decisions can retain their inputs and generated results as memory.
 
-Sign in, select your workspace and open **Decision API** below **Agents & integrations**. An Admin's first visit creates the workspace bank and key. Editors can test decisions and change memory or policies; Viewers can read memory and policies. The app uses your account session, with no key to paste.
+Sign in, select your workspace and open **Tide-1** below **Agents & integrations**. An Admin's first visit creates the workspace bank and key. Editors can test decisions and change memory or policies; Viewers can read memory and policies. The app uses your account session, with no key to paste.
 
 <Steps>
   <Step title="Prepare the comparison">
@@ -77,13 +77,13 @@ The API selects from the supplied choices even with weak evidence. If your workf
 
 ## Call from your application
 
-An Admin can select **Copy API key** in Decision API. This Connection key is bound to the workspace bank and uses **Bearer** authentication. It also authorizes memory and policy edits, so keep it in the intended backend application's secret manager. See [API keys](/docs/api-keys#decision-api-keys) for expiration, copying and replacement.
+An Admin can select **Copy API key** in Tide-1. This Connection key is bound to the workspace bank and uses **Bearer** authentication. It also authorizes memory and policy edits, so keep it in the intended backend application's secret manager. See [API keys](/docs/api-keys#tide-1-keys) for expiration, copying and replacement.
 
 The Bash examples use `uuidgen`. Set the production API URL and the key copied from the same environment:
 
 ```bash
 export RT_API='https://agent-evalserver-production.up.railway.app'
-export RT_BANK_KEY='<Connection key copied from Decision API>'
+export RT_BANK_KEY='<Connection key copied from Tide-1>'
 ```
 
 For staging, use `https://agent-evalserver-staging.up.railway.app` with its staging bank key. Keep the app, API and credentials in the same environment.
@@ -248,7 +248,7 @@ All routes below use the bank's Bearer Connection key. The key selects the bank;
 
 ## Retries, limits and errors
 
-Keep the original UUID and request body when retrying an uncertain decision, memory addition or feedback submission. Changed content under the same UUID returns `409 IDEMPOTENCY_CONFLICT`. A pending decision retry returns `409 REQUEST_IN_PROGRESS`; a failed decision retry returns its saved error. A new UUID requests a new decision. Exact replay of a completed response is disabled by default: `409 RESULT_NOT_REPLAYABLE` can confirm completion without returning the original result or calling the model again. See [Memory and replay](/docs/privacy#decision-api-memory-and-replay) for the separate opt-in cache.
+Keep the original UUID and request body when retrying an uncertain decision, memory addition or feedback submission. Changed content under the same UUID returns `409 IDEMPOTENCY_CONFLICT`. A pending decision retry returns `409 REQUEST_IN_PROGRESS`; a failed decision retry returns its saved error. A new UUID requests a new decision. Exact replay of a completed response is disabled by default: `409 RESULT_NOT_REPLAYABLE` can confirm completion without returning the original result or calling the model again. See [Memory and replay](/docs/privacy#tide-1-memory-and-replay) for the separate opt-in cache.
 
 | Limit | Current budget |
 | --- | --- |
@@ -278,4 +278,4 @@ Decision and memory HTTP bodies are limited to 64 KiB; policy bodies to 32 KiB. 
 
 A successful decision can return `memory.status: not_queued` with `BANK_QUEUE_FULL` when fewer than two queue slots are free. Otherwise its response keeps the compatibility value `memory.status: pending`, while the associated ingestions are already retained on commit. Check the returned ingestion IDs when memory status matters.
 
-Request IDs, key replacement and retries do not make your application's business effects idempotent. Implement that behavior at the effect itself. Read [Privacy & capture](/docs/privacy#decision-api-memory-and-replay) for the retained content and current removal limits.
+Request IDs, key replacement and retries do not make your application's business effects idempotent. Implement that behavior at the effect itself. Read [Privacy & capture](/docs/privacy#tide-1-memory-and-replay) for the retained content and current removal limits.
