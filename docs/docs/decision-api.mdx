@@ -9,6 +9,192 @@ Each workspace has a shared memory bank for stored information, previous interac
 
 Policies guide the model's comparison. [Rules and the Policy API](/docs/policy-api) evaluate execution and delivery boundaries. A Tide-1 recommendation does not execute, approve or block an action.
 
+## Get your API key
+
+{/* TODO(app-label): the app sidebar item still reads "Decision API" (platform staging 2781740). Match this copy to the app label before launch. */}
+
+1. Sign in at [app.rippletide.com](https://app.rippletide.com/decision-api) and open **Tide-1** in the sidebar.
+2. Select **Copy API key**.
+
+When you sign up, Rippletide creates a workspace and makes you its Admin. Your first visit to Tide-1 creates the key, so you can copy it right away.
+
+In a shared workspace, only Admins see **Copy API key**. If you are an Editor or Viewer, ask a workspace Admin to copy the key and share it with you through your secret manager. If the page asks you to contact an administrator, no Admin has opened Tide-1 in this workspace yet. An Admin's first visit creates the key.
+
+The key is a Bearer token for your workspace's memory bank. It can also change memory and policies, so keep it in your backend. It expires after 90 days. See [API keys](/docs/api-keys#tide-1-keys) for copying and replacement.
+
+## Make your first call
+
+This example asks Tide-1 for the most likely cause of an incident. The logs go in `context`. The candidate causes go in `choices`. Tide-1 picks one of the choices.
+
+Set the key you copied:
+
+```bash
+export RT_BANK_KEY='<your API key>'
+```
+
+{/* TODO(base-url): public API host is eng's call. Replace the Railway host in all three samples once it is chosen. */}
+
+<CodeGroup>
+
+```bash curl
+curl -sS -X POST 'https://agent-evalserver-production.up.railway.app/v1/decide' \
+  -H "Authorization: Bearer $RT_BANK_KEY" \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "question": "Which cause best explains the checkout errors in these logs?",
+    "context": {
+      "service": "checkout",
+      "logs": [
+        "12:04:01 ERROR pg: timeout acquiring connection from pool (size=20, waiting=57)",
+        "12:04:01 WARN POST /api/checkout 503 in 30012 ms",
+        "12:04:03 ERROR pg: timeout acquiring connection from pool (size=20, waiting=61)",
+        "12:04:05 INFO payments-gateway p95 latency 180 ms"
+      ]
+    },
+    "choices": ["db_pool_exhausted", "payment_gateway_timeout", "bad_deploy"]
+  }'
+```
+
+```python Python
+import os
+import uuid
+
+import requests
+
+API = "https://agent-evalserver-production.up.railway.app"
+
+response = requests.post(
+    f"{API}/v1/decide",
+    headers={
+        "Authorization": f"Bearer {os.environ['RT_BANK_KEY']}",
+        "Idempotency-Key": str(uuid.uuid4()),
+    },
+    json={
+        "question": "Which cause best explains the checkout errors in these logs?",
+        "context": {
+            "service": "checkout",
+            "logs": [
+                "12:04:01 ERROR pg: timeout acquiring connection from pool (size=20, waiting=57)",
+                "12:04:01 WARN POST /api/checkout 503 in 30012 ms",
+                "12:04:03 ERROR pg: timeout acquiring connection from pool (size=20, waiting=61)",
+                "12:04:05 INFO payments-gateway p95 latency 180 ms",
+            ],
+        },
+        "choices": ["db_pool_exhausted", "payment_gateway_timeout", "bad_deploy"],
+    },
+    timeout=60,
+)
+response.raise_for_status()
+decision = response.json()
+print(decision["choice"], decision.get("choice_scores"))
+```
+
+```typescript TypeScript
+const API = "https://agent-evalserver-production.up.railway.app";
+
+const response = await fetch(`${API}/v1/decide`, {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.RT_BANK_KEY}`,
+    "Content-Type": "application/json",
+    "Idempotency-Key": crypto.randomUUID(),
+  },
+  body: JSON.stringify({
+    question: "Which cause best explains the checkout errors in these logs?",
+    context: {
+      service: "checkout",
+      logs: [
+        "12:04:01 ERROR pg: timeout acquiring connection from pool (size=20, waiting=57)",
+        "12:04:01 WARN POST /api/checkout 503 in 30012 ms",
+        "12:04:03 ERROR pg: timeout acquiring connection from pool (size=20, waiting=61)",
+        "12:04:05 INFO payments-gateway p95 latency 180 ms",
+      ],
+    },
+    choices: ["db_pool_exhausted", "payment_gateway_timeout", "bad_deploy"],
+  }),
+});
+if (!response.ok) throw new Error(`Tide-1 returned ${response.status}`);
+const decision = await response.json();
+console.log(decision.choice, decision.choice_scores);
+```
+
+</CodeGroup>
+
+Each new decision needs a new `Idempotency-Key` UUID. To retry a call you are unsure about, send the same key and the same body again.
+
+A successful call returns HTTP 200. This sample comes from a bank that already holds one runbook note and one active policy. Your IDs, scores and evidence will differ.
+
+```json
+{
+  "decision_id": "6f1c2a9e-3b7d-4c51-9a0e-2d8f4b6c1e73",
+  "mode": "choice",
+  "status": "answered",
+  "choice": "db_pool_exhausted",
+  "answer": null,
+  "reason": null,
+  "choice_scores": [
+    { "choice": "db_pool_exhausted", "probability": 0.86 },
+    { "choice": "payment_gateway_timeout", "probability": 0.09 },
+    { "choice": "bad_deploy", "probability": 0.05 }
+  ],
+  "evidence": {
+    "context_id": "0b7e4d12-8a3f-4e6c-b1d9-5c2a7f9e3d40",
+    "policy_versions": [{ "policy_id": "incident-diagnosis", "version": 1 }],
+    "retrieved_fact_ids": ["a3d9e1f0-6c2b-4f8a-9e7d-1b5c3a2f4e68"],
+    "presented_fact_ids": ["a3d9e1f0-6c2b-4f8a-9e7d-1b5c3a2f4e68"],
+    "presented_source_refs": ["runbook:checkout-db"],
+    "presented_facts": [
+      {
+        "fact_id": "a3d9e1f0-6c2b-4f8a-9e7d-1b5c3a2f4e68",
+        "text": "Checkout uses a Postgres pool of 20 connections. Pool timeouts mean the pool is exhausted.",
+        "source": {
+          "ref": "runbook:checkout-db",
+          "observed_at": "2026-10-14T09:00:00.000Z",
+          "kind": "direct_memory",
+          "decision_id": null
+        }
+      }
+    ],
+    "presented_policies": [
+      {
+        "policy_id": "incident-diagnosis",
+        "version": 1,
+        "text": "Choose the cause supported by the supplied logs and runbook facts."
+      }
+    ],
+    "citation_status": "unsupported",
+    "cited_fact_ids": [],
+    "source_refs": []
+  },
+  "usage": { "input_tokens": 912, "output_tokens": 6 },
+  "explanation": {
+    "status": "pending",
+    "text": null,
+    "policy_refs": [],
+    "expires_at": "2026-11-10T17:02:15.000Z"
+  },
+  "memory": {
+    "status": "pending",
+    "error_code": null,
+    "ingestions": [
+      {
+        "kind": "client_input",
+        "ingestion_id": "c4e8a1b2-7d3f-4a69-8e15-9f2b6d0c3a71",
+        "memory_id": "e1b7c3d9-2a4f-4e8b-a6c0-7d9f1e3b5a28"
+      },
+      {
+        "kind": "model_output",
+        "ingestion_id": "f9a2d6e4-1c8b-4d37-b5e0-3a7c9e1f2b84",
+        "memory_id": "b5d3f1a7-9e2c-4b68-8a04-6c1e7d3f9b52"
+      }
+    ]
+  }
+}
+```
+
+`choice` is always one of your `choices`. Use it, the scores and the evidence however your application needs. [Read a decision](#read-a-decision) explains each field.
+
 ## Try it in the app
 
 This example uses a fictional service, **Orion**, and synthetic error code **RP17**. It compares the same question before and after adding sourced information. Review [Privacy & capture](/docs/privacy#tide-1-memory-and-replay) before submitting customer data: successful decisions can retain their inputs and generated results as memory.
@@ -62,11 +248,15 @@ The conversation clears on reload, workspace changes and logout. Stored memory a
 | --- | --- |
 | `decision_id` | Identifier to retain for feedback and diagnostics |
 | `choice` | One of the exact strings supplied in `choices` |
-| `choice_scores` | Each option's `probability` from 0 to 1, in submitted order; the selected option has a maximum score |
+| `choice_scores` | Each option's `probability` from 0 to 1, in submitted order; the selected option has a maximum score. Can be absent when the model returns no scores |
 | `mode`, `status` | New decisions return `choice` and `answered` |
 | `answer`, `reason` | Currently `null` for new decisions; no free-text answer or explanation is returned here |
 | `evidence.presented_facts` | Exact retrieved excerpts presented to this decision, with source references, observation dates and provenance |
 | `evidence.policy_versions` | IDs and versions of policies included in the decision |
+| `evidence.presented_policies` | Exact text and version of each policy included in the decision |
+| `usage` | Input and output tokens for the decision |
+| `explanation` | A short summary generated after the decision. New decisions return `status: pending` or `unavailable` |
+| `memory` | Ingestions created to keep this question and result in the bank's memory |
 | **Why?** | The original decision's memory excerpts and policy versions, rather than the bank's current contents |
 
 Scores are model outputs, not calibrated certainty. Presented facts prove what was supplied to the model, not factual correctness, causal influence or compliance with a policy. `citation_status: unsupported` means the response provides no model citations.
@@ -77,7 +267,7 @@ The API selects from the supplied choices even with weak evidence. If your workf
 
 ## Call from your application
 
-An Admin can select **Copy API key** in Tide-1. This Connection key is bound to the workspace bank and uses **Bearer** authentication. It also authorizes memory and policy edits, so keep it in the intended backend application's secret manager. See [API keys](/docs/api-keys#tide-1-keys) for expiration, copying and replacement.
+Use the key from [Get your API key](#get-your-api-key). This Connection key is bound to the workspace bank and uses **Bearer** authentication. It also authorizes memory and policy edits, so keep it in the intended backend application's secret manager. See [API keys](/docs/api-keys#tide-1-keys) for expiration, copying and replacement.
 
 The Bash examples use `uuidgen`. Set the production API URL and the key copied from the same environment:
 
