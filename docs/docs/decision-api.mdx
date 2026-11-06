@@ -464,7 +464,7 @@ Decision and memory HTTP bodies are limited to 64 KiB; policy bodies to 32 KiB. 
 | `401` or `403` | Check the bank key, expiry and environment; an agent or Platform key cannot authorize these runtime routes |
 | `400 INVALID_REQUEST` | Check required choices, valid JSON and the UUID header; objects reject unexpected fields |
 | `400 INPUT_BUDGET_EXCEEDED` or `CONTEXT_BUDGET_EXCEEDED` | Shorten the question or context. The second code also counts the retrieved memory and active policies, so shorter policies help too |
-| `400 BANK_SELECTED_BY_CREDENTIAL` | Remove bank or workspace query parameters and headers; the key selects the bank |
+| `400 BANK_SELECTED_BY_CREDENTIAL` | Remove query parameters (other than `offset` on `GET /v1/memories`) and any `x-bank-id` or `x-workspace-id` header; the key selects the bank |
 | `404 DECISION_NOT_FOUND` | Send feedback for a completed decision from the same bank |
 | `409 POLICY_VERSION_CONFLICT` | Read the latest policy version before editing |
 | `409 POLICY_LIMIT_EXCEEDED` | Check total and active policy budgets; at the total limit, edit an existing policy rather than adding another |
