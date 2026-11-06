@@ -218,7 +218,7 @@ Sign in, select your workspace and open **Tide-1** below **Agents & integrations
   </Step>
 
   <Step title="Record the first decision">
-    Send the question. Record the selected option and both **Choice scores**, then open **Why?** to inspect the memory excerpts and policies presented to the model.
+    Send the question. Record the selected option, open **Choice scores** and record both scores. Then open **Decision context** to inspect the memory excerpts and policies presented to the model.
 
     This is a baseline: it may already select the right option. Earlier interactions or generated hypotheses in memory do not establish what RP17 means.
   </Step>
@@ -236,7 +236,7 @@ Sign in, select your workspace and open **Tide-1** below **Agents & integrations
   <Step title="Repeat with the same inputs">
     Return to **Test** and send the same question without changing **Choices**, **Context** or the active policies. Sending clears the question but keeps the configured choices and context.
 
-    The supplied runbook supports `upstream_timeout`. Open **Why?** and check whether the runbook text appears as **Information**. Compare the actual option and scores with your first result. One comparison, or a higher score alone, does not measure overall accuracy.
+    The supplied runbook supports `upstream_timeout`. Open **Decision context** and check whether the runbook text appears as **Information**. Compare the actual option and scores with your first result. One comparison, or a higher score alone, does not measure overall accuracy.
   </Step>
 </Steps>
 
@@ -257,7 +257,7 @@ The conversation clears on reload, workspace changes and logout. Stored memory a
 | `usage` | Input and output tokens for the decision |
 | `explanation` | A short summary generated after the decision. New decisions return `status: pending` or `unavailable` |
 | `memory` | Ingestions created to keep this question and result in the bank's memory |
-| **Why?** | The original decision's memory excerpts and policy versions, rather than the bank's current contents |
+| **Decision context** (app) | The original decision's memory excerpts and policy versions, rather than the bank's current contents |
 
 Scores are model outputs, not calibrated certainty. Presented facts prove what was supplied to the model, not factual correctness, causal influence or compliance with a policy. `citation_status: unsupported` means the response provides no model citations.
 
@@ -397,7 +397,7 @@ A new policy starts at version 1. For an update, use its current version from `G
 
 ## Correct a response
 
-In **Test**, select **Correct this answer** below the result, enter the correction and select **Send**. The app attributes it as user-provided information with an observation time. It can inform future decisions without changing the original response or its **Why?** snapshot.
+In **Test**, select **Correct this answer** below the result, pick the **Correct choice**, add an optional **Comment** and select **Submit**. The app saves it as a sourced correction with an observation time. It can inform future decisions without changing the original response or its **Decision context**.
 
 The API supports either a vote or a sourced correction. For an incorrect result with a source, use the returned `decision_id` and generate a UUID once for the feedback operation:
 
