@@ -54,7 +54,7 @@ Rules using a model predicate can send the selected field and instruction to the
 
 ## Tide-1 memory and replay
 
-[Tide-1](/docs/decision-api) sends the question, context, supplied choices, selected retained facts and active exact policies to its decision model. A successful new decision automatically retains the original question/context/choices and generated result as two memories in its bank when queue capacity permits. They are committed with decision completion; a decision recorded as failed creates no automatic memories. A timeout response alone does not prove that completion or memory retention failed.
+[Tide-1](/docs/decision-api) sends the question, context, supplied choices, selected retained facts and the exact text of active policies to its decision model. A successful new decision automatically retains the original question/context/choices and generated result as two memories in its bank when queue capacity permits. They are committed with decision completion; a decision recorded as failed creates no automatic memories. A timeout response alone does not prove that completion or memory retention failed.
 
 Direct memory additions and sourced feedback corrections are stored and indexed as text excerpts in Postgres in the same transaction as their ingestion journal. They are searchable when the request returns. Exact policy text and every revision are also retained. Generated results and attributed corrections are not automatically verified truth; memories do not change policies.
 
