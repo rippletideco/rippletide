@@ -123,7 +123,7 @@ console.log(decision.choice, decision.choice_scores);
 
 Each new decision needs a new `Idempotency-Key` UUID. To retry a call you are unsure about, send the same key and the same body again.
 
-A successful call returns HTTP 200. This sample comes from a bank that already holds one runbook note and one active policy. Your IDs, scores and evidence will differ.
+A successful call returns HTTP 200. This sample comes from a bank that already holds one runbook note and one active policy. Your IDs, scores and evidence will differ, and so can the choice: it depends on what your bank's memory and policies hold.
 
 ```json
 {
@@ -133,11 +133,6 @@ A successful call returns HTTP 200. This sample comes from a bank that already h
   "choice": "db_pool_exhausted",
   "answer": null,
   "reason": null,
-  "choice_scores": [
-    { "choice": "db_pool_exhausted", "probability": 0.86 },
-    { "choice": "payment_gateway_timeout", "probability": 0.09 },
-    { "choice": "bad_deploy", "probability": 0.05 }
-  ],
   "evidence": {
     "context_id": "0b7e4d12-8a3f-4e6c-b1d9-5c2a7f9e3d40",
     "policy_versions": [{ "policy_id": "incident-diagnosis", "version": 1 }],
@@ -160,7 +155,8 @@ A successful call returns HTTP 200. This sample comes from a bank that already h
       {
         "policy_id": "incident-diagnosis",
         "version": 1,
-        "text": "Choose the cause supported by the supplied logs and runbook facts."
+        "text": "Choose the cause supported by the supplied logs and runbook facts.",
+        "display_id": "diagnosis-evidence"
       }
     ],
     "citation_status": "unsupported",
@@ -168,11 +164,15 @@ A successful call returns HTTP 200. This sample comes from a bank that already h
     "source_refs": []
   },
   "usage": { "input_tokens": 912, "output_tokens": 6 },
+  "choice_scores": [
+    { "choice": "db_pool_exhausted", "probability": 0.86 },
+    { "choice": "payment_gateway_timeout", "probability": 0.09 },
+    { "choice": "bad_deploy", "probability": 0.05 }
+  ],
   "explanation": {
-    "status": "pending",
+    "status": "unavailable",
     "text": null,
-    "policy_refs": [],
-    "expires_at": "2026-11-10T17:02:15.000Z"
+    "policy_refs": []
   },
   "memory": {
     "status": "pending",
@@ -253,7 +253,7 @@ The conversation clears on reload, workspace changes and logout. Stored memory a
 | `answer`, `reason` | Currently `null` for new decisions; no free-text answer or explanation is returned here |
 | `evidence.presented_facts` | Exact retrieved excerpts presented to this decision, with source references, observation dates and provenance |
 | `evidence.policy_versions` | IDs and versions of policies included in the decision |
-| `evidence.presented_policies` | Exact text and version of each policy included in the decision |
+| `evidence.presented_policies` | Exact text and version of each policy included in the decision, with its short `display_id` when it has one |
 | `usage` | Input and output tokens for the decision |
 | `explanation` | A short summary generated after the decision. New decisions return `status: pending` or `unavailable` |
 | `memory` | Ingestions created to keep this question and result in the bank's memory |
