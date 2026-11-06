@@ -52,6 +52,8 @@ Result filtering sends the full declared result for transient validation and eva
 
 Rules using a model predicate can send the selected field and instruction to the configured model evaluator. Trace discovery analyses captured values, and document discovery/labeling analyses imported text. Only select sources and fields approved for that processing. A trace without captured content cannot later be replayed as if its raw arguments had been retained.
 
+<span id="decision-api-memory-and-replay" />
+
 ## Tide-1 memory and replay
 
 [Tide-1](/docs/decision-api) sends the question, context, supplied choices, selected retained facts and the exact text of active policies to its decision model. A successful new decision automatically retains the original question/context/choices and generated result as two memories in its bank when queue capacity permits. They are committed with decision completion; a decision recorded as failed creates no automatic memories. A timeout response alone does not prove that completion or memory retention failed.

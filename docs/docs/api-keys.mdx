@@ -31,6 +31,8 @@ Both formats remain supported. A valid connection string takes precedence over l
 
 Codex uses `~/.rippletide/codex.env`, not the repository's `.env`. Its setup command claims the Connection key on the machine that runs Codex. The app's single-use session token is a setup token, not a runtime key.
 
+<span id="decision-api-keys" />
+
 ## Tide-1 keys
 
 Open [Tide-1](/docs/decision-api) in the selected workspace. The app uses your signed-in account session. An Admin's first visit creates the workspace's memory bank and its Connection key; later visits reuse them. Editors can use Tide-1 without receiving the secret. Provisioning, copying and replacing the key require an Admin account session.
