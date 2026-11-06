@@ -62,7 +62,7 @@ SDK trace options such as `captureContent` and `capture_content` do not control 
 
 The metadata-only decision journal and optional replay cache are separate from retained memory. Explicit replay consent enables an encrypted response-only cache for 24 hours; responses can include the fact excerpts presented to the model. Cache expiry does not expire memory or policy revisions, and database backups can outlive cache expiry.
 
-There is currently no content purge API. Confirm your database and backup retention requirements before processing client data. Disabling a bank or revoking/replacing its [Connection key](/docs/api-keys) does not erase retained memory or policies.
+In the app's **Memory** tab, Editors and Admins can select **Delete from memory** on an entry. This removes its text from the bank and from future retrieval; for an earlier decision it removes both the question and the result. Policy revisions are kept, and database backups can outlive the deletion. There is no bulk purge. Confirm your database and backup retention requirements before processing client data. Disabling a bank or revoking/replacing its [Connection key](/docs/api-keys) does not erase retained memory or policies.
 
 ## Codex history and local state
 

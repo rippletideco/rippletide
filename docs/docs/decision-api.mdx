@@ -475,4 +475,4 @@ Decision and memory HTTP bodies are limited to 64 KiB; policy bodies to 32 KiB. 
 
 A successful decision can return `memory.status: not_queued` with `BANK_QUEUE_FULL` when fewer than two queue slots are free. Otherwise its response keeps the compatibility value `memory.status: pending`, while the associated ingestions are already retained on commit. Check the returned ingestion IDs when memory status matters.
 
-Request IDs, key replacement and retries do not make your application's business effects idempotent. Implement that behavior at the effect itself. Read [Privacy & capture](/docs/privacy#tide-1-memory-and-replay) for the retained content and current removal limits.
+Request IDs, key replacement and retries do not make your application's business effects idempotent. Implement that behavior at the effect itself. Read [Privacy & capture](/docs/privacy#tide-1-memory-and-replay) for the retained content and how to delete a memory entry.
