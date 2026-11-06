@@ -461,11 +461,16 @@ Decision and memory HTTP bodies are limited to 64 KiB; policy bodies to 32 KiB. 
 | --- | --- |
 | `401` or `403` | Check the bank key, expiry and environment; an agent or Platform key cannot authorize these runtime routes |
 | `400 INVALID_REQUEST` | Check required choices, valid JSON and the UUID header; objects reject unexpected fields |
+| `400 INPUT_BUDGET_EXCEEDED` or `CONTEXT_BUDGET_EXCEEDED` | Shorten the question or context. The second code also counts the retrieved memory and active policies, so shorter policies help too |
+| `400 BANK_SELECTED_BY_CREDENTIAL` | Remove bank or workspace query parameters and headers; the key selects the bank |
+| `404 DECISION_NOT_FOUND` | Send feedback for a completed decision from the same bank |
 | `409 POLICY_VERSION_CONFLICT` | Read the latest policy version before editing |
 | `409 POLICY_LIMIT_EXCEEDED` | Check total and active policy budgets; at the total limit, edit an existing policy rather than adding another |
+| `413 PAYLOAD_TOO_LARGE` | Keep decision and memory bodies under 64 KiB and policy bodies under 32 KiB |
+| `429 RATE_LIMITED` | Too many decisions for this bank; wait for `Retry-After`, then retry with the same UUID |
 | `429 BANK_QUEUE_FULL` | Retry the same memory operation after capacity is available |
 | `502 INVALID_MODEL_OUTPUT` or `MODEL_ERROR` | Keep the error code and request ID for diagnosis |
-| `503 SERVICE_UNAVAILABLE` or `MEMORY_UNAVAILABLE` | Check service availability; do not treat the error as a recommendation |
+| `503 SERVICE_UNAVAILABLE`, `MEMORY_UNAVAILABLE` or `CONTEXT_UNAVAILABLE` | Check service availability; do not treat the error as a recommendation |
 | `504 TIMEOUT` | Retry with the same UUID to check the attempt's outcome |
 
 A successful decision can return `memory.status: not_queued` with `BANK_QUEUE_FULL` when fewer than two queue slots are free. Otherwise its response keeps the compatibility value `memory.status: pending`, while the associated ingestions are already retained on commit. Check the returned ingestion IDs when memory status matters.
