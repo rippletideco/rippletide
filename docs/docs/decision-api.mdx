@@ -121,6 +121,8 @@ console.log(decision.choice, decision.choice_scores);
 
 </CodeGroup>
 
+The Python sample uses `requests` (`pip install requests`). The TypeScript sample uses top-level `await`, so run it as an ES module on Node.js 20 or later.
+
 Each new decision needs a new `Idempotency-Key` UUID. To retry a call you are unsure about, send the same key and the same body again.
 
 A successful call returns HTTP 200. This sample comes from a bank that already holds one runbook note and one active policy. Your IDs, scores and evidence will differ, and so can the choice: it depends on what your bank's memory and policies hold.
