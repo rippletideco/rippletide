@@ -2,6 +2,18 @@
   "$schema": "https://mintlify.com/docs.json",
   "name": "Rippletide Docs",
   "description": "Connect existing agents, inspect runtime evidence, and apply reviewed business rules at action and response boundaries.",
+  "seo": {
+    "organization": {
+      "id": "https://www.rippletide.com/#organization",
+      "name": "Rippletide",
+      "url": "https://www.rippletide.com/",
+      "logo": "https://www.rippletide.com/assets/rippletide-logo.svg",
+      "sameAs": [
+        "https://www.linkedin.com/company/rippletide/",
+        "https://github.com/rippletideco"
+      ]
+    }
+  },
   "theme": "maple",
   "colors": {
     "primary": "#9A3F60",
