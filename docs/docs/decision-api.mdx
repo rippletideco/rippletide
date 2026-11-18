@@ -11,8 +11,6 @@ Policies guide the model's comparison. [Rules and the Policy API](/docs/policy-a
 
 ## Get your API key
 
-{/* TODO(app-label): the app sidebar item still reads "Decision API" (platform staging 2781740). Match this copy to the app label before launch. */}
-
 1. Sign in at [app.rippletide.com](https://app.rippletide.com/decision-api) and open **Tide-1** in the sidebar.
 2. Select **Copy API key**.
 
@@ -31,8 +29,6 @@ Set the key you copied:
 ```bash
 export RT_BANK_KEY='<your API key>'
 ```
-
-{/* TODO(base-url): public API host is eng's call. Replace the Railway host in all three samples once it is chosen. */}
 
 <CodeGroup>
 
@@ -95,6 +91,7 @@ const API = "https://agent-evalserver-production.up.railway.app";
 
 const response = await fetch(`${API}/v1/decide`, {
   method: "POST",
+  signal: AbortSignal.timeout(60_000),
   headers: {
     Authorization: `Bearer ${process.env.RT_BANK_KEY}`,
     "Content-Type": "application/json",
@@ -121,7 +118,7 @@ console.log(decision.choice, decision.choice_scores);
 
 </CodeGroup>
 
-The Python sample uses `requests` (`pip install requests`). The TypeScript sample uses top-level `await`, so run it as an ES module on Node.js 20 or later.
+The Python sample uses `requests` (`pip install requests`). The TypeScript sample also runs as JavaScript: save it as `first-decision.mjs` and run `node first-decision.mjs` on Node.js 20 or later.
 
 Each new decision needs a new `Idempotency-Key` UUID. To retry a call you are unsure about, send the same key and the same body again.
 
@@ -278,8 +275,6 @@ export RT_API='https://agent-evalserver-production.up.railway.app'
 export RT_BANK_KEY='<Connection key copied from Tide-1>'
 ```
 
-{/* TODO(staging): eng to confirm whether public docs should name a staging host at all. Text unchanged until then. */}
-
 For staging, use `https://agent-evalserver-staging.up.railway.app` with its staging bank key. Keep the app, API and credentials in the same environment.
 
 <Steps>
@@ -399,6 +394,207 @@ curl -sS -X PUT "$RT_API/v1/policies/orion-diagnosis" \
 
 A new policy starts at version 1. For an update, use its current version from `GET /v1/policies`. Identical updates are no-ops; a stale version returns `409 POLICY_VERSION_CONFLICT`. Inactive policies are excluded from future decisions. Run a new decision and inspect `evidence.policy_versions` for the policy and saved version.
 
+## Infer policies from a document
+
+Editors and Admins can select **Policies → Infer policy from document**, upload
+one UTF-8 `.md`/`.txt` file or paste text, then review the suggested instructions
+and their exact source excerpts. Edit or deselect proposals before choosing
+**Save and activate**. Generation saves nothing; each selected Policy becomes
+active only after its save succeeds.
+
+Backend clients use `POST /v1/policies/infer` with the same bank Bearer key.
+Send document text as JSON, not a multipart upload or a file URL:
+
+```json
+{
+  "document": {
+    "name": "provider-policy.md",
+    "text": "When a caller switches to a different patient for claims, change the current member while preserving provider verification and clearing member verification. Verify the new member before looking up claims."
+  }
+}
+```
+
+HTTP 200 returns `{ "policies": [{ "text": "...", "source_excerpt": "..." }] }`.
+An empty `policies` array is valid. Each excerpt is an exact substring of the
+submitted text. Excerpts support review; they do not prove that all conditions,
+exceptions or sections of the document were preserved. Check coverage and
+wording before activation. Generation does not add the document or proposals
+to the bank's Policy or Memory stores.
+
+### Document to reviewed Policy to decision
+
+Use a bank reserved for testing, or coordinate changes with its workspace owner.
+This fictional provider-line example evaluates a proposed action or response.
+It does not perform the action or deliver the response.
+
+The commands use Bash, `curl` with `--fail-with-body` support, `jq` and `uuidgen`.
+Set `RT_API` and `RT_BANK_KEY` as described in
+[Call from your application](#call-from-your-application).
+
+<Steps>
+  <Step title="Submit document text">
+    Save your Markdown/text document as `provider-policy.md`. You can also
+    create a text file from pasted content:
+
+    ```bash
+    cat > provider-policy.md <<'MD'
+    # Fictional provider-line policy
+
+    When a caller switches to a different patient for claims, change the current member while preserving provider verification and clearing member verification. Verify the new member before looking up claims.
+
+    When an authorization is denied, vendor-managed and has no readable denial reason, say the reason is unavailable and offer the vendor's contact details for the reason and next steps. Do not invent a denial reason.
+    MD
+
+    jq -n --rawfile text provider-policy.md \
+      '{document: {name: "provider-policy.md", text: $text}}' \
+      > inference-request.json
+
+    curl --fail-with-body -sS --max-time 60 \
+      -X POST "$RT_API/v1/policies/infer" \
+      -H "Authorization: Bearer $RT_BANK_KEY" \
+      -H 'Content-Type: application/json' \
+      --data-binary @inference-request.json \
+      -o policy-proposals.json
+    ```
+
+    Reading a file and pasting text produce the same `document.text` field.
+    This endpoint does not require an `Idempotency-Key`. Do not add automatic
+    generation retries after a timeout; no Policy was saved by generation.
+  </Step>
+
+  <Step title="Review proposals against the source">
+    Display each proposal with its index and exact excerpt:
+
+    ```bash
+    jq '.policies | to_entries[] |
+      {index: .key, text: .value.text, source_excerpt: .value.source_excerpt}' \
+      policy-proposals.json
+    ```
+
+    Check the patient-switch conditions, provider verification, member reset,
+    and vendor-denial exception against your document. Proposal order and how
+    instructions are split can vary. If no suitable proposal is returned, edit
+    a Policy manually rather than treating an empty result as approval.
+  </Step>
+
+  <Step title="Explicitly save and activate a selected instruction">
+    After review, choose one proposal index and a new lowercase Policy ID:
+
+    ```bash
+    export RT_POLICY_INDEX=0
+    export RT_POLICY_ID='provider-patient-switch'
+
+    jq --argjson index "$RT_POLICY_INDEX" \
+      '(.policies[$index] // error("No proposal at this index")) |
+       {text: .text, active: true, expected_version: 0}' \
+      policy-proposals.json > reviewed-policy.json
+
+    cat reviewed-policy.json
+    ```
+
+    Edit `reviewed-policy.json` if the instruction needs correction. Confirm
+    its text and `active: true`, then save it:
+
+    ```bash
+    curl --fail-with-body -sS --max-time 60 \
+      -X PUT "$RT_API/v1/policies/$RT_POLICY_ID" \
+      -H "Authorization: Bearer $RT_BANK_KEY" \
+      -H 'Content-Type: application/json' \
+      --data-binary @reviewed-policy.json
+    ```
+
+    `expected_version: 0` creates a new Policy at version 1. If that ID already
+    exists, read its current version before editing; do not overwrite it with a
+    guessed version. Repeat this deliberate review/save for each relevant
+    instruction, using a distinct ID. Activate the vendor-denial instruction
+    too before using the response example below.
+  </Step>
+
+  <Step title="Evaluate the proposed action or response">
+    Save one of these request bodies as `review-request.json`. The question
+    identifies what to judge; `context` contains the candidate and the preceding
+    conversation/state. Use actual trusted state and lookup results in your
+    integration, and distinguish a proposed transition from an observed effect.
+
+    <CodeGroup>
+    ```json Action check
+    {
+      "question": "Does the proposed next action comply with the active policies?",
+      "choices": ["yes", "no", "insufficient_evidence"],
+      "context": {
+        "conversation": [
+          {"role": "agent", "message": "We have finished this claim question."},
+          {"role": "caller", "message": "I have a different patient now, also for claims."}
+        ],
+        "state": {
+          "intent": "claims",
+          "provider_verified": true,
+          "member_verified": true
+        },
+        "proposed_action": {
+          "action": "riverbend/claims/change_member",
+          "params": {"new_intent": "claims"},
+          "proposed_transition": {
+            "provider_verified": true,
+            "member_verified": false
+          }
+        }
+      }
+    }
+    ```
+
+    ```json Response check
+    {
+      "question": "Does the proposed response comply with the active policies?",
+      "choices": ["yes", "no", "insufficient_evidence"],
+      "context": {
+        "conversation": [
+          {"role": "agent", "message": "The authorization status returned as denied."},
+          {"role": "caller", "message": "Why was it denied?"}
+        ],
+        "state": {
+          "intent": "prior_auth_status",
+          "provider_verified": true,
+          "member_verified": true,
+          "lookup": {
+            "status": "denied",
+            "readable_denial_reason": null,
+            "vendor_managed": true
+          }
+        },
+        "proposed_response": "I cannot see the specific denial reason. The vendor managing this authorization can provide the denial details and next steps. Would you like their contact information?"
+      }
+    }
+    ```
+    </CodeGroup>
+
+    Send the request with a new UUID:
+
+    ```bash
+    export RT_REVIEW_REQUEST_ID="$(uuidgen)"
+
+    curl --fail-with-body -sS --max-time 60 \
+      -X POST "$RT_API/v1/decide" \
+      -H "Authorization: Bearer $RT_BANK_KEY" \
+      -H 'Content-Type: application/json' \
+      -H "Idempotency-Key: $RT_REVIEW_REQUEST_ID" \
+      --data-binary @review-request.json \
+      -o reviewed-decision.json
+
+    jq '{choice, choice_scores, policies: .evidence.presented_policies}' \
+      reviewed-decision.json
+    ```
+
+    Check the actual choice and the relevant saved Policy IDs/versions in
+    `evidence.presented_policies`. These fixtures are intended to satisfy their
+    corresponding instructions, but a generated suggestion or one decision
+    does not establish complete policy coverage or accuracy. For your use case,
+    test incorrect and missing-context variants too. Including
+    `insufficient_evidence` makes it available as a choice; define when to use
+    it in your reviewed policies if abstention is required.
+  </Step>
+</Steps>
+
 ## Correct a response
 
 In **Test**, select **Correct this answer** below the result, pick the **Correct choice**, add an optional **Comment** and select **Submit**. The app saves it as a sourced correction with an observation time. It can inform future decisions without changing the original response or its **Decision context**.
@@ -437,6 +633,7 @@ All routes below use the bank's Bearer Connection key. The key selects the bank;
 | `GET /v1/memories?offset=0` | Retained excerpts, newest first, 50 per page; `total` counts excerpts |
 | `POST /v1/context/recall` | `{ "query": "..." }`; returns `{ bank_id, facts, policies }` without calling the decision model |
 | `GET /v1/policies` | Exact policy text, versions and activation state, including inactive policies |
+| `POST /v1/policies/infer` | `{ "document": { "name": "policy.md", "text": "..." } }`; source-supported proposals without saving; no UUID required |
 | `PUT /v1/policies/:policyId` | Exact `text`, `active` and `expected_version`; version 0 creates |
 | `POST /v1/feedback` | Decision ID and rating, optionally correction plus source; UUID `Idempotency-Key` |
 
@@ -454,10 +651,21 @@ Keep the original UUID and request body when retrying an uncertain decision, mem
 | Prepared question, context, memory and policies | 24,000 bytes |
 | Memory or correction | 16,000 characters; source reference up to 256; observation time in UTC ISO 8601 ending in `Z` |
 | Recall query | 1–2,000 nonblank characters |
-| Policy | Lowercase slug ID up to 64 characters; text up to 8,000; 100 policies per bank, eight active and 16,000 active-text characters |
+| Policy | Lowercase slug ID up to 64 characters; text up to 8,000; 100 policies per bank and 50 active; no aggregate active-text character cap |
+| Inference document | Nonblank UTF-8 text, up to 24,000 characters and 48 KiB, with a safe filename; JSON body up to 64 KiB |
+| Inference proposals | Up to 20; each instruction up to 8,000 characters and source excerpt up to 4,000 |
 | Decision rate | Two simultaneous decisions and 20 new decisions per second per bank |
 
 Decision and memory HTTP bodies are limited to 64 KiB; policy bodies to 32 KiB. Memory additions and recall share 30 requests/minute/bank per server instance; memory reads and ingestion checks share 120/minute/bank. Policy writes allow 30/minute/bank and reads 120/minute/bank per instance. For HTTP 429, honor `Retry-After` when supplied.
+
+Within each server process, browser and API inference requests share three
+calls/minute/bank and two simultaneous calls/bank, including replacement keys.
+Each process admits eight concurrent generations across all banks; the public
+route also limits each IP to 120 requests/minute. The generation deadline is
+45 seconds; it does not retry automatically. Inference responses use
+`Cache-Control: no-store`. Save and activation are separate operations.
+Decisions still have to fit their prepared-context byte budget; the higher active
+Policy count does not increase that budget.
 
 | Error | Next step |
 | --- | --- |
@@ -469,11 +677,17 @@ Decision and memory HTTP bodies are limited to 64 KiB; policy bodies to 32 KiB. 
 | `409 POLICY_VERSION_CONFLICT` | Read the latest policy version before editing |
 | `409 POLICY_LIMIT_EXCEEDED` | Check total and active policy budgets; at the total limit, edit an existing policy rather than adding another |
 | `413 PAYLOAD_TOO_LARGE` | Keep decision and memory bodies under 64 KiB and policy bodies under 32 KiB |
-| `429 RATE_LIMITED` | Too many decisions for this bank; wait for `Retry-After`, then retry with the same UUID |
+| `429 RATE_LIMITED` | Wait for `Retry-After`. For decisions, retry with the original UUID; inference has no UUID and shares its own bank/concurrency limits |
 | `429 BANK_QUEUE_FULL` | Retry the same memory operation after capacity is available |
 | `502 INVALID_MODEL_OUTPUT` or `MODEL_ERROR` | Keep the error code and request ID for diagnosis |
 | `503 SERVICE_UNAVAILABLE`, `MEMORY_UNAVAILABLE` or `CONTEXT_UNAVAILABLE` | Check service availability; do not treat the error as a recommendation |
 | `504 TIMEOUT` | Retry with the same UUID to check the attempt's outcome |
+| `503 POLICY_INFERENCE_UNAVAILABLE` | Document generation is not configured; do not treat this as an empty result |
+| `502` or `504 POLICY_INFERENCE_FAILED` | Generation failed or timed out; preserve the document for review and retry deliberately. Nothing was saved by inference |
+
+Inference rejects malformed documents and caller-supplied bank/workspace selectors
+with `400 INVALID_REQUEST`; JSON parser overflow returns `413 PAYLOAD_TOO_LARGE`.
+Provider details and document contents are omitted from its error responses.
 
 A successful decision can return `memory.status: not_queued` with `BANK_QUEUE_FULL` when fewer than two queue slots are free. Otherwise its response keeps the compatibility value `memory.status: pending`, while the associated ingestions are already retained on commit. Check the returned ingestion IDs when memory status matters.
 

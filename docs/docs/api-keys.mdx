@@ -37,7 +37,7 @@ Codex uses `~/.rippletide/codex.env`, not the repository's `.env`. Its setup com
 
 Open [Tide-1](/docs/decision-api) in the selected workspace. The app uses your signed-in account session. An Admin's first visit creates the workspace's memory bank and its Connection key; later visits reuse them. Editors can use Tide-1 without receiving the secret. Provisioning, copying and replacing the key require an Admin account session.
 
-Backend calls use this bank's Connection key in `Authorization: Bearer <connection-key>` for memory, policies, decisions and feedback. The key also permits policy edits. Agent/MCP and direct-integration policy guards use their own Connection keys in `x-api-key`; those credentials do not authorize Tide-1.
+Backend calls use this bank's Connection key in `Authorization: Bearer <connection-key>` for memory, policies, decisions and feedback. It also authorizes [Policy inference from document text](/docs/decision-api#infer-policies-from-a-document) and explicit Policy edits. Inference returns suggestions; saving or activating them requires a separate Policy write. Agent/MCP and direct-integration policy guards use their own Connection keys in `x-api-key`; those credentials do not authorize Tide-1.
 
 An Admin can copy the same active secret again from Tide-1. Copying does not rotate it. Store the copied value in your application's secret manager. Platform-key management scripts can manage separate issuer-owned banks; they cannot provision or manage the workspace's default bank or its key.
 
